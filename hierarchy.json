@@ -6,10 +6,10 @@
     "jailtime": 0,
     "stealc": 0,
     "rpsc": 0,
-    "bank": 86,
+    "bank": 81,
     "bankc": 0,
-    "total": 86,
-    "hbank": 86,
+    "total": 81,
+    "hbank": 81,
     "heistamount": 0,
     "items": [],
     "inuse": [],
@@ -52,27 +52,18 @@
   },
   {
     "user": "322896727071784960",
-    "money": 542,
-    "workc": 3202,
+    "money": 0,
+    "workc": 1714,
     "jailtime": 0,
-    "stealc": 1483,
+    "stealc": 8962,
     "rpsc": 0,
-    "bank": 23,
+    "bank": 533,
     "bankc": 0,
-    "total": 565,
-    "hbank": 23,
+    "total": 533,
+    "hbank": 533,
     "heistamount": 50,
     "items": [],
-    "inuse": [
-      {
-        "name": "gun",
-        "timer": 9960
-      },
-      {
-        "name": "padlock",
-        "timer": 163501
-      }
-    ],
+    "inuse": [],
     "storage": 2,
     "isworking": "False"
   },
@@ -95,15 +86,15 @@
   },
   {
     "user": "371316432673177601",
-    "money": 472,
+    "money": 597,
     "workc": 0,
     "jailtime": 0,
-    "stealc": 0,
+    "stealc": 4105,
     "rpsc": 0,
-    "bank": 178,
+    "bank": 168,
     "bankc": 0,
-    "total": 650,
-    "hbank": 178,
+    "total": 765,
+    "hbank": 168,
     "heistamount": 42,
     "items": [],
     "inuse": [],
@@ -134,10 +125,10 @@
     "jailtime": 0,
     "stealc": 0,
     "rpsc": 0,
-    "bank": 148,
+    "bank": 140,
     "bankc": 0,
-    "total": 149,
-    "hbank": 148,
+    "total": 141,
+    "hbank": 140,
     "heistamount": 40,
     "items": [],
     "inuse": [],
@@ -253,10 +244,10 @@
     "jailtime": 0,
     "stealc": 0,
     "rpsc": 0,
-    "bank": 631,
+    "bank": 594,
     "bankc": 0,
-    "total": 631,
-    "hbank": 631,
+    "total": 594,
+    "hbank": 594,
     "heistamount": 50,
     "items": [],
     "inuse": [],
@@ -521,9 +512,9 @@
   {
     "user": "600855080962490396",
     "money": 1490,
-    "workc": 3318,
+    "workc": 0,
     "jailtime": 0,
-    "stealc": 10523,
+    "stealc": 0,
     "rpsc": 0,
     "bank": 0,
     "bankc": 0,
@@ -535,12 +526,7 @@
       "gun",
       "gun"
     ],
-    "inuse": [
-      {
-        "name": "padlock",
-        "timer": 172539
-      }
-    ],
+    "inuse": [],
     "storage": 3,
     "isworking": "False"
   },
@@ -566,7 +552,7 @@
     "money": 822,
     "workc": 0,
     "jailtime": 0,
-    "stealc": 0,
+    "stealc": 9123,
     "rpsc": 0,
     "bank": 0,
     "bankc": 0,
@@ -575,13 +561,12 @@
     "heistamount": 50,
     "items": [
       "gun",
-      "padlock",
       "padlock"
     ],
     "inuse": [
       {
         "name": "padlock",
-        "timer": 172537
+        "timer": 170997
       }
     ],
     "storage": 3,
@@ -1051,7 +1036,7 @@
     "money": 7,
     "workc": 0,
     "jailtime": 0,
-    "stealc": 1350,
+    "stealc": 0,
     "rpsc": 0,
     "bank": 0,
     "bankc": 0,

@@ -288,7 +288,7 @@ class info(commands.Cog):
                     avatar = guild.get_member(member.id)
                     avatar = avatar.avatar_url_as(static_format='jpg',size=256)
                     embed = discord.Embed(color=0x4785ff)
-                    embed.set_author(name=f"{author.name}'s items ({len(person['items'])}/{person['storage']})",icon_url=avatar)
+                    embed.set_author(name=f"{member.name}'s items ({len(person['items'])}/{person['storage']})",icon_url=avatar)
                     embed2 = discord.Embed(color=0xff8000)
                     embed2.set_author(name=f"{member.name}'s items in use",icon_url=avatar)
                     for x in person["inuse"]:

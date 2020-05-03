@@ -55,7 +55,7 @@ async def bank():
     channel = client.get_channel(698403873374601237)
     guild = client.get_guild(692906379203313695)
     for person in hierarchy:
-        bank = person["hbank"] * 0.1
+        bank = person["hbank"] * 0.06
         bank = int(bank)
         if bank > 200:
             bank = 200
@@ -71,7 +71,7 @@ async def bank():
         person["total"] = person["money"] + person["bank"]
         person["hbank"] = person["bank"]
     bankping = guild.get_role(698322063206776972)
-    await channel.send(f"{bankping.mention} A 10% bank fee has been collected. *(No more than $200 was taken from your account)*")
+    await channel.send(f"{bankping.mention} A 6% bank fee has been collected. *(No more than $200 was taken from your account)*")
     write_json(hierarchy)
     await leaderboard(client)
 
@@ -260,6 +260,7 @@ async def on_member_remove(member):
     channel = client.get_channel(692956542437425153)
     guild = client.get_guild(692906379203313695)
     inaudit = False
+    await asyncio.sleep(0.1)
     async for entry in guild.audit_logs(limit=1):
         if entry.action == discord.AuditLogAction.ban or entry.action == discord.AuditLogAction.kick:
             inaudit = True

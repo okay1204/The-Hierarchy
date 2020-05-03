@@ -714,6 +714,25 @@ class actions(commands.Cog):
                         await ctx.send(f"You can now carry up to {person['storage']} items.")
                     write_json(hierarchy)
 
+    @commands.command()
+    @commands.check(rightCategory)
+    async def redeem(self, ctx):
+        author = ctx.author
+        hierarchy = open_json()
+        for person in hierarchy:
+            if int(person["user"]) == author.id:
+                if person["tokens"] == 0:
+                    await ctx.send("You don't have any tokens.")
+                elif person["tokens"] > 0:
+                    await ctx.send(f"**{author.name}** redeemed {person['tokens']} tokens for ${person['tokens']*50}.")
+                    person["money"] += person["tokens"] * 50
+                    person["total"] = person["money"] + person["bank"]
+                    person["tokens"] = 0
+                    write_json(hierarchy)
+                    await rolecheck(self.client, author.id)
+                    await leaderboard(self.client)
+    
+
 
 
     @pay.error

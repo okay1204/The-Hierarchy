@@ -307,6 +307,29 @@ class info(commands.Cog):
         
         await ctx.send(embed=embed)
         await ctx.send(embed=embed2)
+
+    @commands.command()
+    @commands.check(rightCategory)
+    async def tokens(self, ctx, member:discord.Member=None):
+        author = ctx.author
+        hierarchy = open_json()
+        if not member:
+            for person in hierarchy:
+                if int(person["user"]) == author.id:
+                    await ctx.send(f"**{author.name}** has {person['tokens']} tokens.")
+        elif member.id==698771271353237575:
+            await ctx.send("Why me?")
+            return
+        elif member.bot == True:
+            await ctx.send("Bots don't play!")
+            return
+        elif member != None:
+            for person in hierarchy:
+                if int(person["user"]) == member.id:
+                    await ctx.send(f"**{member.name}** has {person['tokens']} tokens.")
+
+
+    
                         
     @bal.error
     async def bal_error(self,ctx,error):
@@ -345,6 +368,11 @@ class info(commands.Cog):
 
     @items.error
     async def items_error(self,ctx,error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("Member not found.")
+
+    @tokens.error
+    async def tokens_error(self,ctx,error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")
 

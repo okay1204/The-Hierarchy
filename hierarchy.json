@@ -14,7 +14,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "308335856777953280",
@@ -31,7 +32,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "320424309057388544",
@@ -48,24 +50,26 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "322896727071784960",
     "money": 0,
-    "workc": 1714,
+    "workc": 0,
     "jailtime": 0,
-    "stealc": 8962,
+    "stealc": 0,
     "rpsc": 0,
-    "bank": 533,
+    "bank": 603,
     "bankc": 0,
-    "total": 533,
-    "hbank": 533,
+    "total": 603,
+    "hbank": 603,
     "heistamount": 50,
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "331224824548556801",
@@ -82,14 +86,15 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "371316432673177601",
     "money": 597,
     "workc": 0,
     "jailtime": 0,
-    "stealc": 4105,
+    "stealc": 0,
     "rpsc": 0,
     "bank": 168,
     "bankc": 0,
@@ -99,7 +104,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "386316232820916224",
@@ -116,7 +122,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "396040708454219776",
@@ -133,7 +140,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "473355465515073547",
@@ -150,24 +158,28 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "570461430613278720",
-    "money": 2190,
+    "money": 2132,
     "workc": 0,
-    "jailtime": 0,
-    "stealc": 0,
+    "jailtime": 3484,
+    "stealc": 214,
     "rpsc": 0,
     "bank": 0,
     "bankc": 0,
-    "total": 2190,
+    "total": 2132,
     "hbank": 0,
     "heistamount": 47,
-    "items": [],
+    "items": [
+      "gun"
+    ],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "584404905771401216",
@@ -184,7 +196,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "615393838831370241",
@@ -201,7 +214,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "627975421627072514",
@@ -218,7 +232,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "688909659230568449",
@@ -235,7 +250,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "558783392515227648",
@@ -252,7 +268,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "373594850031042562",
@@ -269,7 +286,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "378554450614157313",
@@ -286,7 +304,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "324696247904501771",
@@ -303,7 +322,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "414637770892378112",
@@ -320,7 +340,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "287829427730251776",
@@ -337,7 +358,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "585167118195097610",
@@ -354,7 +376,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "340736546627911680",
@@ -371,7 +394,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "353623330391195650",
@@ -388,7 +412,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "678605434722058261",
@@ -405,7 +430,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "342353903876177951",
@@ -422,7 +448,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "410093943406198784",
@@ -439,7 +466,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "380859710410063872",
@@ -456,7 +484,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "692932895828082780",
@@ -473,7 +502,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "360197853487955980",
@@ -490,7 +520,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "271204470203875328",
@@ -507,52 +538,63 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "600855080962490396",
-    "money": 1490,
+    "money": 735,
     "workc": 0,
     "jailtime": 0,
     "stealc": 0,
     "rpsc": 0,
-    "bank": 0,
+    "bank": 700,
     "bankc": 0,
-    "total": 1490,
-    "hbank": 0,
+    "total": 1435,
+    "hbank": 700,
     "heistamount": 48,
     "items": [
       "gun",
-      "gun",
       "gun"
     ],
-    "inuse": [],
+    "inuse": [
+      {
+        "name": "gun",
+        "timer": 37039
+      },
+      {
+        "name": "padlock",
+        "timer": 163041
+      }
+    ],
     "storage": 3,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "621116124293234701",
-    "money": 1490,
+    "money": 1435,
     "workc": 0,
     "jailtime": 0,
     "stealc": 0,
     "rpsc": 0,
     "bank": 0,
     "bankc": 0,
-    "total": 1490,
+    "total": 1435,
     "hbank": 0,
     "heistamount": 44,
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "561656968461418526",
     "money": 822,
     "workc": 0,
     "jailtime": 0,
-    "stealc": 9123,
+    "stealc": 0,
     "rpsc": 0,
     "bank": 0,
     "bankc": 0,
@@ -566,11 +608,12 @@
     "inuse": [
       {
         "name": "padlock",
-        "timer": 170997
+        "timer": 158562
       }
     ],
     "storage": 3,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "514970180238049292",
@@ -587,7 +630,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "204978212025925633",
@@ -604,7 +648,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "626295153694605334",
@@ -621,7 +666,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "447117929339682827",
@@ -638,7 +684,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "510969392834674688",
@@ -655,7 +702,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "601896051737100327",
@@ -672,7 +720,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "652649778399805482",
@@ -689,7 +738,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "556695110071615518",
@@ -706,7 +756,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700282847759695872",
@@ -723,7 +774,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700286639888662539",
@@ -740,7 +792,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700291504236789850",
@@ -757,7 +810,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700295730891325481",
@@ -774,7 +828,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700300967102644274",
@@ -791,7 +846,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700305265353949224",
@@ -808,7 +864,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700411732727693342",
@@ -825,7 +882,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700423471615705191",
@@ -842,7 +900,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700438377547169914",
@@ -859,7 +918,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700586227187056640",
@@ -876,7 +936,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700587975548862485",
@@ -893,7 +954,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "700684459711660152",
@@ -910,7 +972,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "364953792703102978",
@@ -927,7 +990,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "669779067892924416",
@@ -944,7 +1008,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "619934895694676039",
@@ -961,7 +1026,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "401806699863998464",
@@ -978,7 +1044,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "699356777141239859",
@@ -995,7 +1062,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "407017615874064404",
@@ -1012,7 +1080,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "693559358461575299",
@@ -1029,7 +1098,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "619982304122765313",
@@ -1046,7 +1116,8 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   },
   {
     "user": "335825280348323850",
@@ -1063,6 +1134,7 @@
     "items": [],
     "inuse": [],
     "storage": 2,
-    "isworking": "False"
+    "isworking": "False",
+    "tokens": 0
   }
 ]

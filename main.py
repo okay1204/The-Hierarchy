@@ -25,6 +25,7 @@ async def on_ready():
         person["isworking"] = "False"
     write_json(hierarchy)
 
+    
 async def tax():
     hierarchy = open_json()
     channel = client.get_channel(698403873374601237)
@@ -99,6 +100,12 @@ async def timer():
                         itemindex = person["inuse"].index(item)
                         person["inuse"].pop(itemindex)
                 
+    for invite in hierarchystats["invites"]:
+        if invite["expires"] > 0:
+            invite["expires"] -= 1
+            if invite["expires"] == 0:
+                inviteindex = hierarchystats["invites"].index(invite)
+                hierarchystats["invites"].pop(inviteindex)
     if hierarchystats["heistc"] > 0:
         hierarchystats["heistc"] -= 1
     if hierarchystats["heistt"] > 0:
@@ -207,6 +214,7 @@ async def on_raw_reaction_add(payload):
     guild = client.get_guild(692906379203313695)
     taxping = guild.get_role(698321954742075504)
     bankping = guild.get_role(698322063206776972)
+    tokendm = guild.get_role(706589874966364191)
     channel = client.get_channel(698318226613993553)
     if payload.message_id == 698774871949181039:
         user = payload.user_id
@@ -216,12 +224,17 @@ async def on_raw_reaction_add(payload):
         user = payload.user_id
         user = guild.get_member(user)
         await user.add_roles(bankping)
+    if payload.message_id == 706589449043181730:
+        user = payload.user_id
+        user = guild.get_member(user)
+        await user.add_roles(tokendm)
 
 @client.event
 async def on_raw_reaction_remove(payload):
     guild = client.get_guild(692906379203313695)
     taxping = guild.get_role(698321954742075504)
     bankping = guild.get_role(698322063206776972)
+    tokendm = guild.get_role(706589874966364191)
     channel = client.get_channel(698318226613993553)
     if payload.message_id == 698774871949181039:
         user = payload.user_id
@@ -231,29 +244,66 @@ async def on_raw_reaction_remove(payload):
         user = payload.user_id
         user = guild.get_member(user)
         await user.remove_roles(bankping)
-        
+    if payload.message_id == 706589449043181730:
+        user = payload.user_id
+        user = guild.get_member(user)
+        await user.remove_roles(tokendm)  
         
 @client.event
 async def on_member_join(member):
     channel = client.get_channel(692956542437425153)
     guild = client.get_guild(692906379203313695)
-    poor = member.guild.get_role(692952611141451787)
+    poor = guild.get_role(692952611141451787)
+    if member.bot == True:
+        return
     await channel.send(f"Hey {member.mention}, welcome to **The Hierarchy**! Please check <#692951648410140722> before you do anything else!")
     await member.add_roles(poor)
     alreadyin = False
-    if member.bot == True:
-        alreadyin = True
     hierarchy = open_json()
+    hierarchystats = open_json2()
     memberid = str(member.id)
     for person in hierarchy:
         if memberid == person["user"]:
             alreadyin = True
+
+
+    if alreadyin == True:
+        for hinvite in hierarchystats["invites"]:
+            cinvite = await client.fetch_invite(hinvite["code"])
+            for ginvite in await guild.invites():
+                if ginvite.id == hinvite["code"]:
+                    cuses = ginvite.uses
+            if hinvite["uses"] < cuses:
+                hinvite["uses"] += 1
+                if hinvite["uses"] == hinvite["max uses"]:
+                    inviteindex = hierarchystats["invites"].index(hinvite)
+                    hierarchystats["invites"].pop(inviteindex)
             
     if alreadyin == False:
         memberid = str(member.id)
         person = {'user':memberid,'money':0, 'workc':0, 'jailtime': 0, 'stealc': 0, 'rpsc': 0, 'bank': 0, 'bankc': 0, 'total': 0, 'hbank': 0, 'heistamount': 0, 'items':[], 'inuse':[], 'storage':2, 'isworking':'False'}
         hierarchy.append(person)
-        write_json(hierarchy)
+        for hinvite in hierarchystats["invites"]:
+            for ginvite in await guild.invites():
+                if ginvite.id == hinvite["code"]:
+                    cuses = ginvite.uses
+            if hinvite["uses"] < cuses:
+                hinvite["uses"] += 1
+                inviter = guild.get_member(hinvite["inviter"])
+                if hinvite["uses"] == hinvite["max uses"]:
+                    inviteindex = hierarchystats["invites"].index(hinvite)
+                    hierarchystats["invites"].pop(inviteindex)
+                for person in hierarchy:
+                    if int(person["user"]) == inviter.id:
+                        person["tokens"] += 1
+                        dmrole = guild.get_role(706589874966364191)
+                        for r in guild.get_member(inviter.id).roles:
+                            if r == dmrole:
+                                await inviter.send(f"You recieved a token because **{member.mention}** used your invite.")
+                
+            
+    write_json(hierarchy)                  
+    write_json2(hierarchystats)
     await leaderboard(client)
     
 
@@ -273,8 +323,22 @@ async def on_member_remove(member):
     if inaudit == False:
         await channel.send(f"{member.mention} has left **The Hierarchy**. Too bad for him/her.")
     await leaderboard(client)
-    
 
+
+@client.event
+async def on_invite_create(invite):
+    hierarchystats = open_json2()
+    hierarchystats["invites"].append({"code":invite.id,"uses":0,"expires":invite.max_age, "inviter":invite.inviter.id, "max uses":invite.max_uses})
+    write_json2(hierarchystats)
+    
+@client.event
+async def on_invite_delete(invite):
+    hierarchystats = open_json2()
+    for invite1 in hierarchystats["invites"]:
+        if invite1["code"] == invite.id:
+            inviteindex = hierarchystats["invites"].index(invite1)
+            hierarchystats["invites"].pop(inviteindex)
+    write_json2(hierarchystats)
 
 
 

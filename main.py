@@ -241,6 +241,8 @@ async def on_member_join(member):
     await channel.send(f"Hey {member.mention}, welcome to **The Hierarchy**! Please check <#692951648410140722> before you do anything else!")
     await member.add_roles(poor)
     alreadyin = False
+    if member.bot == True:
+        alreadyin = True
     hierarchy = open_json()
     memberid = str(member.id)
     for person in hierarchy:

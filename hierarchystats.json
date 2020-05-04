@@ -1,9 +1,45 @@
 {
-  "heistc": 0,
+  "heistc": 3434,
   "oheist": "False",
   "heistv": "None",
   "heistp": [],
   "heistt": 0,
   "heistl": "None",
   "invites": [
+    {
+      "code": "edU2B5",
+      "uses": 1,
+      "expires": 19808,
+      "inviter": 322896727071784960,
+      "max uses": 0
+    },
+    {
+      "code": "xUvY8Ed",
+      "uses": 5,
+      "expires": 0,
+      "inviter": 322896727071784960,
+      "max uses": 0
+    },
+    {
+      "code": "rczpmt",
+      "uses": 0,
+      "expires": 38686,
+      "inviter": 322896727071784960,
+      "max uses": 1
+    },
+    {
+      "code": "6sNmSE",
+      "uses": 9,
+      "expires": 80760,
+      "inviter": 558783392515227648,
+      "max uses": 0
+    },
+    {
+      "code": "6qtmV3",
+      "uses": 0,
+      "expires": 85993,
+      "inviter": 652932460761579532,
+      "max uses": 0
+    }
+  ]
 }

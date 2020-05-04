@@ -381,6 +381,7 @@ class actions(commands.Cog):
                                     if item["name"] == "gun":
                                         if random.randint(1,2) == 1:
                                             await ctx.send(f"**{author.name}** was caught stealing but got away with their gun.")
+                                            person2["stealc"] = 10800
                                             write_json(hierarchy)
                                             await leaderboard(self.client)
                                             await rolecheck(self.client, author.id)

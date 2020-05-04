@@ -19,6 +19,12 @@ class debug(commands.Cog):
             if int(person["user"]) == int(member):
                 await ctx.send(person)
 
+    @commands.command()
+    @commands.check(debugCheck)
+    async def hstats(self, ctx):
+        hierarchystats = open_json2()
+        await ctx.send(hierarchystats)
+
 
     @commands.command()
     @commands.check(debugCheck)

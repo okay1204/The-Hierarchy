@@ -265,14 +265,17 @@ async def on_member_join(member):
     for person in hierarchy:
         if memberid == person["user"]:
             alreadyin = True
-
-
+    await asyncio.sleep(1)
+    codes = []
+    for ginvite in await guild.invites():
+        codes.append(ginvite.id)
     if alreadyin == True:
         for hinvite in hierarchystats["invites"]:
-            cinvite = await client.fetch_invite(hinvite["code"])
             for ginvite in await guild.invites():
                 if ginvite.id == hinvite["code"]:
                     cuses = ginvite.uses
+            if (hinvite["code"] not in codes) and hinvite["max uses"] == 1:
+                cuses = 1
             if hinvite["uses"] < cuses:
                 hinvite["uses"] += 1
                 if hinvite["uses"] == hinvite["max uses"]:
@@ -281,12 +284,14 @@ async def on_member_join(member):
             
     if alreadyin == False:
         memberid = str(member.id)
-        person = {'user':memberid,'money':0, 'workc':0, 'jailtime': 0, 'stealc': 0, 'rpsc': 0, 'bank': 0, 'bankc': 0, 'total': 0, 'hbank': 0, 'heistamount': 0, 'items':[], 'inuse':[], 'storage':2, 'isworking':'False'}
+        person = {'user':memberid,'money':0, 'workc':0, 'jailtime': 0, 'stealc': 0, 'rpsc': 0, 'bank': 0, 'bankc': 0, 'total': 0, 'hbank': 0, 'heistamount': 0, 'items':[], 'inuse':[], 'storage':2, 'isworking':'False', 'tokens':0}
         hierarchy.append(person)
         for hinvite in hierarchystats["invites"]:
             for ginvite in await guild.invites():
                 if ginvite.id == hinvite["code"]:
                     cuses = ginvite.uses
+            if (hinvite["code"] not in codes) and hinvite["max uses"] == 1:
+                cuses = 1
             if hinvite["uses"] < cuses:
                 hinvite["uses"] += 1
                 inviter = guild.get_member(hinvite["inviter"])

@@ -253,14 +253,7 @@ class info(commands.Cog):
 
             embed2 = discord.Embed(color=0xff8000)
             embed2.set_author(name=f"{author.name}'s items in use",icon_url=avatar)
-            inuse = []
-            for x in read_value('members', 'id', author.id, 'inuse').split():
-                try:
-                    x = int(x)
-                    citem["timer"] = x
-                    inuse.append(citem)
-                except:
-                    citem = {'name':x}
+            in_use(author.id)
             for x in inuse:
                 embed2.add_field(name='__________', value=f'{x["name"].capitalize()}: {splittime(x["timer"])}', inline=False)
 
@@ -293,14 +286,7 @@ class info(commands.Cog):
 
             embed2 = discord.Embed(color=0xff8000)
             embed2.set_author(name=f"{member.name}'s items in use",icon_url=avatar)
-            inuse = []
-            for x in read_value('members', 'id', member.id, 'inuse').split():
-                try:
-                    x = int(x)
-                    citem["timer"] = x
-                    inuse.append(citem)
-                except:
-                    citem = {'name':x}
+            in_use(member.id)
             for x in inuse:
                 embed2.add_field(name='__________', value=f'{x["name"].capitalize()}: {splittime(x["timer"])}', inline=False)
 

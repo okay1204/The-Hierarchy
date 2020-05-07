@@ -340,7 +340,10 @@ async def on_invite_create(invite):
 async def on_invite_delete(invite):
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor()
-    c.execute(f'DELETE FROM invites WHERE code = {invite.id}')
+    try:
+        c.execute(f'DELETE FROM invites WHERE code = {invite.id}')
+    except:
+        pass
     conn.commit()
     conn.close()
 

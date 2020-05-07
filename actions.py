@@ -175,6 +175,8 @@ class actions(commands.Cog):
             earnings = random.randint(60,70)       
         await ctx.send(f"**{author.name}** worked and successfully completed {flag} tasks, earning ${earnings}.")
         money = read_value('members', 'id', author.id, 'money')
+        money += earnings
+        write_value('members', 'id', author.id, 'money', money)
         update_total(author.id)
         workc = int(time.time()) + 3600
         write_value('members', 'id', author.id, 'workc', workc)
@@ -669,17 +671,17 @@ class actions(commands.Cog):
         if item.lower() not in items:
             await ctx.send("This item does not exist.")
             return
-        if item.lower() not in read_value('members', 'id', author.id, 'items').split():
+        elif item.lower() not in read_value('members', 'id', author.id, 'items').split():
             await ctx.send(f"You do not own {item.capitalize()}.")
             return
-        in_use = in_use(author.id)
-        for x in in_use:
+        inuse = in_use(author.id)
+        for x in inuse:
             if x["name"] == item.lower():
                 await ctx.send(f"You already have {item.capitalize()} in use.")
                 return
 
         await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
-        person["items"].remove(item.lower())
+        remove_item(item.lower(), author.id)
         if item.lower() == 'padlock':
             timer = int(time.time()) + 172800
             add_use('padlock', timer, author.id)
@@ -718,10 +720,10 @@ class actions(commands.Cog):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")
             
-##    @steal.error
-##    async def steal_error(self, ctx,error):
-##        if isinstance(error, commands.BadArgument):
-##            await ctx.send("Member not found.")
+    @steal.error
+    async def steal_error(self, ctx,error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("Member not found.")
             
     @bail.error
     async def bail_error(self, ctx,error):

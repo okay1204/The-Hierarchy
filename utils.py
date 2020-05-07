@@ -48,7 +48,7 @@ def in_use(userid):
         inusetext = f"{inusetext} {item['name']} {item['timer']}"
     inusetext = f"'{inusetext}'"
     write_value('members', 'id', userid, 'inuse', inusetext)
-    return inuse
+    return items
 
 def add_item(name, userid):
     items = read_value('members', 'id', userid, 'items').split()
@@ -63,7 +63,7 @@ def remove_item(name, userid):
     itemtext = ""
     done = False
     for item in items:
-        if item['name'] == name and done == False:
+        if item == name and done == False:
             done = True
             continue
         itemtext = f"{itemtext} {item}"

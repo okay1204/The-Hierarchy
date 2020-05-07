@@ -14,20 +14,19 @@ class games(commands.Cog):
     @commands.check(rightCategory)
     async def rps(self, ctx, entry=None):
         author = ctx.author
-        hierarchy = open_json()
-        for person in hierarchy:
-            if str(author.id) == person["user"]:
-                if person["jailtime"] > 0:
-                    await ctx.send(f'You are still in jail for {splittime(person["jailtime"])}.')
-                    return
-                if person["rpsc"] > 0:
-                    await ctx.send(f'You must wait {splittime(person["rpsc"])} before you can play again.')
-                    return
-        hierarchystats = open_json2()
-        if hierarchystats["heistv"] == str(author.id):
+        jailtime = read_value('members', 'id', author.id, 'jailtime')
+        rpsc = read_value('members', 'id', author.id, 'rpsc')
+        if jailtime > time.time():
+            await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
+            return
+        if rpsc > time.time():
+            await ctx.send(f'You must wait {splittime(rpsc)} before you can play again.')
+            return
+        heist = open_json()
+        if heist["heistv"] == author.id:
             await ctx.send(f"You are currently being targeted for a heist.")
             return
-        if author.id in hierarchystats["heistp"]:
+        if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
         if not entry:
@@ -53,18 +52,16 @@ class games(commands.Cog):
             await ctx.send("You lose.")
         if entry.lower() == 'rock' and pc =='Scissors':
             await ctx.send(f'You win. ${rmoney} was added to your account.')
-            for person in hierarchy:
-                if person["user"] == str(author.id):
-                    person["money"] += rmoney
-                    person["total"] = person["money"] + person["bank"]
-                    write_json(hierarchy)
+            money = read_value('members', 'id', author.id, 'money')
+            money += rmoney
+            write_value('members', 'id', author.id, 'money', money)
+            update_total(author.id)
         if entry.lower() == 'paper' and pc =='Rock':
             await ctx.send(f'You win. ${rmoney} was added to your account.')
-            for person in hierarchy:
-                if person["user"] == str(author.id):
-                    person["money"] += rmoney
-                    person["total"] = person["money"] + person["bank"]
-                    write_json(hierarchy)
+            money = read_value('members', 'id', author.id, 'money')
+            money += rmoney
+            write_value('members', 'id', author.id, 'money', money)
+            update_total(author.id)
         if entry.lower() == 'paper' and pc =='Paper':
             await ctx.send("Tie.")
         if entry.lower() == 'paper' and pc =='Scissors':
@@ -73,17 +70,14 @@ class games(commands.Cog):
             await ctx.send("You lose.")
         if entry.lower() == 'scissors' and pc =='Paper':
             await ctx.send(f'You win. ${rmoney} was added to your account.')
-            for person in hierarchy:
-                if person["user"] == str(author.id):
-                    person["money"] += rmoney
-                    person["total"] = person["money"] + person["bank"]
-                    write_json(hierarchy)
+            money = read_value('members', 'id', author.id, 'money')
+            money += rmoney
+            write_value('members', 'id', author.id, 'money', money)
+            update_total(author.id)
         if entry.lower() == 'scissors' and pc =='Scissors':
             await ctx.send("Tie.")
-        for person in hierarchy:
-                if person["user"] == str(author.id):
-                    person["rpsc"] = 10
-                    write_json(hierarchy)
+        rpsc = time.time() + 10
+        write_value('members', 'id', author.id, 'rpsc', rpsc)
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
 
@@ -92,39 +86,40 @@ class games(commands.Cog):
     @commands.check(rightCategory)
     async def roll(self, ctx):
         author = ctx.author
-        hierarchy = open_json()
-        for person in hierarchy:
-            if str(author.id) == person["user"]:
-                if person["jailtime"] > 0:
-                    await ctx.send(f'You are still in jail for {splittime(person["jailtime"])}.')
-                    return
-                if person["rpsc"] > 0:
-                    await ctx.send(f'You must wait {splittime(person["rpsc"])} before you can play again.')
-                    return
-        hierarchystats = open_json2()
-        if hierarchystats["heistv"] == str(author.id):
+        jailtime = read_value('members', 'id', author.id, 'jailtime')
+        rpsc = read_value('members', 'id', author.id, 'rpsc')
+        if jailtime > time.time():
+            await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
+            return
+        if rpsc > time.time():
+            await ctx.send(f'You must wait {splittime(rpsc)} before you can play again.')
+            return
+        heist = open_json()
+        if heist["heistv"] == author.id:
             await ctx.send(f"You are currently being targeted for a heist.")
             return
-        if author.id in hierarchystats["heistp"]:
+        if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
-        for person in hierarchy:
-            if str(author.id) == person["user"]:
-                rollp = random.randint(1,6)
-                rollb = random.randint(1,6)
-                await ctx.send(f'**{author.name}** rolled {rollp}.\n**The Hierarchy** rolled {rollb}.')
-                if rollp > rollb:
-                    await ctx.send(f'You won. $2 was added to your account.')
-                    person['money'] += 2
-                elif rollp < rollb:
-                    await ctx.send(f'You lost.')
-                elif rollp == rollb:
-                    await ctx.send(f'Tie. $1 was added to your account.')
-                    person['money'] += 1
-                person["rpsc"] = 10
-                person["total"] = person["money"] + person["bank"]
-                write_json(hierarchy)
-
+        rollp = random.randint(1,6)
+        rollb = random.randint(1,6)
+        await ctx.send(f'**{author.name}** rolled {rollp}.\n**The Hierarchy** rolled {rollb}.')
+        if rollp > rollb:
+            await ctx.send(f'You won. $2 was added to your account.')
+            money = read_value('members', 'id', author.id, 'money')
+            money += 2
+            write_value('members', 'id', author.id, 'money', money)
+            update_total(author.id)
+        elif rollp < rollb:
+            await ctx.send(f'You lost.')
+        elif rollp == rollb:
+            await ctx.send(f'Tie. $1 was added to your account.')
+            money = read_value('members', 'id', author.id, 'money')
+            money += 1
+            write_value('members', 'id', author.id, 'money', money)
+            update_total(author.id)
+        rpsc = time.time() + 10
+        write_value('members', 'id', author.id, 'rpsc', rpsc)
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
 
@@ -133,20 +128,19 @@ class games(commands.Cog):
     @commands.check(rightCategory)
     async def guess(self, ctx, entry=None):
         author = ctx.author
-        hierarchy = open_json()
-        for person in hierarchy:
-            if str(author.id) == person["user"]:
-                if person["jailtime"] > 0:
-                    await ctx.send(f'You are still in jail for {splittime(person["jailtime"])}.')
-                    return
-                if person["rpsc"] > 0:
-                    await ctx.send(f'You must wait {splittime(person["rpsc"])} before you can play again.')
-                    return
-        hierarchystats = open_json2()
-        if hierarchystats["heistv"] == str(author.id):
+        jailtime = read_value('members', 'id', author.id, 'jailtime')
+        rpsc = read_value('members', 'id', author.id, 'rpsc')
+        if jailtime > time.time():
+            await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
+            return
+        if rpsc > time.time():
+            await ctx.send(f'You must wait {splittime(rpsc)} before you can play again.')
+            return
+        heist = open_json()
+        if heist["heistv"] == author.id:
             await ctx.send(f"You are currently being targeted for a heist.")
             return
-        if author.id in hierarchystats["heistp"]:
+        if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
         if not entry:
@@ -165,17 +159,16 @@ class games(commands.Cog):
         rmoney = random.randint(10,15)
         if entry == number:
             await ctx.send(f"You won. ${rmoney} was added to your account.")
-            for person in hierarchy:
-                if person["user"] == str(author.id):
-                    person["money"] += rmoney
-                    person["rpsc"] = 10
-                    person["total"] = person["money"] + person["bank"]
+            money = read_value('members', 'id', author.id, 'money')
+            money += rmoney
+            write_value('members', 'id', author.id, 'money', money)
+            update_total(author.id)
+            rpsc = time.time() + 10
+            write_value('members', 'id', author.id, 'rpsc', rpsc)
         elif entry != number:
             await ctx.send(f"You lost. The number was {number}.")
-            for person in hierarchy:
-                if person["user"] == str(author.id):
-                    person["rpsc"] = 10
-        write_json(hierarchy)
+            rpsc = time.time() + 10
+            write_value('members', 'id', author.id, 'rpsc', rpsc)
 
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)

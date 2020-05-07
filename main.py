@@ -99,7 +99,7 @@ async def heisttimer():
         write_json(heist)
         if heist["heistt"] == 0:
             channel = client.get_channel(heist["heistl"])
-            if len(heist["heistp"]) < 2:
+            if len(heist["heistp"]) < 3:
                 heist["heistl"] = 0
                 heist["oheist"] = "False"
                 heist["heistp"] = []

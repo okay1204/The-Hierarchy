@@ -167,11 +167,11 @@ class info(commands.Cog):
         author = ctx.author
         if member==None:
             jailtime = read_value('members', 'id', author.id, 'jailtime')
-            if jailtime < time.time:
+            if jailtime < time.time():
                 await ctx.send(f"**{author.name}** is not in jail.")
                 write_value('members', 'id', author.id, 'jailtime', 0)
             else:
-                bailprice = int(int(jailtime-time.time)/3600*40)
+                bailprice = int(int(jailtime-time.time())/3600*40)
                 await ctx.send(f"**{author.name}**'s bail price right now is ${bailprice}.")
         elif member.id==698771271353237575:
             await ctx.send("Why me?")
@@ -181,11 +181,11 @@ class info(commands.Cog):
             return
         elif member!=None:
             jailtime = read_value('members', 'id', member.id, 'jailtime')
-            if jailtime < time.time:
+            if jailtime < time.time():
                 await ctx.send(f"**{member.name}** is not in jail.")
                 write_value('members', 'id', member.id, 'jailtime', 0)
             else:
-                bailprice = int(int(jailtime-time.time)/3600*40)
+                bailprice = int(int(jailtime-time.time())/3600*40)
                 await ctx.send(f"**{member.name}**'s bail price right now is ${bailprice}.")
 
 
@@ -253,7 +253,7 @@ class info(commands.Cog):
 
             embed2 = discord.Embed(color=0xff8000)
             embed2.set_author(name=f"{author.name}'s items in use",icon_url=avatar)
-            in_use(author.id)
+            inuse = in_use(author.id)
             for x in inuse:
                 embed2.add_field(name='__________', value=f'{x["name"].capitalize()}: {splittime(x["timer"])}', inline=False)
 
@@ -286,7 +286,7 @@ class info(commands.Cog):
 
             embed2 = discord.Embed(color=0xff8000)
             embed2.set_author(name=f"{member.name}'s items in use",icon_url=avatar)
-            in_use(member.id)
+            inuse = in_use(member.id)
             for x in inuse:
                 embed2.add_field(name='__________', value=f'{x["name"].capitalize()}: {splittime(x["timer"])}', inline=False)
 

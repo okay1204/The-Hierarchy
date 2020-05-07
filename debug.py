@@ -11,19 +11,25 @@ class debug(commands.Cog):
     @commands.command()
     @commands.check(debugCheck)
     async def stats(self, ctx, member=None):
-        hierarchy = open_json()
         guild = self.client.get_guild(692906379203313695)
         if not member:
             await ctx.send("Enter a user.")
-        for person in hierarchy:
-            if int(person["user"]) == int(member):
-                await ctx.send(person)
+
+        conn = sqlite3.connect('hierarchy.db')
+        c = conn.cursor()
+        try:
+            c.execute(f'SELECT * FROM members WHERE id = {member.id}')
+        except:
+            await ctx.send("Member not found.")
+        reading = c.fetchall()
+        conn.close()
+        await ctx.send(reading)
 
     @commands.command()
     @commands.check(debugCheck)
     async def hstats(self, ctx):
-        hierarchystats = open_json2()
-        await ctx.send(hierarchystats)
+        heist = open_json()
+        await ctx.send(heist)
 
 
     @commands.command()

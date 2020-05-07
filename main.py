@@ -17,167 +17,154 @@ async def on_ready():
     print("Bot ready")
     guild = client.get_guild(692906379203313695)
     await client.change_presence(activity=discord.Game(name='with money'))
-    timer.start()
+    heisttimer.start()
     eventtimer.start()
-    hierarchy = open_json()
-    for person in hierarchy:
-        person["total"] = person["money"] + person["bank"]
-        person["isworking"] = "False"
-    write_json(hierarchy)
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor()
+    c.execute('UPDATE members SET isworking="False"')
+    conn.commit()
+    conn.close()
+    await leaderboard(client)
 
     
 async def tax():
-    hierarchy = open_json()
     channel = client.get_channel(698403873374601237)
     guild = client.get_guild(692906379203313695)
-    for person in hierarchy:
-        tax = person["total"] * 0.03
-        tax = int(tax)
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor()
+    c.execute('SELECT id, money, bank, total FROM members')
+    users = c.fetchall()
+    conn.close()
+    for person in users:
+        money = person[1]
+        bank = person[2]
+        total = person[3]
+        tax = int(total * 0.03)
         if tax > 100:
             tax = 100
-        if person["bank"] >= tax:
-            person["bank"] -= tax
-        elif person["bank"] < tax:
-            extra = tax - person["bank"]
-            person["bank"] = 0
-            if extra > person["money"]:
-                person["money"] = 0
-            elif extra <= person["money"]:
-                person["money"] -= extra
-        person["total"] = person["money"] + person["bank"]
+        if bank >= tax:
+            bank -= tax
+            write_value('members', 'id', person[0], 'bank', bank)
+        elif bank < tax:
+            extra = tax - bank
+            bank = 0
+            if extra > money:
+                money = 0
+            elif extra <= money:
+                money -= extra
+        write_value('members', 'id', person[0], 'bank', bank)
+        update_total(person[0])
     taxping = guild.get_role(698321954742075504)
     await channel.send(f"{taxping.mention} A 3% tax has been collected. *(No more than $100 was taken from your account)*")
-    write_json(hierarchy)
     await leaderboard(client)
 
 
 async def bank():
-    hierarchy = open_json()
     channel = client.get_channel(698403873374601237)
     guild = client.get_guild(692906379203313695)
-    for person in hierarchy:
-        bank = person["hbank"] * 0.06
-        bank = int(bank)
-        if bank > 200:
-            bank = 200
-        if person["bank"] >= bank:
-            person["bank"] -= bank
-        elif person["bank"] < bank:
-            extra = bank - person["bank"]
-            person["bank"] = 0
-            if extra > person["money"]:
-                person["money"] = 0
-            elif extra <= person["money"]:
-                person["money"] -= extra
-        person["total"] = person["money"] + person["bank"]
-        person["hbank"] = person["bank"]
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor()
+    c.execute('SELECT id, money, bank, total FROM members')
+    users = c.fetchall()
+    conn.close()
+    for person in users:
+        money = person[1]
+        bank = person[2]
+        total = person[3]
+        tax = int(total * 0.06)
+        if tax > 200:
+            tax = 200
+        if bank >= tax:
+            bank -= tax
+            write_value('members', 'id', person[0], 'bank', bank)
+        elif bank < tax:
+            extra = tax - bank
+            bank = 0
+            if extra > money:
+                money = 0
+            elif extra <= money:
+                money -= extra
+        write_value('members', 'id', person[0], 'bank', bank)
+        update_total(person[0])
     bankping = guild.get_role(698322063206776972)
     await channel.send(f"{bankping.mention} A 6% bank fee has been collected. *(No more than $200 was taken from your account)*")
-    write_json(hierarchy)
     await leaderboard(client)
 
             
 @tasks.loop(seconds=1)
-async def timer():
-    hierarchy = open_json()
-    hierarchystats = open_json2()
-    for person in hierarchy:
-        if person["workc"] > 0:
-            person["workc"] -= 1
-        if person["jailtime"] > 0:
-            person["jailtime"] -= 1
-        if person["stealc"] > 0:
-            person["stealc"] -= 1
-        if person["rpsc"] > 0:
-            person["rpsc"] -= 1
-        if person["bankc"] > 0:
-            person["bankc"] -= 1
-        for item in person["inuse"]:
-            if "timer" in item:
-                if item["timer"] > 0:
-                    item["timer"] -= 1
-                    if item["timer"] == 0:
-                        itemindex = person["inuse"].index(item)
-                        person["inuse"].pop(itemindex)
-                
-    for invite in hierarchystats["invites"]:
-        if invite["expires"] > 0:
-            invite["expires"] -= 1
-            if invite["expires"] == 0:
-                inviteindex = hierarchystats["invites"].index(invite)
-                hierarchystats["invites"].pop(inviteindex)
-    if hierarchystats["heistc"] > 0:
-        hierarchystats["heistc"] -= 1
-    if hierarchystats["heistt"] > 0:
-        hierarchystats["heistt"] -= 1
-        if hierarchystats["heistt"] == 0:
-            channel = client.get_channel(int(hierarchystats["heistl"]))
-            if len(hierarchystats["heistp"]) < 3:
-                hierarchystats["heistl"] = "None"
-                hierarchystats["oheist"] = "False"
-                hierarchystats["heistp"] = []
-                hierarchystats["heistv"] = "None"
+async def heisttimer():
+    heist = open_json()
+    if heist["heistt"] > 0:
+        heist["heistt"] -= 1
+        write_json(heist)
+        if heist["heistt"] == 0:
+            channel = client.get_channel(heist["heistl"])
+            if len(heist["heistp"]) < 2:
+                heist["heistl"] = 0
+                heist["oheist"] = "False"
+                heist["heistp"] = []
+                heist["heistv"] = 0
                 await channel.send("Heist cancelled: Not enough people joined.")
             else:
                 guild = client.get_guild(692906379203313695)
                 total = 0
-                for person in hierarchy:
-                    if int(person["user"]) in hierarchystats["heistp"]:
-                        person["heistamount"] = random.randint(40,50)
-                        total += person["heistamount"]
-                for person in hierarchy:
-                    if hierarchystats["heistv"] == person["user"]:
-                        while person["bank"] < total:
-                            total2 = 0
-                            for person2 in hierarchy:
-                                if int(person2["user"]) in hierarchystats["heistp"]:
-                                    person2["heistamount"] -= 1
-                                    total2 += person2["heistamount"]
-                                    total = total2
+                for userid in heist["heistp"]:
+                    heistamount = random.randint(40,50)
+                    write_value('members', 'id', userid, 'heistamount', heistamount)
+                    total += heistamount
+                    
+                while read_value('members', 'id', heist['heistv'], 'bank') < total:
+                    total2 = 0
+                    for userid2 in heist["heistp"]:
+                        heistamount = read_value('members', 'id', userid, 'heistamount')
+                        heistamount -= 1
+                        total2 += heistamount
+                        write_value('members', 'id', userid, 'heistamount', heistamount)
+                        total = total2
+                            
                 embed = discord.Embed(color=0xed1f1f)
                 embed.set_author(name="Heist results")
-                for person in hierarchy:
-                    if int(person["user"]) in hierarchystats["heistp"]:
-                        if random.randint(1,4) == 1:
-                            gotaway = False
-                            for item in person["inuse"]:
-                                    if item["name"] == "gun":
-                                        if random.randint(1,2) == 1:
-                                            embed.add_field(name=f'{guild.get_member(int(person["user"])).name}', value=f'Caught, got away with their gun.', inline=True)
-                                            gotaway = True
-                            if gotaway == False:
-                                embed.add_field(name=f'{guild.get_member(int(person["user"])).name}', value=f'Caught, jailed for 3h.', inline=True)
-                                person["jailtime"] = 10800
-                            await rolecheck(client, int(person["user"]))
-                        else:
-                            embed.add_field(name=f'{guild.get_member(int(person["user"])).name}', value=f'Got away with ${person["heistamount"]}.')
-                            person["money"] += person["heistamount"]
-                            person["total"] = person["money"] + person["bank"]
-                            for person2 in hierarchy:
-                                if person2["user"] == hierarchystats["heistv"]:
-                                    person2["bank"] -= person["heistamount"]
-                                    person2["total"] = person2["bank"] + person2["money"]
-                                    break
-                for person in hierarchy:
-                    if person["user"] == hierarchystats["heistv"]:
-                        await rolecheck(client, int(person["user"]))
-                        break
+                for userid in heist["heistp"]:
+                    if random.randint(1,4) == 1:
+                        gotaway = False
+                        for item in in_use(userid):
+                            if item["name"] == "gun":
+                                if random.randint(1,2) == 1:
+                                    embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, got away with their gun.', inline=True)
+                                    gotaway = True
+                        if gotaway == False:
+                            embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, jailed for 3h.', inline=True)
+                            jailtime = int(time.time()) + 10800
+                            write_value('members', 'id', userid, 'jailtime', jailtime)
+                        await rolecheck(client, userid)
+                    else:
+                        heistamount = read_value("members", "id", userid, "heistamount")
+                        embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Got away with ${heistamount}.')
+                        money = read_value("members", "id", userid, "money")
+                        money += heistamount
+                        write_value("members", "id", userid, "money", money)
+                        update_total(userid)
+                        bank = read_value("members", "id", heist["heistv"], "bank")
+                        bank -= heistamount
+                        write_value("members", "id", heist["heistv"], "bank", bank)
+                        update_total(heist["heistv"])
 
-                channel = client.get_channel(int(hierarchystats["heistl"]))
+                await rolecheck(client, heist["heistv"])
+
+                channel = client.get_channel(heist["heistl"])
                 await channel.send(embed=embed)
-                hierarchystats["heistv"] = "None"
-                hierarchystats["heistt"] = 0
-                hierarchystats["heistp"] = []
-                hierarchystats["heistl"] = "None"
-                hierarchystats["oheist"] = "False"
-                hierarchystats["heistc"] = 9000
-                write_json(hierarchy)
-                write_json2(hierarchystats)
+                heist["heistv"] = "None"
+                heist["heistt"] = 0
+                heist["heistp"] = []
+                heist["heistl"] = "None"
+                heist["oheist"] = "False"
+                heist["heistc"] = 9000
+                write_json(heist)
                 await leaderboard(client)
-                return
+
                 
-    write_json(hierarchy)
-    write_json2(hierarchystats)
+
+
 
 @tasks.loop(seconds=60)
 async def eventtimer():
@@ -205,6 +192,8 @@ async def eventtimer():
         embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
     else:
         embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
+
+            
     await feemessage.edit(embed=embed)
 
 
@@ -258,57 +247,64 @@ async def on_member_join(member):
         return
     await channel.send(f"Hey {member.mention}, welcome to **The Hierarchy**! Please check <#692951648410140722> before you do anything else!")
     await member.add_roles(poor)
-    alreadyin = False
-    hierarchy = open_json()
-    hierarchystats = open_json2()
-    memberid = str(member.id)
-    for person in hierarchy:
-        if memberid == person["user"]:
-            alreadyin = True
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor()
+    c.execute('SELECT id FROM members')
+    users = c.fetchall()
+    c.execute('SELECT code, uses, expires, maxuses, inviter FROM invites')
+    invites = c.fetchall()
+    for person in users:
+        if member.id == person[0]:
+            alreadyin = False
+    heist = open_json()
     await asyncio.sleep(1)
     codes = []
     for ginvite in await guild.invites():
         codes.append(ginvite.id)
+
     if alreadyin == True:
-        for hinvite in hierarchystats["invites"]:
+        for hinvite in invites:
+            if hinvite[2] < time.time() and hinvite[2] != 0:
+                c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
+                return
             for ginvite in await guild.invites():
-                if ginvite.id == hinvite["code"]:
+                if ginvite.id == hinvite[0]:
                     cuses = ginvite.uses
-            if (hinvite["code"] not in codes) and hinvite["max uses"] == 1:
+            if (hinvite[0] not in codes) and hinvite[3] == 1:
                 cuses = 1
-            if hinvite["uses"] < cuses:
-                hinvite["uses"] += 1
-                if hinvite["uses"] == hinvite["max uses"]:
-                    inviteindex = hierarchystats["invites"].index(hinvite)
-                    hierarchystats["invites"].pop(inviteindex)
-            
+            if hinvite[1] < cuses:
+                hinvite[1] += 1
+                c.execute(f'UPDATE invites SET uses = {hinvite[1]} WHERE code = {hinvite[0]}')
+                if hinvite[1] == hinvite[3]:
+                    c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
+                    
     if alreadyin == False:
-        memberid = str(member.id)
-        person = {'user':memberid,'money':0, 'workc':0, 'jailtime': 0, 'stealc': 0, 'rpsc': 0, 'bank': 0, 'bankc': 0, 'total': 0, 'hbank': 0, 'heistamount': 0, 'items':[], 'inuse':[], 'storage':2, 'isworking':'False', 'tokens':0}
-        hierarchy.append(person)
-        for hinvite in hierarchystats["invites"]:
+        c.execute(f'INSERT INTO members (id) VALUES ({member.id})')
+        for hinvite in invites:
+            if hinvite[2] < time.time() and hinvite[2] != 0:
+                c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
+                return
             for ginvite in await guild.invites():
-                if ginvite.id == hinvite["code"]:
+                if ginvite.id == hinvite[0]:
                     cuses = ginvite.uses
-            if (hinvite["code"] not in codes) and hinvite["max uses"] == 1:
+            if (hinvite[0] not in codes) and hinvite[3] == 1:
                 cuses = 1
-            if hinvite["uses"] < cuses:
-                hinvite["uses"] += 1
-                inviter = guild.get_member(hinvite["inviter"])
-                if hinvite["uses"] == hinvite["max uses"]:
-                    inviteindex = hierarchystats["invites"].index(hinvite)
-                    hierarchystats["invites"].pop(inviteindex)
-                for person in hierarchy:
-                    if int(person["user"]) == inviter.id:
-                        person["tokens"] += 1
-                        dmrole = guild.get_role(706589874966364191)
-                        for r in guild.get_member(inviter.id).roles:
-                            if r == dmrole:
-                                await inviter.send(f"You recieved a token because **{member.mention}** used your invite.")
+            if hinvite[1] < cuses:
+                hinvite[1] += 1
+                c.execute(f'UPDATE invites SET uses = {hinvite[1]} WHERE code = {hinvite[0]}')
+                inviter = guild.get_member(hinvite[4])
+                if hinvite[1] == hinvite[3]:
+                    c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
+                tokens = read_value('members', 'id', inviter.id, 'tokens', tokens)
+                tokens += 1
+                write_value('members', 'id', inviter.id, 'tokens', tokens)
+                dmrole = guild.get_role(706589874966364191)
+                for r in guild.get_member(inviter.id).roles:
+                    if r == dmrole:
+                        await inviter.send(f"You recieved a token because **{member.mention}** used your invite.")
                 
-            
-    write_json(hierarchy)                  
-    write_json2(hierarchystats)
+    conn.commit()
+    conn.close()
     await leaderboard(client)
     
 
@@ -332,19 +328,21 @@ async def on_member_remove(member):
 
 @client.event
 async def on_invite_create(invite):
-    hierarchystats = open_json2()
-    hierarchystats["invites"].append({"code":invite.id,"uses":0,"expires":invite.max_age, "inviter":invite.inviter.id, "max uses":invite.max_uses})
-    write_json2(hierarchystats)
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor() 
+    heist["invites"].append({"code":invite.id,"uses":0,"expires":invite.max_age, "inviter":invite.inviter.id, "max uses":invite.max_uses})
+    expires = int(time.time()) + invite.max_age
+    c.execute(f'INSERT INTO invites (code, uses, expires, inviter , maxuses) VALUES ({invite.id}, 0, {expires}, {invite.inviter.id}, {invite.max_uses})')
+    conn.commit()
+    conn.close()
     
 @client.event
 async def on_invite_delete(invite):
-    hierarchystats = open_json2()
-    for invite1 in hierarchystats["invites"]:
-        if invite1["code"] == invite.id:
-            inviteindex = hierarchystats["invites"].index(invite1)
-            hierarchystats["invites"].pop(inviteindex)
-    write_json2(hierarchystats)
-
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor()
+    c.execute(f'DELETE FROM invites WHERE code = {invite.id}')
+    conn.commit()
+    conn.close()
 
 
 
@@ -352,4 +350,5 @@ client.load_extension('debug')
 client.load_extension('info')
 client.load_extension('games')
 client.load_extension('actions')
+client.load_extension('admin')
 client.run('Njk4NzcxMjcxMzUzMjM3NTc1.XpKrfw.2bt069XC42fFvaUQQdfprVM7omc')

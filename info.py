@@ -204,9 +204,7 @@ class info(commands.Cog):
         hierarchy = c.fetchall()
         conn.close()
         sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
-        for x in sorted_list:
-            if guild.get_member(x[0]) is None:
-                sorted_list.remove(x)
+        sorted_list = tuple(filter(lambda x: guild.get_member(x[0]) is not None, sorted_list))
         if member==None:
             for x in sorted_list:
                 if author.id == x[0]:

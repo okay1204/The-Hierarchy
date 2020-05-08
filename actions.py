@@ -231,7 +231,7 @@ class actions(commands.Cog):
             write_value('members', 'id', member.id, 'money', money)
             update_total(author.id)
             await ctx.send(f'**{author.name}** spent ${bailprice} to bail **{member.name}**.')
-        write_value('members', 'id', member.id, 'jailtime', int(time.time()))
+            write_value('members', 'id', member.id, 'jailtime', int(time.time()))
         await leaderboard(self.client)
         await rolecheck(self.client, member.id)
         await rolecheck(self.client, author.id)
@@ -341,10 +341,11 @@ class actions(commands.Cog):
             stealc = int(time.time()) + 10800
             write_value('members', 'id', author.id, 'stealc', stealc)
             if random.randint(1,4) == 1:
-                if "gun" in in_use(author.id):
-                    if random.randint(1,2) == 1:
-                        await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead. They were also caught but got away with their gun.")
-                        return
+                for item in in_use(author.id):
+                    if item['name'] == 'gun':
+                        if random.randint(1,2) == 1:
+                            await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead. They were also caught but got away with their gun.")
+                            return
                 await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead. They were also caught and jailed for 1h 30m.")
                 jailtime = int(time.time()) + 5400
                 write_value('members', 'id', author.id, 'jailtime', jailtime)
@@ -361,12 +362,13 @@ class actions(commands.Cog):
             if randomer <= 0:
                 randomer = random.randint(1,10)
             if random.randint(1,200) <= randomer:
-                if 'gun' in in_use(author.id):
-                    if random.randint(1,2) == 1:
-                        await ctx.send(f"**{author.name}** was caught stealing but got away with their gun.")
-                        await rolecheck(self.client, author.id)
-                        await rolecheck(self.client, member.id)
-                        return
+                for item in in_use(author.id):
+                    if item['name'] == 'gun':
+                        if random.randint(1,2) == 1:
+                            await ctx.send(f"**{author.name}** was caught stealing but got away with their gun.")
+                            await rolecheck(self.client, author.id)
+                            await rolecheck(self.client, member.id)
+                            return
                 jailtime = int(int(time.time()) + amount*100.5)
                 write_value('members', 'id', author.id, 'jailtime', jailtime)
                 await ctx.send(f'**{author.name}** was caught stealing and sent to jail for {splittime(jailtime)}.')

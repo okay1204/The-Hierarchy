@@ -38,9 +38,9 @@ def in_use(userid):
         try:
             x = int(x)
             citem["timer"] = x
-            items.append(citem)
             if citem["timer"] < time.time():
-                items.remove(x)
+                continue
+            items.append(citem)
         except:
             citem = {'name':x}
     inusetext = ""
@@ -72,18 +72,10 @@ def remove_item(name, userid):
 
 
 def add_use(name, timer, userid):
-    inuse = read_value('members', 'id', userid, 'inuse').split()
-    items = []
-    for x in inuse:
-        try:
-            x = int(x)
-            citem["timer"] = x
-            items.append(citem)
-        except:
-            citem = {'name':x}
-    items.append({'name':name, 'timer':timer})
+    inuse = in_use(userid)
+    inuse.append({'name':name, 'timer':timer})
     inusetext = ""
-    for item in items:
+    for item in inuse:
         inusetext = f"{inusetext} {item['name']} {item['timer']}"
     inusetext = f"'{inusetext}'"
     write_value('members', 'id', userid, 'inuse', inusetext)
@@ -91,20 +83,12 @@ def add_use(name, timer, userid):
 
 
 def remove_use(name, userid):
-    inuse = read_value('members', 'id', userid, 'inuse').split()
-    items = []
-    for x in inuse:
-        try:
-            x = int(x)
-            citem["timer"] = x
-            items.append(citem)
-        except:
-            citem = {'name':x}
-    for item in items:
+    inuse = in_use(userid)
+    for item in inuse:
         if item["name"] == name:
-            items.remove(item)
+            inuse.remove(item)
     inusetext = ""
-    for item in items:
+    for item in inuse:
         inusetext = f"{inusetext} {item['name']} {item['timer']}"
     inusetext = f"'{inusetext}'"
     write_value('members', 'id', userid, 'inuse', inusetext)
@@ -164,9 +148,7 @@ async def leaderboard(client):
     hierarchy = c.fetchall()
     conn.close()
     sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
-    for x in sorted_list:
-        if guild.get_member(x[0]) is None:
-            sorted_list.remove(x)
+    sorted_list = tuple(filter(lambda x: guild.get_member(x[0]) is not None, sorted_list))
     for x in range(5):
         member = guild.get_member(sorted_list[x][0])
         if x == 0:
@@ -178,12 +160,7 @@ async def leaderboard(client):
         if x == 2:
             embed.add_field(name='__________',value=f'3. {member.mention} \U0001f949 - ${sorted_list[x][1]}',inline=False)
             continue
-        if x == 3:
-            embed.add_field(name='__________',value=f'4. {member.mention} - ${sorted_list[x][1]}',inline=False)
-            continue
-        if x == 4:
-            embed.add_field(name='__________',value=f'5. {member.mention} - ${sorted_list[x][1]}',inline=False)
-            continue
+        embed.add_field(name='__________',value=f'{x+1}. {member.mention} - ${sorted_list[x][1]}',inline=False)
 
 
     await message.edit(embed=embed)

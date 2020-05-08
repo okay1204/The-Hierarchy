@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 import json
+import time
 from utils import *
 
 
@@ -13,7 +14,7 @@ class admin(commands.Cog):
 
     @commands.command()
     @commands.check(adminCheck)
-    async def poll(self, ctx, option=None, time=None, *, name=None):
+    async def poll(self, ctx, option=None, timer=None, *, name=None):
         author = ctx.author
         pollchannel = self.client.get_channel(698009727803719757)
         #2\N{combining enclosing keycap} is 2 emoji and so on
@@ -21,7 +22,7 @@ class admin(commands.Cog):
         if not option:
             await ctx.send("Enter a poll option.")
             return
-        if not time:
+        if not timer:
             await ctx.send("Enter a poll duration in minutes.")
             return
         if not name:
@@ -36,7 +37,7 @@ class admin(commands.Cog):
             await ctx.send('Enter a valid number from 1-9 for your poll options.')
             return
         try:
-            time = int(time)
+            timer = int(timer)
         except:
             await ctx.send('Enter a valid amount of minutes.')
             return
@@ -50,9 +51,9 @@ class admin(commands.Cog):
         poll = await self.client.wait_for('message',check=check)
         content = poll.content
         await ctx.send(f"Poll made in {pollchannel.mention}.")
-        if time != 0:
-            message = await pollchannel.send(f"`{name}:`\n\n{content}\n\n**Time left: {minisplittime(time)}**")
-        elif time == 0:
+        if timer != 0:
+            message = await pollchannel.send(f"`{name}:`\n\n{content}\n\n**Time left: {minisplittime(timer)}**")
+        elif timer == 0:
             message = await pollchannel.send(f'`{name}:`\n\n{content}')
         if option != 1:
             for x in range(option):
@@ -62,9 +63,10 @@ class admin(commands.Cog):
             await message.add_reaction('❌')
         conn = sqlite3.connect('hierarchy.db')
         c = conn.cursor()
-        c.execute(f'INSERT INTO polls (name, time, id) VALUES ({name}, {time}, {poll.id})')
+        expires = int(time.time()) + timer
+        c.execute(f"INSERT INTO polls (name, time, id) VALUES ('{name}', {expires}, {poll.id})")
         conn.commit()
-        conn.close
+        conn.close()
 
 
 def setup(client):

@@ -19,11 +19,11 @@ class debug(commands.Cog):
         c = conn.cursor()
         try:
             c.execute(f'SELECT * FROM members WHERE id = {member.id}')
+            reading = c.fetchall()
+            await ctx.send(reading)
         except:
             await ctx.send("Member not found.")
-        reading = c.fetchall()
         conn.close()
-        await ctx.send(reading)
 
     @commands.command()
     @commands.check(debugCheck)

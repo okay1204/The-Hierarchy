@@ -170,6 +170,7 @@ async def heisttimer():
 async def eventtimer():
     embed = discord.Embed(color=0x442391)
     channel = client.get_channel(698322322834063430)
+    pollchannel = client.get_channel(698009727803719757)
     feemessage = await channel.fetch_message(698775208663973940)
     embed.set_author(name="Fee collection times")
     taxtime = time.localtime()
@@ -195,8 +196,21 @@ async def eventtimer():
 
             
     await feemessage.edit(embed=embed)
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM polls')
+    polls = c.fetchall()
+    for poll in polls:
+        if poll[1] < time.time():
+            c.execute(f"DELETE FROM polls WHERE name = '{poll[0]}'")
+            conn.commit()
+        else:
+            message = await pollchannel.fetch_message(poll[2])
+            text = message.content.split('\n')[0]
+            text = f"{text}\n**Time left:{poll[1]-int(time.time())}**"
+            await message.edit(content=text)
 
-
+    conn.close()
     
 @client.event
 async def on_raw_reaction_add(payload):

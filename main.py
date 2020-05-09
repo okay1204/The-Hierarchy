@@ -160,6 +160,11 @@ async def heisttimer():
                 heist["heistl"] = "None"
                 heist["oheist"] = "False"
                 write_json(heist)
+                conn = sqlite3.connect('hierarchy.db')
+                c = conn.cursor()
+                c.execute(f"UPDATE heist SET cooldown = {int(time.time())+9000}")
+                conn.commit()
+                conn.close()
                 await leaderboard(client)
 
                 

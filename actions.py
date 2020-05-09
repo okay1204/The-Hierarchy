@@ -417,6 +417,9 @@ class actions(commands.Cog):
         money = read_value('members', 'id', author.id, 'money')
         if amount.lower()=='all':
             amount = money
+            if amount == 0:
+                await ctx.send("You don't have any money to deposit.")
+                return
         try:
             amount=int(amount)
         except:
@@ -468,6 +471,9 @@ class actions(commands.Cog):
         bank = read_value('members', 'id', author.id, 'bank')
         if amount.lower()=='all':
             amount = bank
+            if amount == 0:
+                await ctx.send("You don't have any money to deposit.")
+                return
         try:
             amount=int(amount)
         except:

@@ -104,6 +104,7 @@ async def heisttimer():
                 heist["oheist"] = "False"
                 heist["heistp"] = []
                 heist["heistv"] = 0
+                write_json(heist)
                 await channel.send("Heist cancelled: Not enough people joined.")
             else:
                 guild = client.get_guild(692906379203313695)
@@ -158,7 +159,6 @@ async def heisttimer():
                 heist["heistp"] = []
                 heist["heistl"] = "None"
                 heist["oheist"] = "False"
-                heist["heistc"] = 9000
                 write_json(heist)
                 await leaderboard(client)
 

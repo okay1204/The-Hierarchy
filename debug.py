@@ -18,7 +18,7 @@ class debug(commands.Cog):
         conn = sqlite3.connect('hierarchy.db')
         c = conn.cursor()
         try:
-            c.execute(f'SELECT * FROM members WHERE id = {member.id}')
+            c.execute(f'SELECT * FROM members WHERE id = {member}')
             reading = c.fetchall()
             await ctx.send(reading)
         except:

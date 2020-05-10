@@ -124,9 +124,9 @@ class info(commands.Cog):
         if member==None:
             bankc = read_value('members', 'id', author.id, 'bankc')
             if bankc > time.time():
-                await ctx.send(f'**{author.name}** has {splittime(bankc)} left until they can steal.')
+                await ctx.send(f'**{author.name}** has {splittime(bankc)} left until they can access their bank.')
             else:
-                await ctx.send(f'**{author.name}** can steal.')
+                await ctx.send(f'**{author.name}** can access their bank.')
         elif member.id==698771271353237575:
             await ctx.send("Why me?")
             return
@@ -136,9 +136,9 @@ class info(commands.Cog):
         elif member!=None:
             bankc = read_value('members', 'id', member.id, 'bankc')
             if bankc > time.time():
-                await ctx.send(f'**{member.name}** has {splittime(bankc)} left until they can steal.')
+                await ctx.send(f'**{member.name}** has {splittime(bankc)} left until they can access their bank.')
             else:
-                await ctx.send(f'**{member.name}** can steal.')
+                await ctx.send(f'**{member.name}** can access their bank.')
 
 
     @commands.command()

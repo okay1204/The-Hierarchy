@@ -209,10 +209,19 @@ async def eventtimer():
         if poll[1] < time.time():
             c.execute(f"DELETE FROM polls WHERE name = '{poll[0]}'")
             conn.commit()
+            message = await pollchannel.fetch_message(poll[2])
+            message.delete()
         else:
             message = await pollchannel.fetch_message(poll[2])
-            text = message.content.split('\n')[0]
-            text = f"{text}\n**Time left:{poll[1]-int(time.time())}**"
+            text = message.content
+            for char in text:
+                if char == '\n':
+                    index = text.index(char)
+                    break
+
+            text = text[index:]
+            text = text[::-1]
+            text = f"{text}**Time left:{minisplittime(int(poll[1]-int(time.time()))/60)}**"
             await message.edit(content=text)
 
     conn.close()
@@ -264,6 +273,7 @@ async def on_member_join(member):
     poor = guild.get_role(692952611141451787)
     if member.bot == True:
         return
+    alreadyin = False
     await channel.send(f"Hey {member.mention}, welcome to **The Hierarchy**! Please check <#692951648410140722> before you do anything else!")
     await member.add_roles(poor)
     conn = sqlite3.connect('hierarchy.db')
@@ -274,7 +284,7 @@ async def on_member_join(member):
     invites = c.fetchall()
     for person in users:
         if member.id == person[0]:
-            alreadyin = False
+            alreadyin = True
     heist = open_json()
     await asyncio.sleep(1)
     codes = []
@@ -284,7 +294,7 @@ async def on_member_join(member):
     if alreadyin == True:
         for hinvite in invites:
             if hinvite[2] < time.time() and hinvite[2] != 0:
-                c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
+                c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
                 return
             for ginvite in await guild.invites():
                 if ginvite.id == hinvite[0]:
@@ -292,16 +302,18 @@ async def on_member_join(member):
             if (hinvite[0] not in codes) and hinvite[3] == 1:
                 cuses = 1
             if hinvite[1] < cuses:
-                hinvite[1] += 1
-                c.execute(f'UPDATE invites SET uses = {hinvite[1]} WHERE code = {hinvite[0]}')
-                if hinvite[1] == hinvite[3]:
-                    c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
+                updated = hinvite[1] + 1
+                c.execute(f"UPDATE invites SET uses = {updated} WHERE code = '{hinvite[0]}'")
+                if updated == hinvite[3]:
+                    c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
+        conn.commit()
+        conn.close()
                     
     if alreadyin == False:
         c.execute(f'INSERT INTO members (id) VALUES ({member.id})')
         for hinvite in invites:
             if hinvite[2] < time.time() and hinvite[2] != 0:
-                c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
+                c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
                 return
             for ginvite in await guild.invites():
                 if ginvite.id == hinvite[0]:
@@ -309,21 +321,21 @@ async def on_member_join(member):
             if (hinvite[0] not in codes) and hinvite[3] == 1:
                 cuses = 1
             if hinvite[1] < cuses:
-                hinvite[1] += 1
-                c.execute(f'UPDATE invites SET uses = {hinvite[1]} WHERE code = {hinvite[0]}')
+                updated = hinvite[1] + 1
+                c.execute(f"UPDATE invites SET uses = {updated} WHERE code = '{hinvite[0]}'")
                 inviter = guild.get_member(hinvite[4])
-                if hinvite[1] == hinvite[3]:
-                    c.execute(f'DELETE FROM invites WHERE code = {hinvite[0]}')
-                tokens = read_value('members', 'id', inviter.id, 'tokens', tokens)
+                if updated == hinvite[3]:
+                    c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
+                conn.commit()
+                conn.close()
+                tokens = read_value('members', 'id', inviter.id, 'tokens')
                 tokens += 1
                 write_value('members', 'id', inviter.id, 'tokens', tokens)
                 dmrole = guild.get_role(706589874966364191)
                 for r in guild.get_member(inviter.id).roles:
                     if r == dmrole:
-                        await inviter.send(f"You recieved a token because **{member.mention}** used your invite.")
+                        await inviter.send(f"You recieved a token because {member.mention} used your invite.")
                 
-    conn.commit()
-    conn.close()
     await leaderboard(client)
     
 

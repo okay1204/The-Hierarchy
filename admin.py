@@ -63,7 +63,7 @@ class admin(commands.Cog):
             await message.add_reaction('❌')
         conn = sqlite3.connect('hierarchy.db')
         c = conn.cursor()
-        expires = int(time.time()) + timer
+        expires = int(time.time()) + timer*60
         c.execute(f"INSERT INTO polls (name, time, id) VALUES ('{name}', {expires}, {poll.id})")
         conn.commit()
         conn.close()

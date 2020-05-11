@@ -352,7 +352,7 @@ async def on_invite_create(invite):
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor() 
     expires = int(time.time()) + invite.max_age
-    c.execute(f'INSERT INTO invites (code, uses, expires, inviter , maxuses) VALUES ({invite.id}, 0, {expires}, {invite.inviter.id}, {invite.max_uses})')
+    c.execute(f"INSERT INTO invites (code, uses, expires, inviter , maxuses) VALUES ('{invite.id}', 0, {expires}, {invite.inviter.id}, {invite.max_uses})")
     conn.commit()
     conn.close()
     
@@ -361,7 +361,7 @@ async def on_invite_delete(invite):
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor()
     try:
-        c.execute(f'DELETE FROM invites WHERE code = {invite.id}')
+        c.execute(f"DELETE FROM invites WHERE code = '{invite.id}'")
     except:
         pass
     conn.commit()

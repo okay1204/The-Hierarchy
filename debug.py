@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 import json
+import sqlite3
+from sqlite3 import Error
 from utils import *
 
 class debug(commands.Cog):
@@ -14,7 +16,6 @@ class debug(commands.Cog):
         guild = self.client.get_guild(692906379203313695)
         if not member:
             await ctx.send("Enter a user.")
-
         conn = sqlite3.connect('hierarchy.db')
         c = conn.cursor()
         try:

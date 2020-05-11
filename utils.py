@@ -2,6 +2,7 @@ import discord
 import json
 import time
 import sqlite3
+from sqlite3 import Error
 
 def read_value(table, where, what, value):
     conn = sqlite3.connect('hierarchy.db')

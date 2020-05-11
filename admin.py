@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands, tasks
 import json
 import time
+import sqlite3
+from sqlite3 import Error
 from utils import *
 
 

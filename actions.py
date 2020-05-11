@@ -4,6 +4,8 @@ import random
 import json
 import asyncio
 import time
+import sqlite3
+from sqlite3 import Error
 from utils import *
 
 class actions(commands.Cog):
@@ -270,6 +272,9 @@ class actions(commands.Cog):
         money = read_value('members', 'id', author.id, 'money')
         if amount.lower()=='all':
             amount = money
+            if amount == 0:
+                await ctx.send("You don't have any money to pay.")
+                return
         try:
             amount = int(amount)
         except:
@@ -289,6 +294,7 @@ class actions(commands.Cog):
             money += amount
             write_value('members', 'id', member.id, 'money', money)
             update_total(author.id)
+            update_total(member.id)
             await ctx.send(f"**{author.name}** payed **{member.name}** ${amount}.")
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
@@ -386,12 +392,7 @@ class actions(commands.Cog):
         await rolecheck(self.client, author.id)
         await rolecheck(self.client, member.id)
 
-
-
-
-
-
-
+        
     @commands.command(aliases=['dep'])
     @commands.check(rightCategory)
     async def deposit(self, ctx, amount=None):
@@ -472,7 +473,7 @@ class actions(commands.Cog):
         if amount.lower()=='all':
             amount = bank
             if amount == 0:
-                await ctx.send("You don't have any money to deposit.")
+                await ctx.send("You don't have any money to withdraw.")
                 return
         try:
             amount=int(amount)
@@ -642,7 +643,7 @@ class actions(commands.Cog):
                     return
                 storage = read_value('members', 'id', author.id, 'storage')
                 if len(read_value('members', 'id', author.id, 'items').split()) >= storage:
-                    await ctx.send(f"You can only carry a maximum {person['storage']} items.")
+                    await ctx.send(f"You can only carry a maximum {storage} items.")
                     return
                 money -= x["cost"]
                 write_value('members', 'id', author.id, 'money', money)

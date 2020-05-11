@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import json
 import time
+import sqlite3
+from sqlite3 import Error
 from utils import *
 
 
@@ -53,7 +55,8 @@ class info(commands.Cog):
         if member==None:
             jailtime = read_value('members', 'id', author.id, 'jailtime')
             if jailtime > time.time():
-                await ctx.send(f'**{author.name}** has {splittime(jailtime)} left in jail.')
+                bailprice = int(int(jailtime-time.time())/3600*40)
+                await ctx.send(f'**{author.name}** has {splittime(jailtime)} left in jail with a bail price of ${bailprice}.')
             else:
                 await ctx.send(f'**{author.name}** is not in jail.')
         elif member.id==698771271353237575:
@@ -65,7 +68,8 @@ class info(commands.Cog):
         elif member!=None:
             jailtime = read_value('members', 'id', member.id, 'jailtime')
             if jailtime > time.time():
-                await ctx.send(f'**{member.name}** has {splittime(jailtime)} left in jail.')
+                bailprice = int(int(jailtime-time.time())/3600*40)
+                await ctx.send(f'**{member.name}** has {splittime(jailtime)} left in jail with a bail price of ${bailprice}.')
             else:
                 await ctx.send(f'**{member.name}** is not in jail.')
 
@@ -158,39 +162,7 @@ class info(commands.Cog):
         elif heist["heistt"] > 0:
             await ctx.send(f'The heist on **{guild.get_member(heist["heistv"]).name}** will start in {heist["heistt"]} seconds.')
         else:
-            await ctx.send(f'A heist can be made.')
-
-
-    @commands.command()
-    @commands.check(rightCategory)
-    async def bailprice(self, ctx, member:discord.Member=None):
-        author = ctx.author
-        if member==None:
-            jailtime = read_value('members', 'id', author.id, 'jailtime')
-            if jailtime < time.time():
-                await ctx.send(f"**{author.name}** is not in jail.")
-                write_value('members', 'id', author.id, 'jailtime', 0)
-            else:
-                bailprice = int(int(jailtime-time.time())/3600*40)
-                await ctx.send(f"**{author.name}**'s bail price right now is ${bailprice}.")
-        elif member.id==698771271353237575:
-            await ctx.send("Why me?")
-            return
-        elif member.bot == True:
-            await ctx.send("Bots don't play!")
-            return
-        elif member!=None:
-            jailtime = read_value('members', 'id', member.id, 'jailtime')
-            if jailtime < time.time():
-                await ctx.send(f"**{member.name}** is not in jail.")
-                write_value('members', 'id', member.id, 'jailtime', 0)
-            else:
-                bailprice = int(int(jailtime-time.time())/3600*40)
-                await ctx.send(f"**{member.name}**'s bail price right now is ${bailprice}.")
-
-
-
-                
+            await ctx.send(f'A heist can be made.')             
         
 
     @commands.command()
@@ -343,11 +315,6 @@ class info(commands.Cog):
 
     @stealtime.error
     async def stealtime_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
-    @bailprice.error
-    async def bailprice_error(self,ctx,error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")
 

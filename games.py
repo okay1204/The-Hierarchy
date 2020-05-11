@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import json
 import random
+import sqlite3
+from sqlite3 import Error
 from utils import *
 
 class games(commands.Cog):

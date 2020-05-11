@@ -4,6 +4,8 @@ import random
 import json
 import time
 import asyncio
+import sqlite3
+from sqlite3 import Error
 from utils import *
 
 
@@ -15,7 +17,6 @@ client.remove_command('help')
 @client.event
 async def on_ready():
     print("Bot ready")
-    guild = client.get_guild(692906379203313695)
     await client.change_presence(activity=discord.Game(name='with money'))
     heisttimer.start()
     eventtimer.start()
@@ -117,10 +118,10 @@ async def heisttimer():
                 while read_value('members', 'id', heist['heistv'], 'bank') < total:
                     total2 = 0
                     for userid2 in heist["heistp"]:
-                        heistamount = read_value('members', 'id', userid, 'heistamount')
+                        heistamount = read_value('members', 'id', userid2, 'heistamount')
                         heistamount -= 1
                         total2 += heistamount
-                        write_value('members', 'id', userid, 'heistamount', heistamount)
+                        write_value('members', 'id', userid2, 'heistamount', heistamount)
                         total = total2
                             
                 embed = discord.Embed(color=0xed1f1f)
@@ -195,7 +196,7 @@ async def eventtimer():
         embed.add_field(name="Tax collection",value=f'{minisplittime(taxtime)}',inline=False)
     if banktime == 0:
         await bank()
-        embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
+        embed.add_field(name="Bank fee collection",value='12h 0m',inline=False)
     else:
         embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
 
@@ -209,16 +210,10 @@ async def eventtimer():
         if poll[1] < time.time():
             c.execute(f"DELETE FROM polls WHERE name = '{poll[0]}'")
             conn.commit()
-            message = await pollchannel.fetch_message(poll[2])
-            message.delete()
         else:
             message = await pollchannel.fetch_message(poll[2])
             text = message.content
-            for char in text:
-                if char == '\n':
-                    index = text.index(char)
-                    break
-
+            index = text.index('\n')
             text = text[index:]
             text = text[::-1]
             text = f"{text}**Time left:{minisplittime(int(poll[1]-int(time.time()))/60)}**"
@@ -232,7 +227,6 @@ async def on_raw_reaction_add(payload):
     taxping = guild.get_role(698321954742075504)
     bankping = guild.get_role(698322063206776972)
     tokendm = guild.get_role(706589874966364191)
-    channel = client.get_channel(698318226613993553)
     if payload.message_id == 698774871949181039:
         user = payload.user_id
         user = guild.get_member(user)
@@ -252,7 +246,6 @@ async def on_raw_reaction_remove(payload):
     taxping = guild.get_role(698321954742075504)
     bankping = guild.get_role(698322063206776972)
     tokendm = guild.get_role(706589874966364191)
-    channel = client.get_channel(698318226613993553)
     if payload.message_id == 698774871949181039:
         user = payload.user_id
         user = guild.get_member(user)
@@ -285,7 +278,6 @@ async def on_member_join(member):
     for person in users:
         if member.id == person[0]:
             alreadyin = True
-    heist = open_json()
     await asyncio.sleep(1)
     codes = []
     for ginvite in await guild.invites():
@@ -302,9 +294,8 @@ async def on_member_join(member):
             if (hinvite[0] not in codes) and hinvite[3] == 1:
                 cuses = 1
             if hinvite[1] < cuses:
-                updated = hinvite[1] + 1
-                c.execute(f"UPDATE invites SET uses = {updated} WHERE code = '{hinvite[0]}'")
-                if updated == hinvite[3]:
+                c.execute(f"UPDATE invites SET uses = {cuses} WHERE code = '{hinvite[0]}'")
+                if cuses == hinvite[3]:
                     c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
         conn.commit()
         conn.close()
@@ -321,10 +312,9 @@ async def on_member_join(member):
             if (hinvite[0] not in codes) and hinvite[3] == 1:
                 cuses = 1
             if hinvite[1] < cuses:
-                updated = hinvite[1] + 1
-                c.execute(f"UPDATE invites SET uses = {updated} WHERE code = '{hinvite[0]}'")
+                c.execute(f"UPDATE invites SET uses = {cuses} WHERE code = '{hinvite[0]}'")
                 inviter = guild.get_member(hinvite[4])
-                if updated == hinvite[3]:
+                if cuses == hinvite[3]:
                     c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
                 conn.commit()
                 conn.close()
@@ -361,7 +351,6 @@ async def on_member_remove(member):
 async def on_invite_create(invite):
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor() 
-    heist["invites"].append({"code":invite.id,"uses":0,"expires":invite.max_age, "inviter":invite.inviter.id, "max uses":invite.max_uses})
     expires = int(time.time()) + invite.max_age
     c.execute(f'INSERT INTO invites (code, uses, expires, inviter , maxuses) VALUES ({invite.id}, 0, {expires}, {invite.inviter.id}, {invite.max_uses})')
     conn.commit()

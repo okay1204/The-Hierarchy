@@ -634,7 +634,14 @@ class actions(commands.Cog):
             await ctx.send(f"You are participating in a heist right now.")
             return
          
-        items = [{"name":"padlock", "cost":110},{"name":"backpack", "cost":100},{"name":"gun", "cost":120}]
+        items = []
+        conn = sqlite3.connect('hierarchy.db')
+        c = conn.cursor()
+        c.execute('SELECT name, price FROM shop')
+        temp = c.fetchall()
+        conn.close()
+        for p in temp:
+            items.append({'name':p[0],'cost':p[1]})
         for x in items:
             if x["name"] == item.lower():
                 money = read_value('members', 'id', author.id, 'money')
@@ -695,7 +702,6 @@ class actions(commands.Cog):
             timer = int(time.time()) + 172800
             add_use('padlock', timer, author.id)
         if item.lower() == 'gun':
-            remove_item('gun', author.id)
             timer = int(time.time()) + 46800
             add_use('gun', timer, author.id)
         if item.lower() == 'backpack':

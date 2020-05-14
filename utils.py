@@ -150,7 +150,7 @@ async def leaderboard(client):
     conn.close()
     sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
     sorted_list = tuple(filter(lambda x: guild.get_member(x[0]) is not None, sorted_list))
-    for x in range(5):
+    for x in range(10):
         member = guild.get_member(sorted_list[x][0])
         if x == 0:
             embed.add_field(name='__________',value=f'1. {member.mention} \U0001f947 - ${sorted_list[x][1]}',inline=False)

@@ -670,9 +670,10 @@ class actions(commands.Cog):
     async def use(self, ctx, item=None):
         author = ctx.author
         jailtime = read_value('members', 'id', author.id, 'jailtime')        
-        if jailtime > time.time():
-            await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
-            return
+        if item.lower() != 'pass':
+            if jailtime > time.time():
+                await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
+                return
         if not item:
             await ctx.send(f'Enter an item.')
             return
@@ -683,9 +684,9 @@ class actions(commands.Cog):
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
-        items = ["padlock", "backpack", "gun"]
+        items = ["padlock", "backpack", "gun", "pass"]
         if item.lower() not in items:
-            await ctx.send("This item does not exist.")
+            await ctx.send(f"There is no such item called {item}.")
             return
         elif item.lower() not in read_value('members', 'id', author.id, 'items').split():
             await ctx.send(f"You do not own {item.capitalize()}.")
@@ -696,19 +697,41 @@ class actions(commands.Cog):
                 await ctx.send(f"You already have {item.capitalize()} in use.")
                 return
 
-        await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
-        remove_item(item.lower(), author.id)
         if item.lower() == 'padlock':
             timer = int(time.time()) + 172800
             add_use('padlock', timer, author.id)
+            remove_item('padlock', author.id)
+            await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
         if item.lower() == 'gun':
             timer = int(time.time()) + 46800
             add_use('gun', timer, author.id)
+            remove_item('gun', author.id)
+            await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
         if item.lower() == 'backpack':
             storage = read_value('members', 'id', author.id, 'storage')
             storage += 1
             write_value('members', 'id', author.id, 'storage', storage)
+            remove_item('backpack', author.id)
+            await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
             await ctx.send(f"You can now carry up to {storage} items.")
+        if item.lower() == 'pass':
+            jailtime = read_value('members', 'id', author.id, 'jailtime')
+            if jailtime < time.time():
+                await ctx.send('You are not in jail.')
+                return
+            else:
+                bailprice = int(int(jailtime-time.time())/3600*40)
+                money = read_value('members', 'id', author.id, 'money')
+                if bailprice > money:
+                    await ctx.send(f'You must have at least ${bailprice} to bail yourself.')
+                else:
+                    money -= bailprice
+                    write_value('members', 'id', author.id, 'money', money)
+                    write_value('members', 'id', author.id, 'jailtime', int(time.time()))
+                    remove_item('pass', author.id)
+                    await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
+                    await ctx.send(f'You bailed yourself for ${bailprice}.')
+
 
     @commands.command()
     @commands.check(rightCategory)

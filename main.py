@@ -127,11 +127,11 @@ async def shopchange():
         
 
         if newprice > stat[1]:
-            text = f'{text}\n{stat[0].capitalize()}: ⏫ ${newprice-stat[1]}'
+            text = f'{text}\n{stat[0].capitalize()}: ⏫ ${newprice-stat[1]} *${stat[1]} -> ${newprice}*'
         elif newprice < stat[1]:
-            text = f'{text}\n{stat[0].capitalize()}: ⏬ ${stat[1]-newprice}'
+            text = f'{text}\n{stat[0].capitalize()}: ⏬ ${stat[1]-newprice} *${stat[1]} -> ${newprice}*'
         if newprice == stat[1]:
-            text = f'{text}\n{stat[0].capitalize()}: No change.'
+            text = f'{text}\n{stat[0].capitalize()}: No change'
 
 
         c.execute(f"UPDATE shop SET price = {newprice} WHERE name = '{stat[0]}'")
@@ -245,13 +245,14 @@ async def eventtimer():
     banktime = 720-minutes
     shoptime = time.localtime()
     minutes = shoptime[4] + shoptime[3]*60
-    times = [180,360,540,720,900,1080,1260]
+    shoptime = 0
+    times = [0,180,360,540,720,900,1080,1260]
     for x in times:
         if minutes > x and minutes < x+180:
             shoptime = x+180
-    if minutes in times:
-        minutes = 0
     shoptime -= minutes
+    if minutes in times:
+        shoptime = 0
     if banktime < 0 or banktime == 720:
         banktime = 1440-minutes
         if banktime == 1440:
@@ -401,6 +402,8 @@ async def on_member_join(member):
         for hinvite in invites:
             if hinvite[2] < time.time() and hinvite[2] != 0:
                 c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
+                c.commit()
+                c.close()
                 return
             for ginvite in await guild.invites():
                 if ginvite.id == hinvite[0]:

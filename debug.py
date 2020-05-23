@@ -45,6 +45,7 @@ class debug(commands.Cog):
         embed.set_author(name="Bot ready to use.",icon_url=botuser)
         await message.edit(embed=embed)
         await ctx.send("Status updated to online.")
+        await self.client.change_presence(status=discord.Status.online,activity=discord.Game(name='with money'))
 
     @commands.command()
     @commands.check(debugCheck)
@@ -58,6 +59,7 @@ class debug(commands.Cog):
         embed.set_author(name="Bot under development.",icon_url=botuser)
         await message.edit(embed=embed)
         await ctx.send("Status updated to offline.")
+        await self.client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
     
 
 

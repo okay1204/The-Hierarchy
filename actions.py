@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import random
 import json
 import asyncio
@@ -191,7 +191,9 @@ class actions(commands.Cog):
     @commands.check(rightCategory)
     async def bail(self, ctx, member:discord.Member=None):
         author = ctx.author
-        
+        if not member:
+            await ctx.send("Enter a user to bail.")
+            return
         if member==author:
             await ctx.send("You can't bail yourself.")
             return
@@ -208,9 +210,6 @@ class actions(commands.Cog):
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
-        if member==None:
-            await ctx.send("Enter a user to bail.")
-            return
         if member.id==698771271353237575:
             await ctx.send("Why me?")
             return
@@ -222,7 +221,7 @@ class actions(commands.Cog):
             await ctx.send(f"**{member.name}** is not in jail.")
             return
         else:
-            bailprice = int(jailtime/3600*40)
+            bailprice = int((jailtime-time.time())/3600*40)
 
         money = read_value('members', 'id', author.id, 'money')
         if bailprice > money:
@@ -230,7 +229,7 @@ class actions(commands.Cog):
             return
         else:
             money -= bailprice
-            write_value('members', 'id', member.id, 'money', money)
+            write_value('members', 'id', author.id, 'money', money)
             update_total(author.id)
             await ctx.send(f'**{author.name}** spent ${bailprice} to bail **{member.name}**.')
             write_value('members', 'id', member.id, 'jailtime', int(time.time()))
@@ -253,6 +252,9 @@ class actions(commands.Cog):
             return
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
+            return
+        if read_value('members', 'id', author.id, 'isfighting') == 'True':
+            await ctx.send('You already have a fight request pending, or are fighting someone.')
             return
         if member==None:
             await ctx.send("Enter a user to pay.")
@@ -342,22 +344,23 @@ class actions(commands.Cog):
         if stealc > time.time():
             await ctx.send(f'You must wait {splittime(stealc)} before you can steal again.')
             return
-        if 'padlock' in in_use(member.id):
-            remove_use('padlock', member.id)
-            stealc = int(time.time()) + 10800
-            write_value('members', 'id', author.id, 'stealc', stealc)
-            if random.randint(1,4) == 1:
-                for item in in_use(author.id):
-                    if item['name'] == 'gun':
-                        if random.randint(1,2) == 1:
-                            await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead. They were also caught but got away with their gun.")
-                            return
-                await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead. They were also caught and jailed for 1h 30m.")
-                jailtime = int(time.time()) + 5400
-                write_value('members', 'id', author.id, 'jailtime', jailtime)
-            else:
-                await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead.")
-            return
+        for itema in in_use(member.id):
+            if itema['name'] == 'padlock':
+                remove_use('padlock', member.id)
+                stealc = int(time.time()) + 10800
+                write_value('members', 'id', author.id, 'stealc', stealc)
+                if random.randint(1,4) == 1:
+                    for item in in_use(author.id):
+                        if item['name'] == 'gun':
+                            if random.randint(1,2) == 1:
+                                await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead. They were also caught but got away with their gun.")
+                                return
+                    await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead. They were also caught and jailed for 1h 30m.")
+                    jailtime = int(time.time()) + 5400
+                    write_value('members', 'id', author.id, 'jailtime', jailtime)
+                else:
+                    await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead.")
+                return
         money = read_value('members', 'id', member.id, 'money')
         if money < amount:
             await ctx.send("This user does not have that much money in cash.")
@@ -412,6 +415,9 @@ class actions(commands.Cog):
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
+        if read_value('members', 'id', author.id, 'isfighting') == 'True':
+            await ctx.send('You already have a fight request pending, or are fighting someone.')
+            return
         if not amount:
             await ctx.send(f"Enter an amount of money to deposit.")
             return
@@ -465,6 +471,9 @@ class actions(commands.Cog):
             return
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
+            return
+        if read_value('members', 'id', author.id, 'isfighting') == 'True':
+            await ctx.send('You already have a fight request pending, or are fighting someone.')
             return
         if not amount:
             await ctx.send(f"Enter an amount of money to withdraw.")
@@ -733,45 +742,16 @@ class actions(commands.Cog):
                     await ctx.send(f'You bailed yourself for ${bailprice}.')
 
 
-    @commands.command()
-    @commands.check(rightCategory)
-    async def redeem(self, ctx):
-        author = ctx.author
-        tokens = read_value('members', 'id', author.id, 'tokens')
-        if tokens == 0:
-            await ctx.send("You don't have any tokens.")
-        elif tokens > 0:
-            await ctx.send(f"**{author.name}** redeemed {tokens} tokens for ${tokens*50}.")
-            money = read_value('members', 'id', author.id, 'money')
-            money += tokens * 50
-            write_value('members', 'id', author.id, 'money', money)
-            update_total(author.id)
-            write_value('members', 'id', author.id, 'tokens', 0)
-            await rolecheck(self.client, author.id)
-            await leaderboard(self.client)
 
-
-
-
-    @pay.error
-    async def pay_error(self, ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-            
+    
+    @bail.error 
     @steal.error
-    async def steal_error(self, ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-            
-    @bail.error
-    async def bail_error(self, ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-            
     @heist.error
-    async def heist_error(self, ctx,error):
+    @pay.error
+    async def member_not_found_error(self, ctx,error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")
+            
 
 
 

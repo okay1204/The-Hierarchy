@@ -16,13 +16,22 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print("Bot ready")
-    await client.change_presence(activity=discord.Game(name='with money'))
+    print(f"Logged in as {client.user}.\nID: {client.user.id}")
+    statuschannel = client.get_channel(698384786460246147)
+    statusmessage = await statuschannel.fetch_message(698775210173923429)
+    for x in statusmessage.embeds:
+        green = discord.Color(0x42f57b)
+        red = discord.Color(0xff5254)
+        if x.color == green:
+            await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with money'))
+        elif x.color == red:
+            await client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
     heisttimer.start()
     eventtimer.start()
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor()
     c.execute('UPDATE members SET isworking="False"')
+    c.execute('UPDATE members SET isfighting="False"')
     conn.commit()
     conn.close()
     await leaderboard(client)
@@ -86,6 +95,7 @@ async def bank():
                 money -= extra
         write_value('members', 'id', person[0], 'bank', bank)
         update_total(person[0])
+        write_value('members', 'id', person[0], 'hbank', bank)
     bankping = guild.get_role(698322063206776972)
     await channel.send(f"{bankping.mention} A 6% bank fee has been collected. *(No more than $200 was taken from your account)*")
     await leaderboard(client)
@@ -227,8 +237,7 @@ async def heisttimer():
                 
 
 
-
-@tasks.loop(seconds=60)
+@tasks.loop(minutes=1)
 async def eventtimer():
     embed = discord.Embed(color=0x442391)
     feechannel = client.get_channel(698322322834063430)
@@ -316,7 +325,6 @@ async def on_raw_reaction_add(payload):
     guild = client.get_guild(692906379203313695)
     taxping = guild.get_role(698321954742075504)
     bankping = guild.get_role(698322063206776972)
-    tokendm = guild.get_role(706589874966364191)
     pollchannel = client.get_channel(698009727803719757)
     if payload.message_id == 698774871949181039:
         user = payload.user_id
@@ -326,10 +334,6 @@ async def on_raw_reaction_add(payload):
         user = payload.user_id
         user = guild.get_member(user)
         await user.add_roles(bankping)
-    if payload.message_id == 706589449043181730:
-        user = payload.user_id
-        user = guild.get_member(user)
-        await user.add_roles(tokendm)
     if payload.channel_id == 698009727803719757:
         if payload.user_id != 698771271353237575:
             message = await pollchannel.fetch_message(payload.message_id)
@@ -342,7 +346,6 @@ async def on_raw_reaction_remove(payload):
     guild = client.get_guild(692906379203313695)
     taxping = guild.get_role(698321954742075504)
     bankping = guild.get_role(698322063206776972)
-    tokendm = guild.get_role(706589874966364191)
     if payload.message_id == 698774871949181039:
         user = payload.user_id
         user = guild.get_member(user)
@@ -350,11 +353,7 @@ async def on_raw_reaction_remove(payload):
     if payload.message_id == 698774872628789328:
         user = payload.user_id
         user = guild.get_member(user)
-        await user.remove_roles(bankping)
-    if payload.message_id == 706589449043181730:
-        user = payload.user_id
-        user = guild.get_member(user)
-        await user.remove_roles(tokendm)  
+        await user.remove_roles(bankping)  
         
 @client.event
 async def on_member_join(member):
@@ -370,61 +369,17 @@ async def on_member_join(member):
     c = conn.cursor()
     c.execute('SELECT id FROM members')
     users = c.fetchall()
-    c.execute('SELECT code, uses, expires, maxuses, inviter FROM invites')
-    invites = c.fetchall()
     for person in users:
         if member.id == person[0]:
             alreadyin = True
-    await asyncio.sleep(1)
-    codes = []
-    for ginvite in await guild.invites():
-        codes.append(ginvite.id)
 
-    if alreadyin == True:
-        for hinvite in invites:
-            if hinvite[2] < time.time() and hinvite[2] != 0:
-                c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
-                return
-            for ginvite in await guild.invites():
-                if ginvite.id == hinvite[0]:
-                    cuses = ginvite.uses
-            if (hinvite[0] not in codes) and hinvite[3] == 1:
-                cuses = 1
-            if hinvite[1] < cuses:
-                c.execute(f"UPDATE invites SET uses = {cuses} WHERE code = '{hinvite[0]}'")
-                if cuses == hinvite[3]:
-                    c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
-        conn.commit()
-        conn.close()
+        
                     
     if alreadyin == False:
         c.execute(f'INSERT INTO members (id) VALUES ({member.id})')
-        for hinvite in invites:
-            if hinvite[2] < time.time() and hinvite[2] != 0:
-                c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
-                c.commit()
-                c.close()
-                return
-            for ginvite in await guild.invites():
-                if ginvite.id == hinvite[0]:
-                    cuses = ginvite.uses
-            if (hinvite[0] not in codes) and hinvite[3] == 1:
-                cuses = 1
-            if hinvite[1] < cuses:
-                c.execute(f"UPDATE invites SET uses = {cuses} WHERE code = '{hinvite[0]}'")
-                inviter = guild.get_member(hinvite[4])
-                if cuses == hinvite[3]:
-                    c.execute(f"DELETE FROM invites WHERE code = '{hinvite[0]}'")
-                conn.commit()
-                conn.close()
-                tokens = read_value('members', 'id', inviter.id, 'tokens')
-                tokens += 1
-                write_value('members', 'id', inviter.id, 'tokens', tokens)
-                dmrole = guild.get_role(706589874966364191)
-                for r in guild.get_member(inviter.id).roles:
-                    if r == dmrole:
-                        await inviter.send(f"You recieved a token because {member.mention} used your invite.")
-                
+        conn.commit()
+
+    conn.close()
     await leaderboard(client)
     
 
@@ -446,31 +401,10 @@ async def on_member_remove(member):
     await leaderboard(client)
 
 
-@client.event
-async def on_invite_create(invite):
-    conn = sqlite3.connect('hierarchy.db')
-    c = conn.cursor() 
-    expires = int(time.time()) + invite.max_age
-    c.execute(f"INSERT INTO invites (code, uses, expires, inviter , maxuses) VALUES ('{invite.id}', 0, {expires}, {invite.inviter.id}, {invite.max_uses})")
-    conn.commit()
-    conn.close()
-    
-@client.event
-async def on_invite_delete(invite):
-    conn = sqlite3.connect('hierarchy.db')
-    c = conn.cursor()
-    try:
-        c.execute(f"DELETE FROM invites WHERE code = '{invite.id}'")
-    except:
-        pass
-    conn.commit()
-    conn.close()
-
-
-
 client.load_extension('debug')        
 client.load_extension('info')
 client.load_extension('games')
 client.load_extension('actions')
 client.load_extension('admin')
+client.load_extension('gambling')
 client.run('Njk4NzcxMjcxMzUzMjM3NTc1.XpKrfw.2bt069XC42fFvaUQQdfprVM7omc')

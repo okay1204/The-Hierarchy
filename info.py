@@ -274,62 +274,17 @@ class info(commands.Cog):
         await ctx.send(embed=embed)
         await ctx.send(embed=embed2)
 
-    @commands.command()
-    @commands.check(rightCategory)
-    async def tokens(self, ctx, member:discord.Member=None):
-        author = ctx.author
-        if not member:
-            tokens = read_value('members', 'id', author.id, 'tokens')
-            await ctx.send(f"**{author.name}** has {tokens} tokens.")
-        elif member.id==698771271353237575:
-            await ctx.send("Why me?")
-            return
-        elif member.bot == True:
-            await ctx.send("Bots don't play!")
-            return
-        elif member != None:
-            tokens = read_value('members', 'id', member.id, 'tokens')
-            await ctx.send(f"**{member.name}** has {tokens} tokens.")
 
     
                         
     @bal.error
-    async def bal_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
     @place.error
-    async def place_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
     @jailtime.error
-    async def jailtime_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
     @worktime.error
-    async def worktime_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
     @stealtime.error
-    async def stealtime_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
     @banktime.error
-    async def banktime_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
     @items.error
-    async def items_error(self,ctx,error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("Member not found.")
-
-    @tokens.error
-    async def tokens_error(self,ctx,error):
+    async def member_not_found_error(self,ctx,error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")
 

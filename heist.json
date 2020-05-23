@@ -1,7 +1,7 @@
 {
   "oheist": "False",
-  "heistv": 0,
+  "heistv": "None",
   "heistp": [],
   "heistt": 0,
-  "heistl": 0
+  "heistl": "None"
 }

@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 import json
+import sqlite3
+from sqlite3 import Error
 from utils import *
 
 class debug(commands.Cog):
@@ -11,13 +13,24 @@ class debug(commands.Cog):
     @commands.command()
     @commands.check(debugCheck)
     async def stats(self, ctx, member=None):
-        hierarchy = open_json()
         guild = self.client.get_guild(692906379203313695)
         if not member:
             await ctx.send("Enter a user.")
-        for person in hierarchy:
-            if int(person["user"]) == int(member):
-                await ctx.send(person)
+        conn = sqlite3.connect('hierarchy.db')
+        c = conn.cursor()
+        try:
+            c.execute(f'SELECT * FROM members WHERE id = {member}')
+            reading = c.fetchall()
+            await ctx.send(reading)
+        except:
+            await ctx.send("Member not found.")
+        conn.close()
+
+    @commands.command()
+    @commands.check(debugCheck)
+    async def hstats(self, ctx):
+        heist = open_json()
+        await ctx.send(heist)
 
 
     @commands.command()
@@ -32,6 +45,7 @@ class debug(commands.Cog):
         embed.set_author(name="Bot ready to use.",icon_url=botuser)
         await message.edit(embed=embed)
         await ctx.send("Status updated to online.")
+        await self.client.change_presence(status=discord.Status.online,activity=discord.Game(name='with money'))
 
     @commands.command()
     @commands.check(debugCheck)
@@ -45,6 +59,7 @@ class debug(commands.Cog):
         embed.set_author(name="Bot under development.",icon_url=botuser)
         await message.edit(embed=embed)
         await ctx.send("Status updated to offline.")
+        await self.client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
     
 
 

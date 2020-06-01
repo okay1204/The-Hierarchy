@@ -281,8 +281,96 @@ class info(commands.Cog):
         await ctx.send(embed=embed)
         await ctx.send(embed=embed2)
 
-
-    
+    @commands.command()
+    @commands.check(rightCategory)
+    async def around(self, ctx, find=None, member:discord.Member=None):
+        if find == None:
+            find = 3
+        try:
+            find = int(find)
+        except:
+            await ctx.send('Enter a valid number from 1-10')
+            return
+        if find < 1 or find > 10:
+            await ctx.send('Enter a number from 1-10.')
+            return
+        if not member:
+            author = ctx.author
+        else:
+            author = member
+        author2 = ctx.author
+        guild = self.client.get_guild(692906379203313695)
+        conn = sqlite3.connect('hierarchy.db')
+        c = conn.cursor()
+        c.execute('SELECT id, total FROM members')
+        hierarchy = c.fetchall()
+        conn.close()
+        sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
+        sorted_list = list(filter(lambda x: guild.get_member(x[0]) is not None, sorted_list))
+        listids = []
+        for x in sorted_list:
+            listids.append(x[0])
+        cindex = listids.index(author.id)
+        result = []
+        iszero = False
+        haszero = False
+        if sorted_list[cindex][1] == 0: 
+            sorted_list = list(filter(lambda x: x[1] != 0 or x[0] == author.id, sorted_list))
+            listids = []
+            for x in sorted_list:
+                listids.append(x[0])
+            cindex = listids.index(author.id)
+        if sorted_list[cindex][1] == 0: 
+            iszero = True
+        elif any(x[1] == 0 for x in sorted_list[cindex-find:cindex+find+1]):
+            haszero = True
+        negextra = 0
+        posextra = 0
+        for x in range(-1*find, find+1):
+            index = cindex + x
+            if iszero and index > cindex:
+                continue
+            if haszero and sorted_list[index][1] == 0:
+                negextra += 1
+                continue
+            elif index < 0:
+                posextra += 1
+                continue
+            result.append(sorted_list[index])
+        for x in range(negextra):
+            index = cindex - find - negextra
+            result.insert(0, sorted_list[index])
+        for x in range(posextra):
+            index = cindex + find + posextra
+            result.append(sorted_list[index])
+        
+        avatar = author.avatar_url_as(static_format='jpg',size=256)
+        embed = discord.Embed(color=0xffd24a)
+        embed.set_author(name=f"Around {author.name}",icon_url=avatar)
+        place = listids.index(result[0][0]) + 1
+        addedfields = []
+        for person in result:
+            member2 = guild.get_member(person[0])
+            if member2.id not in addedfields:
+                medal = ''
+                mk = ''
+                if place == 1:
+                    medal = '🥇 '
+                elif place == 2:
+                    medal = '🥈 '
+                elif place == 3:
+                    medal = '🥉 '
+                if author.id == person[0]:
+                    mk = '**'
+                embed.add_field(name='__________', value=f'{mk}{place}. {member2.mention} {medal}- ${person[1]}{mk}', inline=False)
+                place += 1
+                addedfields.append(member2.id)
+        if find > 3:
+            await ctx.send('Embed too large, check your DMs.')
+            await author2.send(embed=embed)
+        else:
+            await ctx.send(embed=embed)
+        
                         
     @bal.error
     @place.error
@@ -291,6 +379,7 @@ class info(commands.Cog):
     @stealtime.error
     @banktime.error
     @items.error
+    @around.error
     async def member_not_found_error(self,ctx,error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")

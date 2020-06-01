@@ -67,7 +67,6 @@ async def tax():
     await channel.send(f"{taxping.mention} A 3% tax has been collected. *(No more than $100 was taken from your account)*")
     await leaderboard(client)
 
-
 async def bank():
     channel = client.get_channel(698403873374601237)
     guild = client.get_guild(692906379203313695)
@@ -108,8 +107,10 @@ async def shopchange():
     stats = c.fetchall()
     embed = discord.Embed(color=0x30ff56)
     embed.set_author(name='Shop')
+    guild = client.get_guild(692906379203313695)
+    shopping = guild.get_role(716818790947618857)
     x = 1
-    text = ""
+    text = f"{shopping.mention}"
     for stat in stats:
         change = ""
         if stat[2] == 'down':
@@ -234,9 +235,6 @@ async def heisttimer():
                 conn.close()
                 await leaderboard(client)
 
-                
-
-
 @tasks.loop(minutes=1)
 async def eventtimer():
     embed = discord.Embed(color=0x442391)
@@ -320,40 +318,6 @@ async def eventtimer():
     conn.commit()
     conn.close()
     
-@client.event
-async def on_raw_reaction_add(payload):
-    guild = client.get_guild(692906379203313695)
-    taxping = guild.get_role(698321954742075504)
-    bankping = guild.get_role(698322063206776972)
-    pollchannel = client.get_channel(698009727803719757)
-    if payload.message_id == 698774871949181039:
-        user = payload.user_id
-        user = guild.get_member(user)
-        await user.add_roles(taxping)
-    if payload.message_id == 698774872628789328:
-        user = payload.user_id
-        user = guild.get_member(user)
-        await user.add_roles(bankping)
-    if payload.channel_id == 698009727803719757:
-        if payload.user_id != 698771271353237575:
-            message = await pollchannel.fetch_message(payload.message_id)
-            for reaction in message.reactions:
-                if str(reaction.emoji) != str(payload.emoji):
-                    await client.http.remove_reaction(payload.channel_id, payload.message_id, reaction.emoji, payload.user_id)
-
-@client.event
-async def on_raw_reaction_remove(payload):
-    guild = client.get_guild(692906379203313695)
-    taxping = guild.get_role(698321954742075504)
-    bankping = guild.get_role(698322063206776972)
-    if payload.message_id == 698774871949181039:
-        user = payload.user_id
-        user = guild.get_member(user)
-        await user.remove_roles(taxping)
-    if payload.message_id == 698774872628789328:
-        user = payload.user_id
-        user = guild.get_member(user)
-        await user.remove_roles(bankping)  
         
 @client.event
 async def on_member_join(member):
@@ -366,7 +330,15 @@ async def on_member_remove(member):
     await asyncio.sleep(0.1)
     await leaderboard(client)
 
-
+@client.event
+async def on_message(message):
+    if not message.author.bot and message.channel.id == 716720359818133534:
+        submissions = client.get_channel(716724583767474317)
+        await submissions.send(f"By {message.author.mention}: \n{message.content}")
+        await message.delete()
+        await message.channel.send(f"{message.author.mention}, your application was successfully submitted.")
+    
+    await client.process_commands(message)
 
 client.load_extension('debug')        
 client.load_extension('info')

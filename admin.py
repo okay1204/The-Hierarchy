@@ -21,13 +21,13 @@ class admin(commands.Cog):
         pollchannel = self.client.get_channel(698009727803719757)
         #2\N{combining enclosing keycap} is 2 emoji and so on
         #\N{keycap ten} is 10 emoji
-        if not option:
+        if option == None:
             await ctx.send("Enter a poll option.")
             return
-        if not timer:
+        if timer == None:
             await ctx.send("Enter a poll duration in minutes.")
             return
-        if not name:
+        if name == None:
             await ctx.send("Enter a poll name.")
             return
         try:
@@ -63,10 +63,12 @@ class admin(commands.Cog):
         poll = await self.client.wait_for('message',check=check)
         content = poll.content
         await ctx.send(f"Poll made in {pollchannel.mention}.")
+        guild = self.client.get_guild(692906379203313695)
+        pollping = guild.get_role(716818729987473408)
         if timer != 0:
-            message = await pollchannel.send(f"`{name}:`\n\n{content}\n\n**Time left: {minisplittime(timer)}**")
+            message = await pollchannel.send(f"{pollping.mention}\n`{name}:`\n\n{content}\n\n**Time left: {minisplittime(timer)}**")
         elif timer == 0:
-            message = await pollchannel.send(f'`{name}:`\n\n{content}')
+            message = await pollchannel.send(f'{pollping.mention}\n`{name}:`\n\n{content}')
         if option != 1:
             for x in range(option):
                 await message.add_reaction(f'{x+1}\N{combining enclosing keycap}')

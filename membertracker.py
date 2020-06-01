@@ -13,6 +13,7 @@ client.remove_command('help')
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for members"))
 
 @client.event
 async def on_member_join(member):

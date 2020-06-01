@@ -137,6 +137,52 @@ async def adminCheck(ctx):
     return ctx.channel.id == 706953015415930941
 
 
+def around(guild, userid, find):
+    conn = sqlite3.connect('hierarchy.db')
+    c = conn.cursor()
+    c.execute('SELECT id, total FROM members')
+    hierarchy = c.fetchall()
+    conn.close()
+    sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
+    sorted_list = list(filter(lambda x: guild.get_member(x[0]) is not None, sorted_list))
+    listids = []
+    for x in sorted_list:
+        listids.append(x[0])
+    cindex = listids.index(userid)
+    result = []
+    iszero = False
+    haszero = False
+    if sorted_list[cindex][1] == 0: 
+        sorted_list = list(filter(lambda x: x[1] != 0 or x[0] == userid, sorted_list))
+        listids = []
+        for x in sorted_list:
+            listids.append(x[0])
+        cindex = listids.index(userid)
+    if sorted_list[cindex][1] == 0: 
+        iszero = True
+    elif any(x[1] == 0 for x in sorted_list[cindex-find:cindex+find+1]):
+        haszero = True
+    negextra = 0
+    posextra = 0
+    for x in range(-1*find, find+1):
+        index = cindex + x
+        if iszero and index > cindex:
+            continue
+        if haszero and sorted_list[index][1] == 0:
+            negextra += 1
+            continue
+        elif index < 0:
+            posextra += 1
+            continue
+        result.append(sorted_list[index][0])
+    for x in range(negextra):
+        index = cindex - find - negextra
+        result.insert(0, sorted_list[index][0])
+    for x in range(posextra):
+        index = cindex + find + posextra
+        result.append(sorted_list[index][0])
+    return result
+
 async def leaderboard(client):
     hierarchy = open_json()
     guild = client.get_guild(692906379203313695)
@@ -154,15 +200,13 @@ async def leaderboard(client):
     for x in range(10):
         member = guild.get_member(sorted_list[x][0])
         if x == 0:
-            embed.add_field(name='__________',value=f'1. {member.mention} \U0001f947 - ${sorted_list[x][1]}',inline=False)
-            continue
-        if x == 1:
-            embed.add_field(name='__________',value=f'2. {member.mention} \U0001f948 - ${sorted_list[x][1]}',inline=False)
-            continue
-        if x == 2:
+            embed.add_field(name='__________',value=f'1. {member.mention} 🥇 - ${sorted_list[x][1]}',inline=False)
+        elif x == 1:
+            embed.add_field(name='__________',value=f'2. {member.mention} 🥈 - ${sorted_list[x][1]}',inline=False)
+        elif x == 2:
             embed.add_field(name='__________',value=f'3. {member.mention} \U0001f949 - ${sorted_list[x][1]}',inline=False)
-            continue
-        embed.add_field(name='__________',value=f'{x+1}. {member.mention} - ${sorted_list[x][1]}',inline=False)
+        else:
+            embed.add_field(name='__________',value=f'{x+1}. {member.mention} - ${sorted_list[x][1]}',inline=False)
 
 
     await message.edit(embed=embed)

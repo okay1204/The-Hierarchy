@@ -113,7 +113,7 @@ class actions(commands.Cog):
                         order = random.randint(1,2)
                         if order == 1:
                             await ctx.send(f"{n1} x {n2} + {n3}")
-                        elif order -- 2:
+                        elif order == 2:
                             await ctx.send(f"{n3} + {n2} x {n1}")
                     if aos == 2:
                         n3 = random.randint(1,10)
@@ -121,7 +121,7 @@ class actions(commands.Cog):
                         order = random.randint(1,2)
                         if order == 1:
                             await ctx.send(f"{n1} x {n2} - {n3}")
-                        elif order -- 2:
+                        elif order == 2:
                             await ctx.send(f"-{n3} + {n2} x {n1}")
 
                 if mod == 2:
@@ -136,7 +136,7 @@ class actions(commands.Cog):
                         order = random.randint(1,2)
                         if order == 1:
                             await ctx.send(f"{n1} / {n2} + {n3}")
-                        elif order -- 2:
+                        elif order == 2:
                             await ctx.send(f"{n3} + {n1} / {n2}")
                     if aos == 2:
                         n3 = random.randint(1,10)
@@ -144,7 +144,7 @@ class actions(commands.Cog):
                         order = random.randint(1,2)
                         if order == 1:
                             await ctx.send(f"{n1} / {n2} - {n3}")
-                        elif order -- 2:
+                        elif order == 2:
                             await ctx.send(f"-{n3} + {n1} / {n2}")
                 def check(m):
                         return m.channel == ctx.channel and m.author == ctx.author

@@ -7,7 +7,7 @@ from sqlite3 import Error
 def read_value(table, where, what, value):
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor()
-    c.execute(f'SELECT {value} FROM {table} WHERE {where} = {what}')
+    c.execute(f'SELECT {value} FROM {table} WHERE {where} = ?', (what,))
     reading = c.fetchone()
     conn.close()
     reading = reading[0]
@@ -16,7 +16,7 @@ def read_value(table, where, what, value):
 def write_value(table, where, what, value, overwrite):
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor()
-    c.execute(f"UPDATE {table} SET {value} = {overwrite} WHERE {where} = {what}")
+    c.execute(f"UPDATE {table} SET {value} = {overwrite} WHERE {where} = ?", (what,))
     conn.commit()
     conn.close()
 

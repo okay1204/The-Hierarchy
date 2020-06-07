@@ -27,7 +27,6 @@ async def on_ready():
         elif x.color == red:
             await client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
     heisttimer.start()
-    eventtimer.start()
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor()
     c.execute('UPDATE members SET isworking="False"')
@@ -36,128 +35,6 @@ async def on_ready():
     conn.close()
     await leaderboard(client)
     
-async def tax():
-    channel = client.get_channel(698403873374601237)
-    guild = client.get_guild(692906379203313695)
-    conn = sqlite3.connect('hierarchy.db')
-    c = conn.cursor()
-    c.execute('SELECT id, money, bank, total FROM members')
-    users = c.fetchall()
-    conn.close()
-    for person in users:
-        money = person[1]
-        bank = person[2]
-        total = person[3]
-        tax = int(total * 0.03)
-        if tax > 100:
-            tax = 100
-        if bank >= tax:
-            bank -= tax
-            write_value('members', 'id', person[0], 'bank', bank)
-        elif bank < tax:
-            extra = tax - bank
-            bank = 0
-            if extra > money:
-                money = 0
-            elif extra <= money:
-                money -= extra
-        write_value('members', 'id', person[0], 'bank', bank)
-        update_total(person[0])
-    taxping = guild.get_role(698321954742075504)
-    await channel.send(f"{taxping.mention} A 3% tax has been collected. *(No more than $100 was taken from your account)*")
-    await leaderboard(client)
-
-async def bank():
-    channel = client.get_channel(698403873374601237)
-    guild = client.get_guild(692906379203313695)
-    conn = sqlite3.connect('hierarchy.db')
-    c = conn.cursor()
-    c.execute('SELECT id, money, bank, total FROM members')
-    users = c.fetchall()
-    conn.close()
-    for person in users:
-        money = person[1]
-        bank = person[2]
-        total = person[3]
-        tax = int(total * 0.06)
-        if tax > 200:
-            tax = 200
-        if bank >= tax:
-            bank -= tax
-            write_value('members', 'id', person[0], 'bank', bank)
-        elif bank < tax:
-            extra = tax - bank
-            bank = 0
-            if extra > money:
-                money = 0
-            elif extra <= money:
-                money -= extra
-        write_value('members', 'id', person[0], 'bank', bank)
-        update_total(person[0])
-        write_value('members', 'id', person[0], 'hbank', bank)
-    bankping = guild.get_role(698322063206776972)
-    await channel.send(f"{bankping.mention} A 6% bank fee has been collected. *(No more than $200 was taken from your account)*")
-    await leaderboard(client)
-
-async def shopchange():
-    channel = client.get_channel(710211979360338020)
-    conn = sqlite3.connect('hierarchy.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM shop')
-    stats = c.fetchall()
-    embed = discord.Embed(color=0x30ff56)
-    embed.set_author(name='Shop')
-    guild = client.get_guild(692906379203313695)
-    shopping = guild.get_role(716818790947618857)
-    x = 1
-    text = f"{shopping.mention}"
-    for stat in stats:
-        change = ""
-        if stat[2] == 'down':
-            if random.randint(1,3) == 1:
-                change = 'up'
-            else:
-                change = 'down'
-        if stat[2] == 'up':
-            if random.randint(1,3) == 1:
-                change = 'down'
-            else:
-                change = 'up'
-        
-        if change is 'up':
-            newmax = stat[1] + 5
-            if newmax > stat[4]:
-                newmax = stat[4]
-            newprice = random.randint(stat[1], newmax)
-      
-        if change is 'down':
-            newmin = stat[1] - 5
-            if newmin < stat[3]:
-                newmin = stat[3]
-            newprice = random.randint(newmin, stat[1])
-        
-
-        if newprice > stat[1]:
-            text = f'{text}\n{stat[0].capitalize()}: ⏫ ${newprice-stat[1]} *${stat[1]} -> ${newprice}*'
-        elif newprice < stat[1]:
-            text = f'{text}\n{stat[0].capitalize()}: ⏬ ${stat[1]-newprice} *${stat[1]} -> ${newprice}*'
-        if newprice == stat[1]:
-            text = f'{text}\n{stat[0].capitalize()}: No change'
-
-
-        c.execute(f"UPDATE shop SET price = {newprice} WHERE name = '{stat[0]}'")
-        c.execute(f"UPDATE shop SET last = '{change}' WHERE name = '{stat[0]}'")
-
-        embed.add_field(name=f'{x}. ${newprice} - {stat[0].capitalize()} {stat[6]}', value=f'{stat[5]}', inline=False)
-        x += 1
-
-
-    await channel.send(text)
-    shopchannel = client.get_channel(702654620291563600)
-    message = await shopchannel.fetch_message(702906494022058084)
-    await message.edit(embed=embed)
-    conn.commit()
-    conn.close()
 
 @tasks.loop(seconds=1)
 async def heisttimer():
@@ -235,88 +112,7 @@ async def heisttimer():
                 conn.close()
                 await leaderboard(client)
 
-@tasks.loop(minutes=1)
-async def eventtimer():
-    embed = discord.Embed(color=0x442391)
-    feechannel = client.get_channel(698322322834063430)
-    pollchannel = client.get_channel(698009727803719757)
-    shopchannel = client.get_channel(710211730797756477)
-    feemessage = await feechannel.fetch_message(698775208663973940)
-    shopmessage = await shopchannel.fetch_message(710213879707336805)
-    embed.set_author(name="Fee collection times")
-    taxtime = time.localtime()
-    minutes = taxtime[4] + taxtime[3]*60
-    taxtime = 1440-minutes
-    banktime = time.localtime()
-    minutes = banktime[4] + banktime[3]*60
-    banktime = 720-minutes
-    shoptime = time.localtime()
-    minutes = shoptime[4] + shoptime[3]*60
-    shoptime = 0
-    times = [0,180,360,540,720,900,1080,1260]
-    for x in times:
-        if minutes > x and minutes < x+180:
-            shoptime = x+180
-    shoptime -= minutes
-    if minutes in times:
-        shoptime = 0
-    if banktime < 0 or banktime == 720:
-        banktime = 1440-minutes
-        if banktime == 1440:
-            banktime = 0
-    if taxtime == 1440:
-        await tax()
-    
-    embed.add_field(name="Tax collection",value=f'{minisplittime(taxtime)}',inline=False)
-    
-    if banktime == 0:
-        await bank()
-        embed.add_field(name="Bank fee collection",value='12h 0m',inline=False)
-    else:
-        embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
 
-    embed2 = discord.Embed(color=0x30ff56)
-    embed2.set_author(name='Shop change times')
-    
-    
-    if shoptime == 0:
-        await shopchange()
-        embed2.add_field(name='__________', value='3h 0m', inline=False)
-    else:
-        embed2.add_field(name='__________', value=f'{minisplittime(shoptime)}', inline=False)
-            
-    await feemessage.edit(embed=embed)
-    await shopmessage.edit(embed=embed2)
-    conn = sqlite3.connect('hierarchy.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM polls')
-    polls = c.fetchall()
-    for poll in polls:
-        message = await pollchannel.fetch_message(poll[2])    
-        text = message.content
-        text = text[::-1]
-        if poll[1] < time.time() and poll[1] != 0:
-            c.execute(f"DELETE FROM polls WHERE name = '{poll[0]}'")
-            index = text.index('\n')
-            text = text[index:]
-            text = text[::-1]
-            results = ""
-            for reaction in message.reactions:
-                temp = f"{str(reaction.emoji)}: {reaction.count-1}   "
-                results = f"{results}{temp}"
-            text = f'{text}**Poll closed. Results:**\n\n{results}'
-            await message.edit(content=text)
-            await message.clear_reactions()
-
-
-        elif poll[1] > time.time() and poll[1] != 0:
-            index = text.index('\n')
-            text = text[index:]
-            text = text[::-1]
-            text = f"{text}**Time left: {minisplittime(int(int(poll[1]-time.time())/60))}**"
-            await message.edit(content=text)
-    conn.commit()
-    conn.close()
     
         
 @client.event
@@ -334,10 +130,17 @@ async def on_member_remove(member):
 async def on_message(message):
     if not message.author.bot and message.channel.id == 716720359818133534:
         submissions = client.get_channel(716724583767474317)
-        await submissions.send(f"By {message.author.mention}: \n{message.content}")
+        await submissions.send(f"By {message.author.mention}:")
+        await submissions.send(f"{message.content}")
         await message.delete()
         await message.channel.send(f"{message.author.mention}, your application was successfully submitted.")
     
+    try:
+        if message.content.split()[0].lower() == 'pls':
+            helpchannel = client.get_channel(692950528417595453)
+            await message.channel.send(f"Hey, this server isn't ran by Dank Memer, it's a custom bot! Check {helpchannel.mention} for a list of commands.")
+    except:
+        pass
     await client.process_commands(message)
 
 client.load_extension('debug')        

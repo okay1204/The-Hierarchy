@@ -9,6 +9,8 @@ async def on_ready():
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for reactions"))
 
+
+
 @client.event
 async def on_raw_reaction_add(payload):
     guild = client.get_guild(692906379203313695)
@@ -54,7 +56,7 @@ async def on_raw_reaction_add(payload):
 
 
     if payload.channel_id == 698009727803719757:
-        if payload.user_id != 698771271353237575:
+        if payload.user_id != 717086649460326510:
             message = await pollchannel.fetch_message(payload.message_id)
             for reaction in message.reactions:
                 if str(reaction.emoji) != str(payload.emoji):

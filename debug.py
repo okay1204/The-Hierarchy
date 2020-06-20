@@ -11,15 +11,20 @@ class debug(commands.Cog):
         self.client = client
 
     @commands.command()
-    @commands.check(debugCheck)
+    @commands.check(adminCheck)
     async def stats(self, ctx, member=None):
         guild = self.client.get_guild(692906379203313695)
         if not member:
-            await ctx.send("Enter a user.")
+            await ctx.send("Enter a user id.")
+        try:
+            member = int(member)
+        except:
+            await ctx.send("Enter a valid user id.")
+            return
         conn = sqlite3.connect('hierarchy.db')
         c = conn.cursor()
         try:
-            c.execute(f'SELECT * FROM members WHERE id = {member}')
+            c.execute('SELECT * FROM members WHERE id = ?', member)
             reading = c.fetchall()
             await ctx.send(reading)
         except:
@@ -27,14 +32,14 @@ class debug(commands.Cog):
         conn.close()
 
     @commands.command()
-    @commands.check(debugCheck)
+    @commands.check(adminCheck)
     async def hstats(self, ctx):
         heist = open_json()
         await ctx.send(heist)
 
 
     @commands.command()
-    @commands.check(debugCheck)
+    @commands.check(adminCheck)
     async def online(self, ctx):
         guild = self.client.get_guild(692906379203313695)
         channel = self.client.get_channel(698384786460246147)
@@ -48,7 +53,7 @@ class debug(commands.Cog):
         await self.client.change_presence(status=discord.Status.online,activity=discord.Game(name='with money'))
 
     @commands.command()
-    @commands.check(debugCheck)
+    @commands.check(adminCheck)
     async def offline(self, ctx):
         guild = self.client.get_guild(692906379203313695)
         channel = self.client.get_channel(698384786460246147)
@@ -61,9 +66,5 @@ class debug(commands.Cog):
         await ctx.send("Status updated to offline.")
         await self.client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
     
-
-
-
-
 def setup(client):
     client.add_cog(debug(client))

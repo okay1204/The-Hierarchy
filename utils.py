@@ -130,9 +130,6 @@ def minisplittime(minutes):
 async def rightCategory(ctx):
     return ctx.channel.category.id == 692949972764590160
 
-async def debugCheck(ctx):
-    return ctx.channel.id == 704109366529491005
-
 async def adminCheck(ctx):
     return ctx.channel.id == 706953015415930941
 

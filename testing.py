@@ -8,7 +8,7 @@ c.execute('SELECT id, total FROM members')
 hierarchy = c.fetchall()
 conn.close()
 sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
-print(hierarchy)
+print(sorted_list)
 listids = []
 userid = int(input('Enter id: '))
 find = int(input('Enter range: '))
@@ -28,7 +28,6 @@ if sorted_list[cindex][1] == 0:
     iszero = True
 elif any(x[1] == 0 for x in sorted_list[cindex-find:cindex+find+1]):
     haszero = True
-    print('haszero')
 negextra = 0
 posextra = 0
 for x in range(-1*find, find+1):
@@ -48,4 +47,22 @@ for x in range(negextra):
 for x in range(posextra):
     index = cindex + find + posextra
     result.append(sorted_list[index])
+listids = []
+for x in result:
+    listids.append(x[0])
+rindex = listids.index(userid)
+if len(sorted_list[0:cindex]) < find:
+    result.insert(0, ('Steal Divider', 'Steal Divider'))
+else:
+    num = rindex-3
+    if num < 0:
+        pass
+    else:
+        print(rindex)
+        result.insert(num, ('Steal Divider', 'Steal Divider'))
+
+
+if sorted_list[cindex][1] == 0:
+    result.append(('Steal Divider', 'Steal Divider'))
+
 print(result)

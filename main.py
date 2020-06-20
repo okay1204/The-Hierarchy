@@ -31,6 +31,9 @@ async def on_ready():
     c = conn.cursor()
     c.execute('UPDATE members SET isworking="False"')
     c.execute('UPDATE members SET isfighting="False"')
+    c.execute('UPDATE members SET warns=0')
+    c.execute('UPDATE members SET kicks=0')
+    c.execute('UPDATE members SET bans=0')
     conn.commit()
     conn.close()
     await leaderboard(client)
@@ -127,26 +130,24 @@ async def on_member_remove(member):
     await leaderboard(client)
 
 @client.event
-async def on_message(message):
-    if not message.author.bot and message.channel.id == 716720359818133534:
-        submissions = client.get_channel(716724583767474317)
-        await submissions.send(f"By {message.author.mention}:")
-        await submissions.send(f"{message.content}")
-        await message.delete()
-        await message.channel.send(f"{message.author.mention}, your application was successfully submitted.")
-    
+async def on_message(message):    
     try:
-        if message.content.split()[0].lower() == 'pls':
-            helpchannel = client.get_channel(692950528417595453)
-            await message.channel.send(f"Hey, this server isn't ran by Dank Memer, it's a custom bot! Check {helpchannel.mention} for a list of commands.")
+        if message.channel.category == client.get_channel(692949972764590160):
+            if message.content.startswith('pls'):
+                helpchannel = client.get_channel(692950528417595453)
+                await message.channel.send(f"Hey, this server isn't ran by Dank Memer, it's a custom bot! Check {helpchannel.mention} for a list of commands.")
     except:
         pass
+    
+    if message.channel.id == 723644542275813386:
+        boost_channel=client.get_channel(723645417253896234)
+        await boost_channel.send(f'HUGE Thank you to {message.author.mention} for boosting the server, we greatly appreciate it! Enjoy the premium perks!')
+
     await client.process_commands(message)
 
 client.load_extension('debug')        
 client.load_extension('info')
 client.load_extension('games')
 client.load_extension('actions')
-client.load_extension('admin')
 client.load_extension('gambling')
 client.run('Njk4NzcxMjcxMzUzMjM3NTc1.XpKrfw.2bt069XC42fFvaUQQdfprVM7omc')

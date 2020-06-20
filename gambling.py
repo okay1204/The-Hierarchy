@@ -230,6 +230,7 @@ class gambling(commands.Cog):
                         dwaiting = await author.send('Waiting for opponent...')
                         def check(reaction, user):
                             return reaction.message.id == am.id and (str(reaction.emoji) == '✊' or str(reaction.emoji) == '🦵' and user.id != 698771271353237575)
+                            # Make user.id of bot a global variable
                         try:
                             reaction, user = await self.client.wait_for('reaction_add', timeout=15.0, check=check)
                             if str(reaction.emoji) == '✊':
@@ -239,7 +240,9 @@ class gambling(commands.Cog):
                         except asyncio.TimeoutError:
                             aa = 'none'
                         await dwaiting.delete()
-
+                    # You can define a new function here to determine if aa/da is the same or not
+                    # Include comments so  I can tell whats going on in each code chunk
+                    # Define better variable names (shorthand) so you have some idea of what they represent from the name instead of mysterious acronyms
                     if (aa is 'punch' and (da is 'kick' or da is 'none')) or (aa is 'kick' and (da is 'punch' or da is 'none')):
                         await ctx.send(f'**{member.name}** {aa}ed **{author.name}**.')
                         await member.send(f'You successfully {aa}ed your opponent.')

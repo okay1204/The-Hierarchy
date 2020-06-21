@@ -13,44 +13,47 @@ async def on_ready():
 
 @client.event
 async def on_raw_reaction_add(payload):
-    guild = client.get_guild(692906379203313695)
-    pollchannel = client.get_channel(698009727803719757)
-    if payload.message_id == 716819696346857524:
-        if str(payload.emoji) == '🔔':
-            announcements = guild.get_role(716818513708187668)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.add_roles(announcements)
-        elif str(payload.emoji) == '✅':
-            newfeatures = guild.get_role(716818605110460418)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.add_roles(newfeatures)
-        elif str(payload.emoji) == '☑️':
-            polls = guild.get_role(716818729987473408)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.add_roles(polls)
-        elif str(payload.emoji) == '🤝':
-            partnerships = guild.get_role(716836063150342184)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.add_roles(partnerships)
-        elif str(payload.emoji) == '🏦':
-            bank = guild.get_role(698322063206776972)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.add_roles(bank)
-        elif str(payload.emoji) == '💰':
-            tax = guild.get_role(698321954742075504)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.add_roles(tax)
-        elif str(payload.emoji) == '🛒':
-            shop = guild.get_role(716818790947618857)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.add_roles(shop)
+    try:
+        guild = client.get_guild(692906379203313695)
+        pollchannel = client.get_channel(698009727803719757)
+        if payload.message_id == 716819696346857524:
+            if str(payload.emoji) == '🔔':
+                announcements = guild.get_role(716818513708187668)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.add_roles(announcements)
+            elif str(payload.emoji) == '✅':
+                newfeatures = guild.get_role(716818605110460418)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.add_roles(newfeatures)
+            elif str(payload.emoji) == '☑️':
+                polls = guild.get_role(716818729987473408)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.add_roles(polls)
+            elif str(payload.emoji) == '🤝':
+                partnerships = guild.get_role(716836063150342184)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.add_roles(partnerships)
+            elif str(payload.emoji) == '🏦':
+                bank = guild.get_role(698322063206776972)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.add_roles(bank)
+            elif str(payload.emoji) == '💰':
+                tax = guild.get_role(698321954742075504)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.add_roles(tax)
+            elif str(payload.emoji) == '🛒':
+                shop = guild.get_role(716818790947618857)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.add_roles(shop)
+    except:
+        pass
 
 
 
@@ -64,43 +67,52 @@ async def on_raw_reaction_add(payload):
 
 @client.event
 async def on_raw_reaction_remove(payload):
-    guild = client.get_guild(692906379203313695)
-    if payload.message_id == 716819696346857524:
-        if str(payload.emoji) == '🔔':
-            announcements = guild.get_role(716818513708187668)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.remove_roles(announcements)
-        elif str(payload.emoji) == '✅':
-            newfeatures = guild.get_role(716818605110460418)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.remove_roles(newfeatures)
-        elif str(payload.emoji) == '☑️':
-            polls = guild.get_role(716818729987473408)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.remove_roles(polls)
-        elif str(payload.emoji) == '🤝':
-            partnerships = guild.get_role(716836063150342184)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.remove_roles(partnerships)
-        elif str(payload.emoji) == '🏦':
-            bank = guild.get_role(698322063206776972)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.remove_roles(bank)
-        elif str(payload.emoji) == '💰':
-            tax = guild.get_role(698321954742075504)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.remove_roles(tax)
-        elif str(payload.emoji) == '🛒':
-            shop = guild.get_role(716818790947618857)
-            user = payload.user_id
-            user = guild.get_member(user)
-            await user.remove_roles(shop)
+    try:
+        guild = client.get_guild(692906379203313695)
+        if payload.message_id == 716819696346857524:
+            if str(payload.emoji) == '🔔':
+                announcements = guild.get_role(716818513708187668)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.remove_roles(announcements)
+            elif str(payload.emoji) == '✅':
+                newfeatures = guild.get_role(716818605110460418)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.remove_roles(newfeatures)
+            elif str(payload.emoji) == '☑️':
+                polls = guild.get_role(716818729987473408)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.remove_roles(polls)
+            elif str(payload.emoji) == '🤝':
+                partnerships = guild.get_role(716836063150342184)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.remove_roles(partnerships)
+            elif str(payload.emoji) == '🏦':
+                bank = guild.get_role(698322063206776972)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.remove_roles(bank)
+            elif str(payload.emoji) == '💰':
+                tax = guild.get_role(698321954742075504)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.remove_roles(tax)
+            elif str(payload.emoji) == '🛒':
+                shop = guild.get_role(716818790947618857)
+                user = payload.user_id
+                user = guild.get_member(user)
+                await user.remove_roles(shop)
+    except:
+        pass
 
+@client.event
+async def on_member_remove(member):
+    ping_roles = client.get_channel(698318226613993553)
+    message = await ping_roles.fetch_message(716819696346857524)
+    for reaction in message.reactions:
+        await message.remove_reaction(reaction.emoji, member)
 
 client.run("NzE2ODM3NzU5NTE5NTU1NjI0.XtRlPg.xHLUA9U_IyVOcUBcfJa_vRW-zuw")

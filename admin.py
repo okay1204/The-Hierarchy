@@ -19,6 +19,12 @@ def moderationCommandCheck(ctx):
 def modChannel(ctx):
     return ctx.channel.id == 714585657808257095
 
+def inGuild(ctx):
+    return ctx.guild.id == 692906379203313695
+
+def reportChannel(ctx):
+    return ctx.channel.id == 723985222412140584
+
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
@@ -50,7 +56,7 @@ async def warn(ctx, member:discord.Member=None, reason="None", messageid=None, c
 
     #Building embed
     datetime = str(ctx.message.created_at.utcnow())
-    embed = discord.Embed(color=0xf56451, title=f"User warned", description=f"Reason: {reason}")
+    embed = discord.Embed(color=0xf56451, title=f"User Warned", description=f"Reason: {reason}")
     member_avatar = member.avatar_url_as(static_format='jpg',size=256)
     embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
     author_avatar = author.avatar_url_as(static_format='jpg',size=256)
@@ -128,7 +134,7 @@ async def kick(ctx, member:discord.Member=None, reason="None", messageid=None, c
 
     #Building embed
     datetime = str(ctx.message.created_at.utcnow())
-    embed = discord.Embed(color=0xf56451, title=f"User kicked", description=f"Reason: {reason}")
+    embed = discord.Embed(color=0xf56451, title=f"User Kicked", description=f"Reason: {reason}")
     member_avatar = member.avatar_url_as(static_format='jpg',size=256)
     embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
     author_avatar = author.avatar_url_as(static_format='jpg',size=256)
@@ -211,7 +217,7 @@ async def ban(ctx, member:discord.Member=None, reason="None", messageid=None, ch
 
     #Building embed
     datetime = str(ctx.message.created_at.utcnow())
-    embed = discord.Embed(color=0xf56451, title=f"User banned", description=f"Reason: {reason}")
+    embed = discord.Embed(color=0xf56451, title=f"User Banned", description=f"Reason: {reason}")
     member_avatar = member.avatar_url_as(static_format='jpg',size=256)
     embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
     author_avatar = author.avatar_url_as(static_format='jpg',size=256)
@@ -486,14 +492,129 @@ async def offensecount(ctx, member=None):
 
     await ctx.send(f'{member.name}#{member.discriminator} offense count:\nWarns: {warns}\nKicks: {kicks}\nBans: {bans}')
 
-@warn.error
+@client.command()
+@commands.check(moderationCommandCheck)
+@commands.has_any_role(692952463501819984, 706952785362681906, 714584510523768903, 714676918175137814)
+async def purge(ctx, amount=5, channel:discord.TextChannel=None):
+    try:
+      amount = int(amount)
+    except:
+      await ctx.send('Enter a valid amount of messages to purge.')
+      return
+    if not channel:
+        amount += 1
+        await ctx.channel.purge(limit=amount)
+    else:
+        if channel.category.id != 692949458551439370 and channel.category.id != 721444286591139963 and channel.category.id != 692949972764590160:
+            await ctx.send('Invalid channel.')
+            return
+        await channel.purge(limit=amount)
+        await ctx.send(f"{amount} messages cleared from {channel.mention}.")
+
+@client.command()
+@commands.check(inGuild)
+async def report(ctx, member:discord.Member=None, *, reason="Not Specified"):
+    if not member:
+        await ctx.send('Enter a member to report')
+        return
+    author = ctx.author
+    if member == author:
+        await ctx.send("You can't report yourself.")
+        return
+    
+    member_reportc = read_value('members', 'id', member.id, 'reportc')
+    if time.time() < member_reportc:
+        await ctx.send('That member has already been reported.')
+        return
+    
+    reportc = int(time.time()) + 7200
+    write_value('members', 'id', member.id, 'reportc', reportc)
+
+    with open(f'auditcount.json') as json_file:
+        auditcount = json.load(json_file)
+
+    auditid = auditcount["count"]
+    auditcount["count"] += 1
+
+    with open(f'auditcount.json', 'w') as f:
+        json.dump(auditcount, f, indent=2)
+
+    #Building and sending embed
+    embed = discord.Embed(color=0xf56451, title="User Reported", description=f"Reason: {reason}")
+    datetime = str(ctx.message.created_at.utcnow())
+    member_avatar = member.avatar_url_as(static_format='jpg',size=256)
+    embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
+    author_avatar = author.avatar_url_as(static_format='jpg',size=256)
+    embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
+    embed.add_field(name='User ID:', value=member.id, inline=True)
+    embed.add_field(name='Audit ID:', value=auditid, inline=True)
+    await ctx.send(embed=embed)
+    
+    embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+    report_channel = client.get_channel(723985222412140584)
+
+    guild = client.get_guild(692906379203313695)
+    admin = guild.get_role(706952785362681906)
+    mod = guild.get_role(714584510523768903)
+    trial_mod = guild.get_role(714676918175137814)
+    await report_channel.send(content=f"{admin.mention} {mod.mention} {trial_mod.mention}",embed=embed)
+
+@client.command()
+@commands.check(reportChannel)
+async def close(ctx, member=None):
+    if not member:
+        await ctx.send("Enter a member to close a report for.")
+        return
+    
+    #Fetching member
+    try:
+        member = await commands.MemberConverter().convert(ctx, member)
+    except:
+        try:
+            member = int(member)
+            member = await client.fetch_user(member)
+        except:
+            await ctx.send('Member not found.')
+            return
+
+
+    read_reportc = read_value('members', 'id', member.id, 'reportc')
+    if read_reportc == 0:
+        await ctx.send(f"Report for {member.name}#{member.discriminator} is already closed.")
+    elif time.time() < read_reportc:
+        write_value('members', 'id', member.id, 'reportc', 0)
+        await ctx.send(f"Closed report for {member.name}#{member.discriminator}.")
+    elif time.time() > read_reportc:
+        write_value('members', 'id', member.id, 'reportc', 0)
+        await ctx.send(f"Closed report for {member.name}#{member.discriminator}. (Report was already auto-closed.)")
+
+# Error handlers
+
 @history.error
-@ban.error
 @unban.error
-@kick.error
 @revoke.error
 @offensecount.error
-async def error(ctx, error):
+async def member_not_found_error(ctx, error):
+    if isinstance(error, commands.CheckAnyFailure) or isinstance(error, commands.CheckFailure):
+        pass
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send('Member not found.')
+    else:
+        print(error)
+
+@purge.error
+async def channel_not_found_error(ctx, error):
+    if isinstance(error, commands.CheckAnyFailure) or isinstance(error, commands.CheckFailure):
+        pass
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send('Channel not found.')
+    else:
+        print(error)
+
+@warn.error
+@kick.error
+@ban.error
+async def member_or_channel_not_found_error(ctx, error):
     if isinstance(error, commands.CheckAnyFailure) or isinstance(error, commands.CheckFailure):
         pass
     elif isinstance(error, commands.BadArgument):
@@ -501,6 +622,7 @@ async def error(ctx, error):
     else:
         print(error)
 
+# Events
 
 @client.event
 async def on_message(message):

@@ -53,7 +53,7 @@ async def on_message(message):
         if content.lower() == 'next':
             await counting.send(f"**{nextnumber}**")
             return
-        elif message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban'):
+        elif message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
             return
         elif str(nextnumber) in content:
             #Writing number from here
@@ -72,7 +72,7 @@ async def on_message(message):
     #For sentences
     elif message.channel == sentences:
         content = message.content
-        if message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban'):
+        if message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
             return
         elif " " in content:
             await message.delete()
@@ -152,7 +152,7 @@ async def on_raw_message_delete(payload):
         #to here
         if payload.message_id == lastmsgid:
             async for message in counting.history(limit=100):
-                if message.content.lower() == "next" or message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban'):
+                if message.content.lower() == "next" or message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
                     continue
                 else:
                     newmsg = message
@@ -185,7 +185,7 @@ async def on_raw_message_delete(payload):
         #to here
         if payload.message_id == lastmsgid:
             async for message in sentences.history(limit=100):
-                if message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban'):
+                if message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
                     continue
                 else:
                     newmsg = message

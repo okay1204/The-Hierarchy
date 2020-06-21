@@ -344,6 +344,17 @@ class actions(commands.Cog):
         if stealc > time.time():
             await ctx.send(f'You must wait {splittime(stealc)} before you can steal again.')
             return
+
+        guild = self.client.get_guild(692906379203313695)
+        if member.id not in around(guild, author.id, 3):
+            await ctx.send(f"This user is not within a range of 3 from you.")
+            if read_value('members', 'id', member.id, 'rangeinformed') == "False":
+                image = discord.File('stealinfo.png')
+                await ctx.send("*Not sure what this means?*\n**Use the .around command. You may steal from anyone who up to 3 places above you or below you.**", file=image)
+                write_value('members', 'id', member.id, 'rangeinformed', '"True"')
+            return
+
+
         for itema in in_use(member.id):
             if itema['name'] == 'padlock':
                 remove_use('padlock', member.id)
@@ -364,6 +375,7 @@ class actions(commands.Cog):
         money = read_value('members', 'id', member.id, 'money')
         if money < amount:
             await ctx.send("This user does not have that much money in cash.")
+
         else:
             stealc = int(time.time()) + 10800
             write_value('members', 'id', author.id, 'stealc', stealc)
@@ -742,9 +754,11 @@ class actions(commands.Cog):
     @steal.error
     @heist.error
     @pay.error
-    async def member_not_found_error(self, ctx,error):
+    async def member_not_found_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")
+        else:
+            print(error)
             
 
 

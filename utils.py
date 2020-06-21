@@ -133,51 +133,38 @@ async def rightCategory(ctx):
 async def adminCheck(ctx):
     return ctx.channel.id == 706953015415930941
 
+async def partnershipCheck(ctx):
+    return ctx.channel.id == 723945572708384768
+
 
 def around(guild, userid, find):
     conn = sqlite3.connect('hierarchy.db')
     c = conn.cursor()
-    c.execute('SELECT id, total FROM members')
+    c.execute('SELECT id, total FROM members WHERE total > 0 ORDER BY total DESC')
     hierarchy = c.fetchall()
     conn.close()
-    sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
-    sorted_list = list(filter(lambda x: guild.get_member(x[0]) is not None, sorted_list))
-    listids = []
-    for x in sorted_list:
-        listids.append(x[0])
-    cindex = listids.index(userid)
-    result = []
-    iszero = False
-    haszero = False
-    if sorted_list[cindex][1] == 0: 
-        sorted_list = list(filter(lambda x: x[1] != 0 or x[0] == userid, sorted_list))
-        listids = []
-        for x in sorted_list:
-            listids.append(x[0])
-        cindex = listids.index(userid)
-    if sorted_list[cindex][1] == 0: 
-        iszero = True
-    elif any(x[1] == 0 for x in sorted_list[cindex-find:cindex+find+1]):
-        haszero = True
-    negextra = 0
-    posextra = 0
-    for x in range(-1*find, find+1):
-        index = cindex + x
-        if iszero and index > cindex:
-            continue
-        if haszero and sorted_list[index][1] == 0:
-            negextra += 1
-            continue
-        elif index < 0:
-            posextra += 1
-            continue
-        result.append(sorted_list[index][0])
-    for x in range(negextra):
-        index = cindex - find - negextra
-        result.insert(0, sorted_list[index][0])
-    for x in range(posextra):
-        index = cindex + find + posextra
-        result.append(sorted_list[index][0])
+    hierarchy = list(filter(lambda x: guild.get_member(x[0]) is not None, hierarchy))
+    ids=[]
+    for x in hierarchy:
+        ids.append(x[0])
+    try:
+        index = ids.index(userid)
+    except ValueError:
+        hierarchy.append((userid, 0))
+        ids.append(userid)
+        index = ids.index(userid)
+    lower_index = index-find
+
+    if lower_index < 0:
+        lower_index = 0
+
+    higher_index = index+find+1
+    length = len(hierarchy)
+
+    if higher_index > length:
+        higher_index = length
+
+    result = ids[lower_index:higher_index]
     return result
 
 async def leaderboard(client):

@@ -1,12 +1,15 @@
+import asyncio
+import json
+import random
+import sqlite3
+import time
+from sqlite3 import Error
+
 import discord
 from discord.ext import commands
-import random
-import json
-import asyncio
-import time
-import sqlite3
-from sqlite3 import Error
+
 from utils import *
+
 
 class actions(commands.Cog):
 
@@ -38,7 +41,17 @@ class actions(commands.Cog):
             return
         write_value('members', 'id', author.id, 'isworking', "'True'")
         flag = 0
-        for x in range(3):
+        premium = read_value('members', 'id', author.id, 'premium')
+        if premium == "True":
+            premium = True
+        else:
+            premium = False
+        for x in range(5):
+            if x >= 3 and not premium:
+                break
+            elif x == 3 and premium:
+                await ctx.send(f"**{author.name}** has __premium__ and gets two extra tasks!")
+                await asyncio.sleep(2)
             task = random.randint(1,2)
             await ctx.send("Get ready...")
             await asyncio.sleep(3)
@@ -169,13 +182,17 @@ class actions(commands.Cog):
 
         if flag == 0:
             earnings = random.randint(10,20)
-        if flag == 1:
+        elif flag == 1:
             earnings = random.randint(20,35)
-        if flag == 2:
+        elif flag == 2:
             earnings = random.randint(40,50)
-        if flag == 3:
-            earnings = random.randint(60,70)       
-        await ctx.send(f"**{author.name}** worked and successfully completed {flag} tasks, earning ${earnings}.")
+        elif flag == 3:
+            earnings = random.randint(60,70)
+        elif flag == 4:
+            earnings = random.randint(70,80)
+        elif flag == 5:
+            earnings = random.randint(80,90)        
+        await ctx.send(f"💰 **{author.name}** worked and successfully completed {flag} tasks, earning ${earnings}. 💰")
         money = read_value('members', 'id', author.id, 'money')
         money += earnings
         write_value('members', 'id', author.id, 'money', money)
@@ -231,7 +248,7 @@ class actions(commands.Cog):
             money -= bailprice
             write_value('members', 'id', author.id, 'money', money)
             update_total(author.id)
-            await ctx.send(f'**{author.name}** spent ${bailprice} to bail **{member.name}**.')
+            await ctx.send(f'💸 **{author.name}** spent ${bailprice} to bail **{member.name}**. 💸')
             write_value('members', 'id', member.id, 'jailtime', int(time.time()))
         await leaderboard(self.client)
         await rolecheck(self.client, member.id)
@@ -348,10 +365,10 @@ class actions(commands.Cog):
         guild = self.client.get_guild(692906379203313695)
         if member.id not in around(guild, author.id, 3):
             await ctx.send(f"This user is not within a range of 3 from you.")
-            if read_value('members', 'id', member.id, 'rangeinformed') == "False":
+            if read_value('members', 'id', author.id, 'rangeinformed') == "False":
                 image = discord.File('stealinfo.png')
                 await ctx.send("*Not sure what this means?*\n**Use the .around command. You may steal from anyone who up to 3 places above you or below you.**", file=image)
-                write_value('members', 'id', member.id, 'rangeinformed', '"True"')
+                write_value('members', 'id', author.id, 'rangeinformed', '"True"')
             return
 
 
@@ -461,7 +478,7 @@ class actions(commands.Cog):
             hbank = read_value('members', 'id', author.id, 'hbank')
             if bank > hbank:
                 write_value('members', 'id', author.id, 'hbank', bank)
-            await ctx.send(f"Deposited ${amount} to your bank.")
+            await ctx.send(f"🏦 Deposited ${amount} to your bank. 🏦")
 
 
     @commands.command(aliases=['with'])
@@ -514,7 +531,7 @@ class actions(commands.Cog):
             write_value('members', 'id', author.id, 'money', money)
             write_value('members', 'id', author.id, 'bank', bank)
             write_value('members', 'id', author.id, 'bankc', bankc)
-            await ctx.send(f"Withdrew ${amount} from your bank.")
+            await ctx.send(f"🏦 Withdrew ${amount} from your bank. 🏦")
 
 
     @commands.command()
@@ -745,11 +762,187 @@ class actions(commands.Cog):
                     write_value('members', 'id', author.id, 'jailtime', int(time.time()))
                     remove_item('pass', author.id)
                     await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
-                    await ctx.send(f'You bailed yourself for ${bailprice}.')
+                    await ctx.send(f'💸 You bailed yourself for ${bailprice}. 💸')
+
+    @commands.command()
+    @commands.check(rightCategory)
+    async def discard(self, ctx, item=None):
+        author = ctx.author
+        jailtime = read_value('members', 'id', author.id, 'jailtime')        
+        if jailtime > time.time():
+            await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
+            return
+        if not item:
+            await ctx.send(f'Enter an item.')
+            return
+        heist = open_json()
+        if heist["heistv"] == author.id:
+            await ctx.send(f"You are currently being targeted for a heist.")
+            return
+        if author.id in heist["heistp"]:
+            await ctx.send(f"You are participating in a heist right now.")
+            return
+        items = ["padlock", "backpack", "gun", "pass"]
+        if item.lower() not in items:
+            await ctx.send(f"There is no such item called {item}.")
+            return
+        elif item.lower() not in read_value('members', 'id', author.id, 'items').split():
+            await ctx.send(f"You do not own {item.capitalize()}.")
+            return
+        remove_item(item.lower() , author.id)
+        await ctx.send(f'**{author.name}** discarded {item.capitalize()}.')
+        
+    @commands.command()
+    @commands.check(rightCategory)
+    async def daily(self, ctx):
+        author = ctx.author
+        dailytime = read_value('members', 'id', author.id, 'dailytime')
+        if dailytime == 0:
+            dailytime = int(time.time())-1
+        timeDifference = int(dailytime - time.time())// 86400 # Number of seconds in a day 
+        rewards = [40, 50, 60, 70, 80, 90, 100, 0]
+        if timeDifference >= 0:
+            await ctx.send(f"You must wait {splittime(dailytime)} before you can claim your next reward.")
+            return
+
+        elif timeDifference <= -2:
+            streak = 0
+
+        else:
+            streak = read_value('members', 'id', author.id, 'dailystreak')
+
+        reward = rewards[streak]
+        streak += 1
+        nextreward = rewards[streak]
+
+        if streak < 7:
+            
+            if streak != 6:
+                await ctx.send(f"You've earned ${reward}. Come back tomorrow for ${nextreward}!\n*Current streak: {streak}*")
+            
+            else:
+                await ctx.send(f"You've earned ${reward}. Come back tomorrow for ${nextreward}, along with a random shop item!\n*Current streak: {streak}*")
+
+            money = read_value('members', 'id', author.id, 'money')
+            money += reward
+            write_value('members', 'id', author.id, 'money', money)
+            await rolecheck(self.client, author.id)
+            await leaderboard(self.client)
+
+        else:
+
+            skip = False
+            storage = read_value('members', 'id', author.id, 'storage')
+            if len(read_value('members', 'id', author.id, 'items').split()) >= storage:
+                await ctx.send(f"You can only carry a maximum {storage} items. Do you want to discard the shop item you recieve automatically? (Yes/No)")
+                try:
+                    answer = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == author, timeout=20)
+                    if answer.content.lower() == 'yes':
+                        skip = True
+                    else:
+                        await ctx.send('Reward not taken.')
+                        return
+                except asyncio.TimeoutError:
+                    await ctx.send(f"Took too long: Reward not taken.")
+                    return
 
 
+            # Grabbing shop item
+            if not skip:
 
-    
+                conn = sqlite3.connect('hierarchy.db')
+                c = conn.cursor()
+                c.execute('SELECT name FROM shop')
+                items = c.fetchall()
+                conn.close()
+                item = random.choice(items)
+                item = item[0]
+                
+
+                await ctx.send(f"You've earned ${reward}, along with a {item}!\n*Streak reset to 0.*")
+                add_item(item, author.id)
+
+            else:
+                await ctx.send(f"You've earned ${reward}!\n*Streak reset to 0.*")
+            streak = 0
+            write_value('members', 'id', author.id, 'dailystreak', 0)
+            money = read_value('members', 'id', author.id, 'money')
+            money += reward
+            write_value('members', 'id', author.id, 'money', money)
+            await rolecheck(self.client, author.id)
+            await leaderboard(self.client)
+
+        write_value('members', 'id', author.id, 'dailystreak', streak)
+        if timeDifference <= -2:
+            dailytime = int(time.time()) + 86400
+        else:
+            dailytime += 86400
+        write_value('members', 'id', author.id, 'dailytime', dailytime)
+        update_total(author.id)
+
+    @commands.command()
+    @commands.check(rightCategory)
+    async def boost(self, ctx):
+        author = ctx.author
+        premium = read_value('members', 'id', author.id, 'premium')
+        if premium == 'False':
+            await ctx.send("You don't have __premium__. Get __premium__ by boosting the server!")
+            return
+            
+        boosts = read_value('members', 'id', author.id, 'boosts')
+        if boosts <= 0:
+            await ctx.send("You're don't have any boosts.")
+            return
+        
+        timers = ["workc", "jailtime", "stealc", "rpsc", "bankc", "dailytime"]
+        for timer in timers:
+            current = read_value('members', 'id', author.id, timer)
+            current -= 3600
+            write_value('members', 'id', author.id, timer, current)
+
+        boosts -= 1
+        write_value('members', 'id', author.id, "boosts", boosts)
+        await ctx.send('⏱️ You boosted 1 hour! ⏱️')
+
+    @commands.command()
+    @commands.check(rightCategory)
+    async def claim(self, ctx):
+        author = ctx.author
+
+        jailtime = read_value('members', 'id', author.id, 'jailtime')        
+        if jailtime > time.time():
+            await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
+            return
+
+        heist = open_json()
+        if heist["heistv"] == author.id:
+            await ctx.send(f"You are currently being targeted for a heist.")
+            return
+
+        if author.id in heist["heistp"]:
+            await ctx.send(f"You are participating in a heist right now.")
+            return
+
+        with open('wallet.json') as json_file:
+            walletinfo = json.load(json_file)
+        
+        if walletinfo["channel"] == ctx.channel.id:
+            earnings = random.randint(40,70)
+            money = read_value('members', 'id', author.id, 'money')
+            money += earnings
+            write_value('members', 'id', author.id, "money", money)
+            update_total(author.id)
+            await ctx.send(f"**{author.name}** claimed the wallet and earned ${earnings}.")
+
+            newinfo = {}
+            newinfo["timer"] = int(time.time()) + random.randint(21600, 25200)
+            newinfo["channel"] = 0
+            newinfo["continue"] = "True"
+            with open('wallet.json','w') as json_file:
+                json.dump(newinfo, json_file, indent=2)
+        else:
+            await ctx.send("There is no wallet in this channel.")
+
     @bail.error 
     @steal.error
     @heist.error

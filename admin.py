@@ -6,12 +6,12 @@ import sqlite3
 import asyncio
 from sqlite3 import Error
 from utils import *
-from datetime import timezone
+from datetime import timezone 
+import os
+import bottokens
 
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
-
-# Remember to exclude all commands from fun bot
 
 def moderationCommandCheck(ctx):
     return ctx.channel.id != 716720359818133534
@@ -41,8 +41,11 @@ async def warn(ctx, member:discord.Member=None, reason="None", messageid=None, c
 
     author = ctx.author
 
+    if author.top_role <= member.top_role:
+        await ctx.send('This member has a higher or same role as you.')
+        return
+
     #Grabbing next id
-    guild = client.get_guild(692906379203313695)
 
     with open(f'auditcount.json') as json_file:
         auditcount = json.load(json_file)
@@ -85,10 +88,10 @@ async def warn(ctx, member:discord.Member=None, reason="None", messageid=None, c
 
     #Saving warn data
     try:
-        with open(f'member-audits\{member.id}.json') as json_file:
+        with open(f'./member-audits/{member.id}.json') as json_file:
             audits = json.load(json_file)
         
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
                 
             if content == None:
                 audits.append({'audit id':auditid, 'action':'warn', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url})
@@ -98,7 +101,7 @@ async def warn(ctx, member:discord.Member=None, reason="None", messageid=None, c
                 json.dump(audits, f, indent=2)
     except: 
 
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
             if content == None:
                 json.dump([{'audit id':auditid, 'action':'warn', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url}], f, indent=2)
             else:
@@ -119,8 +122,11 @@ async def kick(ctx, member:discord.Member=None, reason="None", messageid=None, c
 
     author = ctx.author
 
+    if author.top_role <= member.top_role:
+        await ctx.send('This member has a higher or same role as you.')
+        return
+
     #Grabbing next id
-    guild = client.get_guild(692906379203313695)
 
     with open(f'auditcount.json') as json_file:
         auditcount = json.load(json_file)
@@ -167,10 +173,10 @@ async def kick(ctx, member:discord.Member=None, reason="None", messageid=None, c
 
     #Saving kick data
     try:
-        with open(f'member-audits\{member.id}.json') as json_file:
+        with open(f'./member-audits/{member.id}.json') as json_file:
             audits = json.load(json_file)
         
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
 
             if content == None:
                 audits.append({'audit id':auditid, 'action':'kick', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url})
@@ -180,7 +186,7 @@ async def kick(ctx, member:discord.Member=None, reason="None", messageid=None, c
                 json.dump(audits, f, indent=2)
     except: 
 
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
             if content == None:
                 json.dump([{'audit id':auditid, 'action':'kick', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url}], f, indent=2)
             else:
@@ -195,15 +201,28 @@ async def kick(ctx, member:discord.Member=None, reason="None", messageid=None, c
 @client.command()
 @commands.check(moderationCommandCheck)
 @commands.has_any_role(692952463501819984, 706952785362681906, 714584510523768903, 714676918175137814)
-async def ban(ctx, member:discord.Member=None, reason="None", messageid=None, channel:discord.TextChannel=None):
+async def ban(ctx, member:discord.Member=None, reason="None", messageid=None, daysdelete=0, channel:discord.TextChannel=None):
     if not member:
         await ctx.send('Enter a member to ban.')
         return
 
     author = ctx.author
 
+    if author.top_role <= member.top_role:
+        await ctx.send('This member has a higher or same role as you.')
+        return
+
+    try:
+        daysdelete = int(daysdelete)
+    except:
+        await ctx.send('Enter a valid amount of days of messages to delete.')
+        return
+
+    if daysdelete < 0 or daysdelete > 7:
+        await ctx.send('Enter an amount of days of messages to delete from 0-7')
+        return
+
     #Grabbing next id
-    guild = client.get_guild(692906379203313695)
 
     with open(f'auditcount.json') as json_file:
         auditcount = json.load(json_file)
@@ -238,8 +257,8 @@ async def ban(ctx, member:discord.Member=None, reason="None", messageid=None, ch
     else:
         content = None
     await ctx.send(embed=embed)
-    await member.send(f'You were banned by {author.mention} for: {reason}')
-    await member.ban(reason=reason)
+    await member.send(f'You were banned by {author.mention} for: {reason}\n\nIf you want to make an appeal, you may do so here: https://forms.gle/W1Vna4EAHmvs4bzB9')
+    await member.ban(reason=reason, delete_message_days=daysdelete)
     embed.add_field(name='Jump Url', value=ctx.message.jump_url)
     audit_log_channel = client.get_channel(723339632145596496)
     await audit_log_channel.send(embed=embed)
@@ -247,10 +266,10 @@ async def ban(ctx, member:discord.Member=None, reason="None", messageid=None, ch
 
     #Saving ban data
     try:
-        with open(f'member-audits\{member.id}.json') as json_file:
+        with open(f'./member-audits/{member.id}.json') as json_file:
             audits = json.load(json_file)
         
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
 
             if content == None:
                 audits.append({'audit id':auditid, 'action':'ban', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url})
@@ -260,7 +279,7 @@ async def ban(ctx, member:discord.Member=None, reason="None", messageid=None, ch
                 json.dump(audits, f, indent=2)
     except: 
 
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
             if content == None:
                 json.dump([{'audit id':auditid, 'action':'ban', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url}], f, indent=2)
             else:
@@ -270,6 +289,35 @@ async def ban(ctx, member:discord.Member=None, reason="None", messageid=None, ch
     ban_count = read_value('members', 'id', member.id, 'bans')
     ban_count += 1
     write_value('members', 'id', member.id, 'bans', ban_count)
+
+@client.command()
+@commands.check(moderationCommandCheck)
+@commands.has_any_role(692952463501819984, 706952785362681906, 714584510523768903, 714676918175137814)
+async def tagremove(ctx, *, name):
+    if not name:
+        await ctx.send("Enter the name of the tag you want to delete.")
+        return
+    
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute('SELECT author FROM tags WHERE name = ?', (name,))
+    tag = c.fetchone()
+    conn.close()
+
+    if not tag:
+        await ctx.send("Tag not found.")
+        return
+
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute(f"DELETE FROM tags WHERE name = ?", (name,))
+    conn.commit()
+    conn.close()
+
+    guild = client.get_guild(692906379203313695)
+    user = guild.get_member(tag[0])
+    await ctx.send(f"Tag successfully removed from {user.name}#{user.discriminator}.")
+
 
 @client.command()
 @commands.check(modChannel)
@@ -338,15 +386,15 @@ async def unban(ctx, member:int=None, reason="None"):
 
     #Saving unban data
     try:
-        with open(f'member-audits\{member.id}.json') as json_file:
+        with open(f'./member-audits/{member.id}.json') as json_file:
             audits = json.load(json_file)
         
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
             audits.append({'audit id':auditid, 'action':'unban', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url})
             json.dump(audits, f, indent=2)
     except: 
 
-        with open(f'member-audits\{member.id}.json','w') as f:
+        with open(f'./member-audits/{member.id}.json','w') as f:
             json.dump([{'audit ID':auditid, 'action':'unban', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url}], f, indent=2)
 
 
@@ -372,8 +420,9 @@ async def history(ctx, member:int=None, page=1):
     except:
         await ctx.send('Enter a valid page number.')
     try:
-        with open(f'member-audits\{member.id}.json') as json_file:
+        with open(f'./member-audits/{member.id}.json') as json_file:
             temp_audit = json.load(json_file)
+        
         
         temp_audit = temp_audit[::-1]
         audit = [temp_audit[x:x+3] for x in range(0, len(temp_audit), 3)]
@@ -389,10 +438,16 @@ async def history(ctx, member:int=None, page=1):
                 memberavatar = member.avatar_url_as(static_format='jpg',size=256)
                 embed.set_author(name=f'{member.name} (Page: {page}/{pages})', icon_url=memberavatar)
                 for cur_audit in pairs:
-                    embed.add_field(name=cur_audit, value=pairs[cur_audit])
+                    if cur_audit != "message content":
+                        embed.add_field(name=cur_audit, value=pairs[cur_audit])
+                    elif len(pairs[cur_audit]) <= 1024:
+                        embed.add_field(name=cur_audit, value=pairs[cur_audit])
+                    else:
+                        embed.add_field(name=cur_audit, value=pairs[cur_audit][0:1024])
                 await ctx.send(embed=embed)
-        except:
+        except Exception as e:
             await ctx.send('This member does not have that many pages.')
+            print(e)
 
     except:
         await ctx.send('Member has no audit history.')
@@ -422,6 +477,10 @@ async def revoke(ctx, member=None, audit_id=None):
             await ctx.send('Member not found.')
             return
 
+    if ctx.author.top_role <= member.top_role:
+        await ctx.send('This member has a higher or same role as you.')
+        return
+
     #Verifying audit id
     try:
         audit_id = int(audit_id)
@@ -429,10 +488,13 @@ async def revoke(ctx, member=None, audit_id=None):
         await ctx.send('Enter a valid audit ID.')
         return
 
-    revoked = False
-    with open(f'member-audits\{member.id}.json') as json_file:
-        audits = json.load(json_file)
+    try:
+        with open(f'./member-audits/{member.id}.json') as json_file:
+            audits = json.load(json_file)
+    except:
+        await ctx.send('Audit not found.')
     
+    revoked = False
     for audit in audits:
         if audit["audit id"] == audit_id:
             action = audit["action"]
@@ -444,9 +506,13 @@ async def revoke(ctx, member=None, audit_id=None):
         await ctx.send('Audit not found.')
         return
     
-    with open(f'member-audits\{member.id}.json','w') as f:
+    if len(audits) == 0:
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, f'member-audits/{member.id}.json')
+        os.remove(filename)
+    else:
+        with open(f'./member-audits/{member.id}.json','w') as f:
             json.dump(audits, f, indent=2)
-    
 
     #Removing from count
     if action == 'warn':
@@ -512,6 +578,53 @@ async def purge(ctx, amount=5, channel:discord.TextChannel=None):
         await ctx.send(f"{amount} messages cleared from {channel.mention}.")
 
 @client.command()
+@commands.check(modChannel)
+@commands.has_any_role(692952463501819984, 706952785362681906, 714584510523768903, 714676918175137814)
+async def fullmessage(ctx, member=None, audit_id=None):
+
+    if not member:
+        await ctx.send('Enter a member to check the full message of.')
+        return
+    
+    if not audit_id:
+        await ctx.send('Enter the audit ID of the full message you want to view.')
+        return
+
+    #Verifying audit id
+    try:
+        audit_id = int(audit_id)
+    except:
+        await ctx.send('Enter a valid audit ID.')
+        return
+
+    #Fetching member
+    try:
+        member = await commands.MemberConverter().convert(ctx, member)
+    except:
+        try:
+            member = int(member)
+            member = await client.fetch_user(member)
+        except:
+            await ctx.send('Member not found.')
+            return
+
+    try:
+        with open(f'./member-audits/{member.id}.json') as json_file:
+            audits = json.load(json_file)
+    except:
+        await ctx.send('Audit not found.')
+    
+    for audit in audits:
+        if audit["audit id"] == audit_id:
+            if "message content" in audit.keys():
+                await ctx.send(audit["message content"])
+            else:
+                await ctx.send("Audit does not have message content recorded.")
+            return
+
+    await ctx.send("Audit not found.")
+    
+@client.command()
 @commands.check(inGuild)
 async def report(ctx, member:discord.Member=None, *, reason="Not Specified"):
     if not member:
@@ -554,10 +667,11 @@ async def report(ctx, member:discord.Member=None, *, reason="Not Specified"):
     report_channel = client.get_channel(723985222412140584)
 
     guild = client.get_guild(692906379203313695)
+    owner = guild.get_role(692952463501819984)
     admin = guild.get_role(706952785362681906)
     mod = guild.get_role(714584510523768903)
     trial_mod = guild.get_role(714676918175137814)
-    await report_channel.send(content=f"{admin.mention} {mod.mention} {trial_mod.mention}",embed=embed)
+    await report_channel.send(content=f"{owner.mention} {admin.mention} {mod.mention} {trial_mod.mention}",embed=embed)
 
 @client.command()
 @commands.check(reportChannel)
@@ -642,4 +756,4 @@ async def on_message(message):
         await client.process_commands(message)
     
 
-client.run("NzIzMjI0MDExMDE3OTQ1MjAy.XuuhLg.pAZTqcpkhZEWaFWZ8-NBSOW8H9g")
+client.run(os.environ.get("admin"))

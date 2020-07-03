@@ -4,6 +4,8 @@ import asyncio
 import sqlite3
 from sqlite3 import Error
 from utils import *
+import os
+import bottokens
 
 
 client = commands.Bot(command_prefix = '.')
@@ -47,8 +49,7 @@ async def on_member_join(member):
             alreadyin = True
     
     membercountchannel = client.get_channel(719716526101364778)
-    membercount = int(membercountchannel.name.split()[1])
-    membercount += 1
+    membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
     await membercountchannel.edit(name=f"Members: {membercount}")
         
                     
@@ -61,6 +62,7 @@ async def on_member_join(member):
 
 @client.event
 async def on_member_remove(member):
+    guild = client.get_guild(692906379203313695)
     if member.bot:
         return
     channel = client.get_channel(692956542437425153)
@@ -68,9 +70,8 @@ async def on_member_remove(member):
     await channel.send(f"{member.mention} has left **The Hierarchy**. Too bad for him/her.")
 
     membercountchannel = client.get_channel(719716526101364778)
-    membercount = int(membercountchannel.name.split()[1])
-    membercount -= 1
+    membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
     await membercountchannel.edit(name=f"Members: {membercount}")
 
-client.run("NzE1Mzc2MTUwMDk1OTg2NzE5.Xs8UEQ.eX1Ybm1Sl_rEV08NWT-zwyZbT8A")
+client.run(os.environ.get("membertracker"))
 

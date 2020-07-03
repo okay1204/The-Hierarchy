@@ -21,7 +21,7 @@ class games(commands.Cog):
         if jailtime > time.time():
             await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
             return
-        if rpsc > time.time():
+        if rpsc > int(time.time()):
             await ctx.send(f'You must wait {splittime(rpsc)} before you can play again.')
             return
         heist = open_json()
@@ -78,7 +78,7 @@ class games(commands.Cog):
             update_total(author.id)
         if entry.lower() == 'scissors' and pc =='Scissors':
             await ctx.send("Tie.")
-        rpsc = time.time() + 10
+        rpsc = int(time.time()) + 10
         write_value('members', 'id', author.id, 'rpsc', rpsc)
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
@@ -93,7 +93,7 @@ class games(commands.Cog):
         if jailtime > time.time():
             await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
             return
-        if rpsc > time.time():
+        if rpsc > int(time.time()):
             await ctx.send(f'You must wait {splittime(rpsc)} before you can play again.')
             return
         heist = open_json()
@@ -105,7 +105,7 @@ class games(commands.Cog):
             return
         rollp = random.randint(1,6)
         rollb = random.randint(1,6)
-        await ctx.send(f'**{author.name}** rolled {rollp}.\n**The Hierarchy** rolled {rollb}.')
+        await ctx.send(f'🎲 **{author.name}** rolled {rollp}. 🎲\n🎲 **The Hierarchy** rolled {rollb}. 🎲')
         if rollp > rollb:
             await ctx.send(f'You won. $2 was added to your account.')
             money = read_value('members', 'id', author.id, 'money')
@@ -120,7 +120,7 @@ class games(commands.Cog):
             money += 1
             write_value('members', 'id', author.id, 'money', money)
             update_total(author.id)
-        rpsc = time.time() + 10
+        rpsc = int(time.time()) + 10
         write_value('members', 'id', author.id, 'rpsc', rpsc)
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
@@ -135,7 +135,7 @@ class games(commands.Cog):
         if jailtime > time.time():
             await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
             return
-        if rpsc > time.time():
+        if rpsc > int(time.time()):
             await ctx.send(f'You must wait {splittime(rpsc)} before you can play again.')
             return
         heist = open_json()
@@ -165,11 +165,11 @@ class games(commands.Cog):
             money += rmoney
             write_value('members', 'id', author.id, 'money', money)
             update_total(author.id)
-            rpsc = time.time() + 10
+            rpsc = int(time.time()) + 10
             write_value('members', 'id', author.id, 'rpsc', rpsc)
         elif entry != number:
             await ctx.send(f"You lost. The number was {number}.")
-            rpsc = time.time() + 10
+            rpsc = int(time.time()) + 10
             write_value('members', 'id', author.id, 'rpsc', rpsc)
 
         await leaderboard(self.client)

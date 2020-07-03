@@ -3,9 +3,15 @@ from discord.ext import commands, tasks
 import asyncio
 import sqlite3
 from sqlite3 import Error
+from utils import rightCategory
+import os
+import bottokens
 
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
+
+def notinapplications(ctx):
+    return ctx.channel.id != 716720359818133534
 
 #Defining own read and write for different database
 def read_value(table, where, what, value):
@@ -28,6 +34,7 @@ def write_value(table, where, what, value, overwrite):
 async def on_ready():
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
     await client.change_presence(status=discord.Status.online, activity=discord.Game(name=' '))
+
 
 @client.event
 async def on_message(message):
@@ -53,7 +60,7 @@ async def on_message(message):
         if content.lower() == 'next':
             await counting.send(f"**{nextnumber}**")
             return
-        elif message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
+        elif message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report') or message.content.startswith('.tag'):
             return
         elif str(nextnumber) in content:
             #Writing number from here
@@ -67,12 +74,13 @@ async def on_message(message):
         else:
             await message.delete()
             await counting.send(f"Your message must have the next number in it, {message.author.mention}.", delete_after=3)
+        return
     
     
     #For sentences
     elif message.channel == sentences:
         content = message.content
-        if message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
+        if message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report') or message.content.startswith('.tag'):
             return
         elif " " in content:
             await message.delete()
@@ -99,6 +107,9 @@ async def on_message(message):
             conn.commit()
             conn.close()
             #to here
+        return
+
+    await client.process_commands(message)
 
 @client.event
 async def on_raw_message_edit(payload):
@@ -152,7 +163,7 @@ async def on_raw_message_delete(payload):
         #to here
         if payload.message_id == lastmsgid:
             async for message in counting.history(limit=100):
-                if message.content.lower() == "next" or message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
+                if message.content.lower() == "next" or message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report') or message.content.startswith('.tag'):
                     continue
                 else:
                     newmsg = message
@@ -185,7 +196,7 @@ async def on_raw_message_delete(payload):
         #to here
         if payload.message_id == lastmsgid:
             async for message in sentences.history(limit=100):
-                if message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report'):
+                if message.author.bot or message.content.startswith('.warn') or message.content.startswith('.kick') or message.content.startswith('.ban') or message.content.startswith('.report') or message.content.startswith('.tag'):
                     continue
                 else:
                     newmsg = message
@@ -200,5 +211,226 @@ async def on_raw_message_delete(payload):
             #to here
 
 
+@client.command()
+@commands.check(rightCategory)
+async def tagcreate(ctx, name=None, privacy=None, *, content=None):
+    if not name:
+        await ctx.send('Enter a name for your tag.')
+        return
+    if not privacy:
+        await ctx.send('Enter a privacy setting for your tag.')
+        return
+    if not content:
+        await ctx.send('Enter some content for your tag.')
+        return
 
-client.run('NzIxNDQxMTM2MzU0Mzk0MTgz.XuUkjw.U1Tv-qr6q0VPzF0uRTYzg2BcV80')
+    privacy = privacy.lower()
+    if privacy != "private" and privacy != "public":
+        await ctx.send("Enter a valid privacy option. (`private`, `public`)")
+        return
+    
+    if content.startswith('.'):
+        await ctx.send('You cannot start the content of your tag with a period.')
+        return
+
+    author = ctx.author
+
+    #Checking for duplicate tags
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute('SELECT name FROM tags')
+    tempnames = c.fetchall()
+    conn.close()
+    names = []
+    for x in tempnames:
+        names.append(x[0])
+    if name in names:
+        await ctx.send(f'There is already a tag called `{name}`.')
+        return
+
+    #Checking for multiple tags
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute('SELECT author FROM tags WHERE author = ?', (author.id,))
+    tagsby = c.fetchall()
+    conn.close()
+    if len(tagsby) >= 3:
+
+        #Checking for premium
+        conn = sqlite3.connect('hierarchy.db')
+        c = conn.cursor()
+        c.execute('SELECT premium FROM members WHERE id = ?', (author.id,))
+        premium = c.fetchone()
+        conn.close()
+        premium = premium[0]
+        if premium == "False" and author.id != 322896727071784960: #My own id
+            await ctx.send("You may only have up to 3 tags. Upgrade to __premium__ to get up to 10!")
+            return
+        elif len(tagsby) >= 10 and author.id != 322896727071784960:
+            await ctx.send("You have may only have up to 10 tags.")
+            return
+
+
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute(f"INSERT INTO tags (name, author, content, privacy) VALUES (?, ?, ?, ?)", (name, author.id, content, privacy))
+    conn.commit()
+    conn.close()
+
+    await ctx.send("🏷️ Tag successfully created. 🏷️")
+
+@client.command()
+@commands.check(rightCategory)
+async def tagdelete(ctx, *, name=None):
+    if not name:
+        await ctx.send("Enter the name of the tag you want to delete.")
+        return
+    
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute('SELECT name, author FROM tags WHERE name = ?', (name,))
+    tag = c.fetchone()
+    conn.close()
+
+    if not tag:
+        await ctx.send("Tag not found.")
+        return
+    elif tag[1] != ctx.author.id:
+        await ctx.send("This tag does not belong to you.")
+        return
+
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute(f"DELETE FROM tags WHERE name = ?", (name,))
+    conn.commit()
+    conn.close()
+
+    await ctx.send("🏷️ Tag successfully deleted. 🏷️")
+
+@client.command()
+@commands.check(rightCategory)
+async def tagedit(ctx, name=None, option=None, *, setting=None):
+    if not name:
+        await ctx.send("Enter the name of the tag you want to edit.")
+    if not option:
+        await ctx.send("Enter the option of the tag you want to edit. (`privacy`, `content`)")
+    
+    #Grabbing tag
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute('SELECT name, author FROM tags WHERE name = ?', (name,))
+    tag = c.fetchone()
+    conn.close()
+
+    if not tag:
+        await ctx.send("Tag not found.")
+        return
+    elif tag[1] != ctx.author.id:
+        await ctx.send("This tag does not belong to you.")
+        return
+
+
+    option = option.lower()
+    if option != "content" and option != "privacy":
+        await ctx.send("Enter a valid option. (`privacy`, `content`)")
+        return
+    
+    if not setting:
+        await ctx.send(f"Enter what you want to change the {option} to.")
+
+    if option == "privacy":
+        setting = setting.lower()
+        if setting != "private" and setting != "public":
+            await ctx.send("Enter a valid privacy option. (`private`, `public`)")
+            return
+        
+        conn = sqlite3.connect('fun.db')
+        c = conn.cursor()
+        c.execute("UPDATE tags SET privacy = ? WHERE name = ?", (setting, name))
+        conn.commit()
+        conn.close()
+
+        await ctx.send(f"🏷️ Tag's privacy successfully updated to {setting}. 🏷️")
+    
+    else:
+        conn = sqlite3.connect('fun.db')
+        c = conn.cursor()
+        c.execute("UPDATE tags SET content = ? WHERE name = ?", (setting, name))
+        conn.commit()
+        conn.close()
+
+        await ctx.send(f"🏷️ Tag's content successfully updated. 🏷️")
+
+        
+        
+    
+
+@client.command()
+@commands.check(rightCategory)
+async def tags(ctx, member:discord.Member=None):
+    if not member:
+        user = ctx.author
+    else:
+        user = member
+
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute('SELECT name, privacy FROM tags WHERE author = ?', (user.id,))
+    tags = c.fetchall()
+    conn.close()
+
+    if not tags:
+        if ctx.author == user:
+            await ctx.send("You don't have any tags.")
+        else:
+            await ctx.send(f"**{member.name}** does not have any tags.")
+        return
+    
+
+    text = f"**{user.name}**'s tags:"
+    for tag in tags:
+        text += f"\n`{tag[1].capitalize()}` {tag[0]}"
+    
+    try:
+        await ctx.send(text)
+    except:
+        await ctx.send("Text Overload: Text was too long to send in one message.")
+
+@client.command()
+@commands.check(notinapplications)
+async def tag(ctx, *, name=None):
+    if not name:
+        await ctx.send("Enter the name of the tag.")
+        return
+    
+    #Grabbing privacy and content
+    conn = sqlite3.connect('fun.db')
+    c = conn.cursor()
+    c.execute('SELECT privacy, content, author FROM tags WHERE name = ?', (name,))
+    tag = c.fetchone()
+    conn.close()
+
+    if not tag:
+        await ctx.send("Tag not found.")
+        return
+    elif tag[0] == "private" and ctx.author.id != tag[2]:
+        await ctx.send("This tag is private.")
+        return
+    
+    await ctx.send(tag[1])
+
+
+@tags.error
+async def member_not_found_error(ctx, error):
+    if isinstance(error, commands.CheckAnyFailure) or isinstance(error, commands.CheckFailure):
+        pass
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send('Member not found.')
+    else:
+        print(error)
+
+
+    
+
+
+client.run(os.environ.get("fun"))

@@ -5,8 +5,10 @@ import json
 import time
 import asyncio
 import sqlite3
+import os
 from sqlite3 import Error
 from utils import *
+import bottokens
 
 
 
@@ -139,8 +141,12 @@ async def on_message(message):
     if message.channel.id == 723644542275813386:
         boost_channel=client.get_channel(723645417253896234)
         await boost_channel.send(f'HUGE Thank you to {message.author.mention} for boosting the server, we greatly appreciate it! Enjoy the premium perks!')
+        write_value('members', 'id', message.author.id, 'premium', '"True"')
+        write_value('members', 'id', message.author.id, 'boosts', '3')
 
     await client.process_commands(message)
+
+
 
 client.load_extension('debug')        
 client.load_extension('info')
@@ -148,4 +154,6 @@ client.load_extension('games')
 client.load_extension('actions')
 client.load_extension('gambling')
 client.load_extension('misc')
-client.run('Njk4NzcxMjcxMzUzMjM3NTc1.XpKrfw.2bt069XC42fFvaUQQdfprVM7omc')
+
+
+client.run(os.environ.get("main"))

@@ -4,6 +4,8 @@ from utils import adminCheck, minisplittime
 import sqlite3
 from sqlite3 import Error
 import time
+import os
+import bottokens
 
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
@@ -225,4 +227,4 @@ async def closepoll(ctx, name=None):
     await message.clear_reactions()
     await ctx.send(f"{name} poll closed.")
 
-client.run('NzE3MDg2NjQ5NDYwMzI2NTEw.XtVNCA.vmvnS1PxdmrTw0hH1KDBMqGBtZg')
+client.run(os.environ.get("pollmanager"))

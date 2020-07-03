@@ -289,10 +289,10 @@ class info(commands.Cog):
         try:
             find = int(find)
         except:
-            await ctx.send('Enter a valid number from 1-10')
+            await ctx.send('Enter a valid number from 1-25')
             return
-        if find < 1 or find > 10:
-            await ctx.send('Enter a number from 1-10.')
+        if find < 1 or find > 25:
+            await ctx.send('Enter a number from 1-25.')
             return
         if not member:
             author = ctx.author
@@ -355,8 +355,40 @@ class info(commands.Cog):
             await author2.send(embed=embed)
         else:
             await ctx.send(embed=embed)
-        
-                        
+
+    @commands.command()
+    @commands.check(rightCategory)
+    async def dailyinfo(self, ctx, member:discord.Member=None):
+        rewards = [40, 50, 60, 70, 80, 90, 100]
+        if not member:
+            streak = read_value('members', 'id', ctx.author.id, 'dailystreak')
+
+            await ctx.send(f"**Day 1**: ${rewards[0]}\n**Day 2**: ${rewards[1]}\n**Day 3**: ${rewards[2]}\n**Day 4**: ${rewards[3]}\n**Day 5**: ${rewards[4]}\n**Day 6**: ${rewards[5]}\n**Day 7**: ${rewards[6]} + Random shop item\n\n*Your current streak: {streak}*")
+        else:
+            streak = read_value('members', 'id', member.id, 'dailystreak')
+
+            await ctx.send(f"**{member.name}**'s streak: {streak}")
+
+    @commands.command()
+    @commands.check(rightCategory)
+    async def boostcount(self, ctx, member:discord.Member=None):
+        if not member:
+            author = ctx.author
+            premium = read_value('members', 'id', author.id, 'premium')
+            if premium == 'False':
+                await ctx.send("You don't have __premium__. Get __premium__ by boosting the server!")
+                return
+            boosts = read_value('members', 'id', author.id, 'boosts')
+            await ctx.send(f"⏱️ **{author.name}**'s boosts: {boosts}")
+        else:
+            premium = read_value('members', 'id', member.id, 'premium')
+            if premium == 'False':
+                await ctx.send(f"**{member.name}** does not have __premium__.")
+                return
+            boosts = read_value('members', 'id', member.id, 'boosts')
+            await ctx.send(f"⏱️ **{member.name}**'s boosts: {boosts}")
+
+
     @bal.error
     @place.error
     @jailtime.error
@@ -365,6 +397,8 @@ class info(commands.Cog):
     @banktime.error
     @items.error
     @around.error
+    @dailyinfo.error
+    @boostcount.error
     async def member_not_found_error(self,ctx,error):
         if isinstance(error, commands.BadArgument):
             await ctx.send("Member not found.")

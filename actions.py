@@ -16,21 +16,16 @@ class actions(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.command()
-    @commands.check(rightCategory)
-    async def work(self, ctx):
+        
+    async def working(self, ctx):
         author = ctx.author
         jailtime = read_value('members', 'id', author.id, 'jailtime')
         workc = read_value('members', 'id', author.id, 'workc')
-        isworking = read_value('members', 'id', author.id, 'isworking')
         if jailtime > time.time():
             await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
             return
         elif workc > time.time():
             await ctx.send(f'You must wait {splittime(workc)} before you can work again.')
-            return
-        elif isworking== "True":
-            await ctx.send(f'You are already working.')
             return
         heist = open_json()
         if heist["heistv"] == author.id:
@@ -39,7 +34,6 @@ class actions(commands.Cog):
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
-        write_value('members', 'id', author.id, 'isworking', "'True'")
         flag = 0
         premium = read_value('members', 'id', author.id, 'premium')
         if premium == "True":
@@ -159,10 +153,8 @@ class actions(commands.Cog):
                             await ctx.send(f"{n1} / {n2} - {n3}")
                         elif order == 2:
                             await ctx.send(f"-{n3} + {n1} / {n2}")
-                def check(m):
-                        return m.channel == ctx.channel and m.author == ctx.author
                 try:
-                    submission = await self.client.wait_for('message', check=check, timeout=5)
+                    submission = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=5)
                     answer = str(answer)
                     submission = str(submission.content)
                     if submission == answer:
@@ -199,9 +191,17 @@ class actions(commands.Cog):
         update_total(author.id)
         workc = int(time.time()) + 3600
         write_value('members', 'id', author.id, 'workc', workc)
-        write_value('members', 'id', author.id, 'isworking', "'False'")
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
+
+    @commands.command()
+    @commands.check(rightCategory)
+    async def work(self, ctx):
+        for task in asyncio.all_tasks():
+            if str(task.get_name()) == f'work {ctx.author.id}':
+                await ctx.send("You are already working.")
+                return
+        asyncio.create_task(self.working(ctx), name=f"work {ctx.author.id}")
 
 
     @commands.command()
@@ -269,9 +269,6 @@ class actions(commands.Cog):
             return
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
-            return
-        if read_value('members', 'id', author.id, 'isfighting') == 'True':
-            await ctx.send('You already have a fight request pending, or are fighting someone.')
             return
         if member==None:
             await ctx.send("Enter a user to pay.")
@@ -444,9 +441,6 @@ class actions(commands.Cog):
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
             return
-        if read_value('members', 'id', author.id, 'isfighting') == 'True':
-            await ctx.send('You already have a fight request pending, or are fighting someone.')
-            return
         if not amount:
             await ctx.send(f"Enter an amount of money to deposit.")
             return
@@ -499,9 +493,6 @@ class actions(commands.Cog):
             return
         if author.id in heist["heistp"]:
             await ctx.send(f"You are participating in a heist right now.")
-            return
-        if read_value('members', 'id', author.id, 'isfighting') == 'True':
-            await ctx.send('You already have a fight request pending, or are fighting someone.')
             return
         if not amount:
             await ctx.send(f"Enter an amount of money to withdraw.")
@@ -927,11 +918,12 @@ class actions(commands.Cog):
             walletinfo = json.load(json_file)
         
         if walletinfo["channel"] == ctx.channel.id:
-            earnings = random.randint(40,70)
+            earnings = random.randint(100,150)
             money = read_value('members', 'id', author.id, 'money')
             money += earnings
             write_value('members', 'id', author.id, "money", money)
             update_total(author.id)
+            await leaderboard(self.client)
             await ctx.send(f"**{author.name}** claimed the wallet and earned ${earnings}.")
 
             newinfo = {}

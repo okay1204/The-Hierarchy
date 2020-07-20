@@ -47,13 +47,16 @@ async def on_member_join(member):
     for person in users:
         if member.id == person[0]:
             alreadyin = True
-    
+            break
+
     membercountchannel = client.get_channel(719716526101364778)
     membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
     await membercountchannel.edit(name=f"Members: {membercount}")
         
                     
     if alreadyin == False:
+        botcomms = client.get_channel(730584224305774602)
+        await botcomms.send(f'main : tutorial | {member.id}')
         c.execute(f'INSERT INTO members (id) VALUES ({member.id})')
         conn.commit()
 

@@ -617,7 +617,8 @@ async def fullmessage(ctx, member=None, audit_id=None):
     for audit in audits:
         if audit["audit id"] == audit_id:
             if "message content" in audit.keys():
-                await ctx.send(audit["message content"])
+                message = await ctx.send('_ _')
+                await message.edit(content=audit["message content"])
             else:
                 await ctx.send("Audit does not have message content recorded.")
             return

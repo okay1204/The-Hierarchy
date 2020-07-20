@@ -93,7 +93,7 @@ class info(commands.Cog):
         elif member.id==698771271353237575:
             await ctx.send("Why me?")
             return
-        elif member.bot == True:
+        elif member.bot:
             await ctx.send("Bots don't play!")
             return
         elif member!=None:
@@ -296,6 +296,12 @@ class info(commands.Cog):
             return
         if not member:
             author = ctx.author
+        elif member.id==self.client.user.id:
+            await ctx.send("Why me?")
+            return
+        elif member.bot:
+            await ctx.send("Bots don't play!")
+            return
         else:
             author = member
         author2 = ctx.author
@@ -358,12 +364,99 @@ class info(commands.Cog):
 
     @commands.command()
     @commands.check(rightCategory)
+    async def aroundm(self, ctx, find=None, member:discord.Member=None):
+        if find == None:
+            find = 3
+        try:
+            find = int(find)
+        except:
+            await ctx.send('Enter a valid number from 1-25')
+            return
+        if find < 1 or find > 25:
+            await ctx.send('Enter a number from 1-25.')
+            return
+        if not member:
+            author = ctx.author
+        elif member.id==self.client.user.id:
+            await ctx.send("Why me?")
+            return
+        elif member.bot:
+            await ctx.send("Bots don't play!")
+            return
+        else:
+            author = member
+        author2 = ctx.author
+        userid = author.id
+        guild = self.client.get_guild(692906379203313695)
+        conn = sqlite3.connect('hierarchy.db')
+        c = conn.cursor()
+        c.execute('SELECT id, total FROM members WHERE total > 0 ORDER BY total DESC')
+        hierarchy = c.fetchall()
+        conn.close()
+        hierarchy = list(filter(lambda x: guild.get_member(x[0]) is not None, hierarchy))
+        ids=[]
+        for x in hierarchy:
+            ids.append(x[0])
+        try:
+            index = ids.index(userid)
+        except ValueError:
+            hierarchy.append((userid, 0))
+            ids.append(userid)
+            index = ids.index(userid)
+
+
+        lower_index = index-find
+
+        if lower_index < 0:
+            lower_index = 0
+
+        higher_index = index+find+1
+        length = len(hierarchy)
+
+        if higher_index > length:
+            higher_index = length
+
+        result = hierarchy[lower_index:higher_index]
+
+        avatar = author.avatar_url_as(static_format='jpg',size=256)
+        embed = discord.Embed(color=0xffd24a)
+        embed.set_author(name=f"Around {author.name}",icon_url=avatar)
+
+        place = ids.index(result[0][0])+1
+        for person in result:
+            member2 = guild.get_member(person[0])
+            medal = ''
+            mk = ''
+            if place == 1:
+                medal = '🥇 '
+            elif place == 2:
+                medal = '🥈 '
+            elif place == 3:
+                medal = '🥉 '
+            if author.id == person[0]:
+                mk = '**'
+            embed.add_field(name='__________', value=f'{mk}{place}. {member2.name} {medal}- ${person[1]}{mk}', inline=False)
+            place += 1
+        if find > 5:
+            await ctx.send('Embed too large, check your DMs.')
+            await author2.send(embed=embed)
+        else:
+            await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.check(rightCategory)
     async def dailyinfo(self, ctx, member:discord.Member=None):
         rewards = [40, 50, 60, 70, 80, 90, 100]
         if not member:
             streak = read_value('members', 'id', ctx.author.id, 'dailystreak')
 
             await ctx.send(f"**Day 1**: ${rewards[0]}\n**Day 2**: ${rewards[1]}\n**Day 3**: ${rewards[2]}\n**Day 4**: ${rewards[3]}\n**Day 5**: ${rewards[4]}\n**Day 6**: ${rewards[5]}\n**Day 7**: ${rewards[6]} + Random shop item\n\n*Your current streak: {streak}*")
+        elif member.id==self.client.user.id:
+            await ctx.send("Why me?")
+            return
+        elif member.bot:
+            await ctx.send("Bots don't play!")
+            return
         else:
             streak = read_value('members', 'id', member.id, 'dailystreak')
 
@@ -380,6 +473,12 @@ class info(commands.Cog):
                 return
             boosts = read_value('members', 'id', author.id, 'boosts')
             await ctx.send(f"⏱️ **{author.name}**'s boosts: {boosts}")
+        elif member.id==self.client.user.id:
+            await ctx.send("Why me?")
+            return
+        elif member.bot:
+            await ctx.send("Bots don't play!")
+            return
         else:
             premium = read_value('members', 'id', member.id, 'premium')
             if premium == 'False':
@@ -397,6 +496,7 @@ class info(commands.Cog):
     @banktime.error
     @items.error
     @around.error
+    @aroundm.error
     @dailyinfo.error
     @boostcount.error
     async def member_not_found_error(self,ctx,error):

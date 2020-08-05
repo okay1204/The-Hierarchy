@@ -4,30 +4,17 @@ import os
 import json
 
 
-database = f"{os.getcwd()}\\hierarchy.db"
-
-conn = sqlite3.connect(database)
+conn = sqlite3.connect('hierarchy.db')
 c = conn.cursor()
-with open('hierarchy.json') as json_file:
-    hierarchy = json.load(json_file)
-
-for person in hierarchy:
-    userid = int(person["user"])
-    items = ""
-    inuse = ""
-    for item in person["items"]:
-        items = f'{items} {item}'
-    for item in person["inuse"]:
-        inusename = item["name"]
-        inusetimer = item["timer"]
-        inuse = f'{inuse} {inusename} {inusetimer}'
-    c.execute(f'INSERT INTO members (id, money, workc, jailtime, stealc, rpsc, bank, bankc, total, hbank, heistamount, items, inuse, storage, isworking, tokens) VALUES ({userid}, {person["money"]}, {person["workc"]}, {person["jailtime"]}, {person["stealc"]}, {person["rpsc"]}, {person["bank"]}, {person["bankc"]}, {person["total"]}, {person["hbank"]}, {person["heistamount"]}, ?, ?, {person["storage"]}, ?, {person["tokens"]});', (items, inuse, 'False'))
+c.execute('SELECT id, warns, kicks, bans FROM members')
+values = c.fetchall()
+conn.close()
+values = list(filter(lambda value: value[1] or value[2] or value[3], values))
 
 
-
-
-
-
-
+conn = sqlite3.connect('./storage/databases/offenses.db')
+c = conn.cursor()
+for value in values:
+    c.execute('INSERT INTO offenses (id, warns, kicks, bans) VALUES (?, ?, ?, ?)', (value[0], value[1], value[2], value[3]))
 conn.commit()
 conn.close()

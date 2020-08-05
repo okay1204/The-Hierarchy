@@ -1,5 +1,8 @@
+# pylint: disable=unused-wildcard-import
+
 import discord
 from discord.ext import commands, tasks
+from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached, CheckFailure
 import random
 import json
 import time
@@ -7,109 +10,151 @@ import datetime
 import asyncio
 import sqlite3
 import os
+import difflib
+import traceback
 from sqlite3 import Error
+
+
 from utils import *
-import bottokens
+import bottoken
 
 
 
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
 
+@client.event
+async def on_command_error(ctx, error):
+
+    error = getattr(error, 'original', error)
+
+
+    if isinstance(error, CommandNotFound):
+
+        allowed_cogs = ['actions', 'fun', 'gambling', 'games', 'info', 'premium']
+
+        command_string = ctx.message.content.split()[0]
+        command_string = command_string.replace('.', '')
+        if command_string in client.every_command:
+            return
+
+        enabled_commands = client.commands
+        enabled_commands = list(filter(lambda command: command.cog and command.cog_name in allowed_cogs, enabled_commands))
+        command_names = list(map(lambda command: command.name, enabled_commands))
+        
+        command_aliases = list(map(lambda command: command.aliases, enabled_commands))
+        all_aliases = []
+        for command_alias in command_aliases:
+            all_aliases.extend(command_alias)
+
+
+        command_names.extend(all_aliases)
+
+        content = ctx.message.content.split()[0]
+        content = content.replace('.', '')
+        close = difflib.get_close_matches(content, command_names)
+
+
+        if len(close) == 0:
+            await ctx.send(f"Command not found.\nSee {client.commandsChannel.mention} for a list of commands.")
+        else:
+
+            close = list(map(lambda command: f"`{command}`", close))
+
+            text = '\n'.join(close)
+            await ctx.send(f"Command not found. Did you mean:\n{text}")
+
+    
+    elif isinstance(error, BadArgument):
+        if ctx.command.cog_name == "admin":
+            
+            if len(ctx.args) == 2:
+                await ctx.send("Member not found.")
+
+            else:
+                await ctx.send("Channel not found.")
+            
+        else:
+            await ctx.send("Member not found.")
+    
+    elif isinstance(error, MaxConcurrencyReached):
+        return
+
+    elif isinstance(error, CheckFailure):
+        return
+
+    else:
+        message = await ctx.send("An error occured while performing this command. This has been automatically reported.")
+
+        error_channel = client.get_channel(740055762956451870)
+
+        error_message = traceback.format_exception(type(error), error, error.__traceback__)
+        error_message = "".join(error_message) 
+        new_message = await error_channel.send(client.myself.mention)
+        await new_message.edit(content=f"In {ctx.channel.mention} by {ctx.author.mention}:\n{message.jump_url}\n```{error_message}```")
+
+
+        raise error
+
 
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
+
+
     statuschannel = client.get_channel(698384786460246147)
     statusmessage = await statuschannel.fetch_message(698775210173923429)
+
+
     green = discord.Color(0x42f57b)
     red = discord.Color(0xff5254)
+
     for x in statusmessage.embeds:
         if x.color == green:
             await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with money'))
         elif x.color == red:
             await client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
-    heisttimer.start()
-    await leaderboard(client)
+
+
+    client.bailprice = lambda number: int(int(number-time.time())/3600*40)
+    client.leaderboardChannel = client.get_channel(692955859109806180)
+    client.leaderboardMessage = await client.leaderboardChannel.fetch_message(698775209024552975)
+    client.commandsChannel = client.get_channel(692950528417595453)
+    client.gameInfoChannel = client.get_channel(706643007646203975)
+    client.membercountchannel = client.get_channel(719716526101364778)
+    client.mainGuild = client.get_guild(692906379203313695)
+    client.welcomeChannel = client.get_channel(692956542437425153)
+
+    client.myself = client.mainGuild.get_member(322896727071784960)
+
+
+    cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events']
+    for cog in cogs:
+        client.load_extension(f'cogs.{cog}')
+
+    commands = set(client.walk_commands())
+    aliases = []
+    for command in commands:
+        aliases.extend(command.aliases)
+    
+    
+    commands = list(map(lambda command: command.name, commands))
+    commands.extend(aliases)
+    client.every_command = commands
     
 
-@tasks.loop(seconds=1)
-async def heisttimer():
-    heist = open_json()
-    if heist["heistt"] > 0:
-        heist["heistt"] -= 1
-        write_json(heist)
-        if heist["heistt"] == 0:
-            channel = client.get_channel(heist["heistl"])
-            if len(heist["heistp"]) < 3:
-                heist["heistl"] = 0
-                heist["oheist"] = "False"
-                heist["heistp"] = []
-                heist["heistv"] = 0
-                write_json(heist)
-                await channel.send("Heist cancelled: Not enough people joined.")
-            else:
-                guild = client.get_guild(692906379203313695)
-                total = 0
-                for userid in heist["heistp"]:
-                    heistamount = random.randint(40,50)
-                    write_value('members', 'id', userid, 'heistamount', heistamount)
-                    total += heistamount
-                    
-                while read_value('members', 'id', heist['heistv'], 'bank') < total:
-                    total2 = 0
-                    for userid2 in heist["heistp"]:
-                        heistamount = read_value('members', 'id', userid2, 'heistamount')
-                        heistamount -= 1
-                        total2 += heistamount
-                        write_value('members', 'id', userid2, 'heistamount', heistamount)
-                        total = total2
-                            
-                embed = discord.Embed(color=0xed1f1f)
-                embed.set_author(name="Heist results")
-                for userid in heist["heistp"]:
-                    if random.randint(1,4) == 1:
-                        gotaway = False
-                        for item in in_use(userid):
-                            if item["name"] == "gun":
-                                if random.randint(1,2) == 1:
-                                    embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, got away with their gun.', inline=True)
-                                    gotaway = True
-                        if gotaway == False:
-                            embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, jailed for 3h.', inline=True)
-                            jailtime = int(time.time()) + 10800
-                            write_value('members', 'id', userid, 'jailtime', jailtime)
-                        await rolecheck(client, userid)
-                    else:
-                        heistamount = read_value("members", "id", userid, "heistamount")
-                        embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Got away with ${heistamount}.')
-                        money = read_value("members", "id", userid, "money")
-                        money += heistamount
-                        write_value("members", "id", userid, "money", money)
-                        update_total(userid)
-                        bank = read_value("members", "id", heist["heistv"], "bank")
-                        bank -= heistamount
-                        write_value("members", "id", heist["heistv"], "bank", bank)
-                        update_total(heist["heistv"])
-
-                await rolecheck(client, heist["heistv"])
-
-                channel = client.get_channel(heist["heistl"])
-                await channel.send(embed=embed)
-                heist["heistv"] = "None"
-                heist["heistt"] = 0
-                heist["heistp"] = []
-                heist["heistl"] = "None"
-                heist["oheist"] = "False"
-                write_json(heist)
-                conn = sqlite3.connect('hierarchy.db')
-                c = conn.cursor()
-                c.execute(f"UPDATE heist SET cooldown = {int(time.time())+9000}")
-                conn.commit()
-                conn.close()
-                await leaderboard(client)
+    cogs_to_unload = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'polls', 'admin', 'reactions', 'timers', 'events']
+    for cog in cogs_to_unload:
+        client.unload_extension(f'cogs.{cog}')
 
 
+    # TODO: add all the cogs back afterward
+    
+    await leaderboard(client)
+
+client.adminChannel = 706953015415930941
+client.partnershipChannel = 723945572708384768
+client.rightCategory = 692949972764590160
     
         
 @client.event
@@ -124,292 +169,220 @@ async def on_member_remove(member):
 
 @client.event
 async def on_message(message):    
-    try:
-        if message.channel.category == client.get_channel(692949972764590160):
-            if message.content.lower().startswith('pls'):
-                helpchannel = client.get_channel(692950528417595453)
-                await message.channel.send(f"Hey, this server isn't ran by Dank Memer, it's a custom bot! Check {helpchannel.mention} for a list of commands.")
-    except:
-        pass
     
-    if message.channel.id == 723644542275813386: # private system
-        boost_channel=client.get_channel(723645417253896234)
-        await boost_channel.send(f'HUGE Thank you to {message.author.mention} for boosting the server, we greatly appreciate it! Enjoy the premium perks!')
-        write_value('members', 'id', message.author.id, 'premium', '"True"')
-        write_value('members', 'id', message.author.id, 'boosts', '3')
+    if type(message.channel) != discord.channel.DMChannel:
+        if message.channel.category.id == client.rightCategory:
+            if message.content.lower().startswith('pls '):
+                await message.channel.send(f"Hey, this server isn't ran by Dank Memer, it's a custom bot! Check {client.commandsChannel.mention} for a list of commands.")
     
-    if message.channel.id == 730584224305774602: #bot comms
-        if message.content.startswith('main : '):
-            command = message.content
-            command = command.replace('main : ', '')
-            command = command.split(' | ')
-
-            green = discord.Color(0x42f57b)
-            red = discord.Color(0xff5254)
-            statuschannel = client.get_channel(698384786460246147)
-            statusmessage = await statuschannel.fetch_message(698775210173923429)
-            for x in statusmessage.embeds:
-                if x.color == green:
-                    await message.add_reaction('✅')
-                elif x.color == red:
-                    await message.add_reaction('❌')
-                    return
-            
-            guild = client.get_guild(692906379203313695)
-            if command[0] == 'tutorial':
-                await asyncio.sleep(30)
-                
-                #checking if member is still in server
-                try:
-                    member = guild.get_member(int(command[1]))
-                except:
-                    return
-                
-                await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')
-
-    # DM check
-    if not message.guild:
-        if message.content.lower() == "tutorial":
-            for task in asyncio.all_tasks():
-                if str(task.get_name()) == f"tutorial {message.author.id}":
-                    await message.channel.send('You already have a tutorial in progress.')
-                    return
-            asyncio.create_task(tutorial(message), name=f"tutorial {message.author.id}")
-
-        
-        if message.content.lower() == "cancel":
-            for task in asyncio.all_tasks():
-                if str(task.get_name()) == f"tutorial {message.author.id}":
-                    await message.channel.send('Cancelled tutorial.')
-                    task.cancel()
-                    return
-        
 
     await client.process_commands(message)
 
-async def tutorial(message):
 
-    dmchannel = message.channel
-    category = client.get_channel(692949972764590160)
-    channels = category.text_channels
+def adminCheck(ctx):
+    return ctx.channel.id == client.adminChannel
 
-    async def channel_check(channel):
-        special_channels = [706953015415930941, 714585657808257095, 723945572708384768]
-        if channel.id in special_channels:
-            return False
-        else:
-            async for msg in channel.history(limit=1):
-                secondspast = int(datetime.datetime.utcnow().timestamp()-msg.created_at.timestamp())
-            if secondspast <= 60:
-                return False
-            else:
-                return True
-                
-    acceptedChannels = []
-    for channel in channels:
-        check = await channel_check(channel)
-        if check:
-            acceptedChannels.append(channel)
 
-    if len(acceptedChannels) == 0:
-        await dmchannel.send('All bot command channels are busy right now, sorry! Try again later.')
+@client.command()
+@commands.check(adminCheck)
+async def refresh(ctx):
+
+    files = [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]
+    files = list(map(lambda filename: filename.replace('.py', ''), files))
+
+    current_cogs = list(client.extensions)
+    current_cogs = list(map(lambda cog: cog.replace('cogs.', ''), current_cogs))
+
+    disabled_cogs = []
+
+    for cog in current_cogs:
+        if cog not in files:
+            disabled_cogs.append(cog)
+            client.load_extension(f'cogs.{cog}')
+
+        commands = set(client.walk_commands())
+        aliases = []
+        for command in commands:
+            aliases.extend(command.aliases)
+        
+        
+        commands = list(map(lambda command: command.name, commands))
+        commands.extend(aliases)
+        client.every_command = commands
+
+    for cog in disabled_cogs:
+        client.unload_extension(f'cogs.{cog}')
+    
+    await ctx.send("Refreshed and added all existing commands to cache.")
+
+@client.command()
+@commands.check(adminCheck)
+async def cache(ctx, name=None):
+
+    if not name:
+        await ctx.send("Incorrect command usage:\n`.cache commandname`")
         return
-    
-    channel = random.choice(acceptedChannels)
-    await dmchannel.send(f"Tutorial started! You may cancel it by DMing me `cancel` at any time. Please head on over to {channel.mention}.")
-    
-    guild = client.get_guild(692906379203313695)
-    author = guild.get_member(message.author.id)
 
-    async with channel.typing():
-        await asyncio.sleep(5)
-    
-    await channel.send(f"Welcome to The Hierarchy, {author.mention}! This is a game of collecting as much money as you can.")
-
-    async with channel.typing():
-        await asyncio.sleep(5)
-    
+    client.every_command.append(name)
+    await ctx.send("Successfully added command to cache.")
 
 
-    for role in author.roles:
-        if role.id == 692952611141451787:
-            guild_role = guild.get_role(692952611141451787) # Poor
-            break
-        elif role.id == 692952792016355369:
-            guild_role = guild.get_role(692952792016355369) # Middle
-            break
-        elif role.id == 692952919947083788:
-            guild_role = guild.get_role(692952919947083788) # Rich
-            break
+@client.command()
+@commands.check(adminCheck)
+async def cogs(ctx):
 
-    rolemessage = await channel.send('_ _')
-    await rolemessage.edit(content=f"First off, let's talk about your role. You currently have the {guild_role.mention} role. This role signifies how rich you are compared to the average amount of money in the server.")
+    files = [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]
 
-    async with channel.typing():
-        await asyncio.sleep(10)
+    current_cogs = list(client.extensions)
+    current_cogs = list(map(lambda cog: cog.replace('cogs.', ''), current_cogs))
 
-    await channel.send("Let's get you started with the basics.")
+    cogs = []
+    for filename in files:
+        filename = filename.replace('.py', '')
+        if filename in current_cogs:
+            state = ': Enabled'
+        else:
+            state = ': Disabled'
+        
+        filename += state
+        cogs.append(filename)
 
-    client_member = guild.get_member(client.user.id)
 
-    async with channel.typing():
-        await asyncio.sleep(3)
+    cogs = "\n".join(cogs)
+    await ctx.send(f"```{cogs}```")
 
-    if read_value('members', 'id', author.id, 'workc') < time.time() and read_value('members', 'id', author.id, 'jailtime') < time.time():        
-        canWork = True
 
-    elif read_value('members', 'id', author.id, 'workc') >= time.time():
-        await channel.send("Hm.. you already seem to have used the `.work` command. Since you already know about it, let's move on then.")
-        canWork = False
-    else:
-        await channel.send("Well, it looks like you're in jail. It looks like we will have to skip majority of the tutorial.")
-        canWork = False
+@client.command()
+@commands.check(adminCheck)
+async def enable(ctx, name=None):
 
-    
-    if canWork: 
+    if not name:
+        await ctx.send("Incorrect command usage:\n`.enable cogname`")
+        return
 
-        await channel.send("Start off by typing `.work`. Be ready though, there will be some minigames coming your way.")
+    name = name.lower()
 
-        while True:
-            try:
-                message = await client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=60)
-            except asyncio.TimeoutError:
-                await channel.send("Tutorial cancelled due to inactivity.")
-                return
-            if message.content == '.work' or message.content.startswith('.work '):
-                channel = message.channel
-                break
+    current_cogs = list(client.extensions)
+    current_cogs = list(map(lambda cog: cog.replace('cogs.', ''), current_cogs))
 
-        while True:
-            try:
-                message = await client.wait_for('message', check=lambda x: x.author == client_member and x.channel == channel, timeout=60)
-            except asyncio.TimeoutError:
-                await channel.send("Hmm... something went wrong. Please start the tutorial again.")
-                return
-            if 'worked and' in message.content:
-                break
+    if name != "all":
 
-    async with channel.typing():
-        await asyncio.sleep(5)
-    
-    await channel.send("You can check your balance with `.balance`. Try that now.")
-
-    while True:
-        try:
-            message = await client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=60)
-        except asyncio.TimeoutError:
-            await channel.send("Tutorial cancelled due to inactivity.")
+        if name in current_cogs:
+            await ctx.send("This cog is already enabled.")
             return
-        if message.content == '.bal' or message.content == '.balance':
-            channel = message.channel
-            break
+        
+        files = [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]
+        files = list(map(lambda filename: filename.replace('.py', ''), files))
 
-    async with channel.typing():
-        await asyncio.sleep(3)
+        if name not in files:
+            await ctx.send("This cog does not exist.")
+            return
+        
+        else:
+            client.load_extension(f'cogs.{name}')
+            await ctx.send(f"Cog `{name}` successfully enabled.")
 
-    await channel.send("Next, let's steal from someone!")
-
-    async with channel.typing():
-        await asyncio.sleep(3)
-
-    if read_value('members', 'id', author.id, 'stealc') < time.time() and read_value('members', 'id', author.id, 'jailtime') < time.time():        
-        canSteal = True
-
-    elif read_value('members', 'id', author.id, 'stealc') >= time.time():
-        await channel.send("Hm.. you already seem to have used the `.steal` command. Since you already know about it, let's move on then.")
-        canSteal = False
     else:
-        await channel.send("Well, it looks like you're in jail. Perhaps you already tried to steal from someone and got jailed already?")
-        canSteal = False
 
-    if canSteal:
-        await channel.send("First, we will have to see who is in your place range. To do this, use `.around`.")
-        while True:
-            try:
-                message = await client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=60)
-            except asyncio.TimeoutError:
-                await channel.send("Tutorial cancelled due to inactivity.")
-                return
-            if message.content == '.around' or message.content.startswith('.around '):
-                channel = message.channel
-                break
+        files = [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]
+        files = list(map(lambda filename: filename.replace('.py', ''), files))
+
+        for filename in files:
+            if filename not in current_cogs:
+                client.load_extension(f'cogs.{filename}')
+
+        await ctx.send("All cogs successfully enabled.")
+
+    
+@client.command()
+@commands.check(adminCheck)
+async def disable(ctx, name=None):
+
+    if not name:
+        await ctx.send("Incorrect command usage:\n`.disable cogname`")
+        return
+
+    name = name.lower()
+
+    if name != "all":
+
+        files = [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]
+        files = list(map(lambda filename: filename.replace('.py', ''), files))
+
+        if name not in files:
+            await ctx.send("This cog does not exist.")
+            return
+
+        current_cogs = list(client.extensions)
+        current_cogs = list(map(lambda cog: cog.replace('cogs.', ''), current_cogs))
+
+        if name not in current_cogs:
+            await ctx.send("This cog is already disabled.")
+            return
         
-        async with channel.typing():
-            await asyncio.sleep(8)
+        else:
+            client.unload_extension(f'cogs.{name}')
+            await ctx.send(f"Cog `{name}` successfully disabled.")
 
-        image = discord.File('stealinfo.png')
-        await channel.send("When stealing, you can only steal from those that are up to 3 places above you or up to 3 places below you. Refer to this diagram:", file=image)
-        
-        async with channel.typing():
-            await asyncio.sleep(15)
+    
+    else:
+
+        files = [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]
+        files = list(map(lambda filename: filename.replace('.py', ''), files))
+
+        current_cogs = list(client.extensions)
+        current_cogs = list(map(lambda cog: cog.replace('cogs.', ''), current_cogs))
+
+        for filename in files:
+            if filename in current_cogs:
+                client.unload_extension(f'cogs.{filename}')
+
+        await ctx.send("All cogs successfully disabled.")
 
 
-        aroundbug = discord.File('aroundbug.png')
-        await channel.send("**If this is what you saw when you did `.around`, it is a common mobile bug. Try using `.aroundm` instead.**", file=aroundbug)
+@client.command()
+@commands.check(adminCheck)
+async def reload(ctx, name=None):
 
-        async with channel.typing():
-            await asyncio.sleep(12)
+    if not name:
+        await ctx.send("Incorrect command usage:\n`.reload cogname`")
+        return
 
-        await channel.send("Now, let's try it out!")
+    name = name.lower()
 
-        async with channel.typing():
-            await asyncio.sleep(3)
+    files = [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]
+    files = list(map(lambda filename: filename.replace('.py', ''), files))
 
-        #Quick checks to make sure they didn't spoof the system
-        spoofed = False
-        if read_value('members', 'id', author.id, 'stealc') >= time.time():
-            await channel.send("You already used `.steal`... what a shame.")
-            spoofed = True
-        elif read_value('members', 'id', author.id, 'jailtime') >= time.time():
-            await channel.send("Well, it looks like you're in jail. Perhaps you already tried to steal from someone and got jailed already?")
-            spoofed = True
-        
-        if not spoofed:
-            await channel.send(f"Use `.steal @mention amount` to steal from someone. Make sure you replace `@mention` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {client_member.mention} 100\n\nTry out this command now.")
-            breakOut = False
-            while True:
-                try:
-                    message = await client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=120)
-                except asyncio.TimeoutError:
-                    await channel.send("Tutorial cancelled due to inactivity.")
-                    return
-                if message.content.startswith('.steal '):
-                    channel = message.channel
-                    while True:
-                        try:
-                            message = await client.wait_for('message', check=lambda x: x.author == client_member and x.channel == channel, timeout=60)
-                        except asyncio.TimeoutError:
-                            await channel.send("Hmm... something went wrong. Please start the tutorial again.")
-                            return
-                        if author.name in message.content:
-                            breakOut = True
-                        break
+    if name != "all":
 
-                if breakOut:
-                    break
-        
-    async with channel.typing():
-        await asyncio.sleep(5)
+        if name not in files:
+            await ctx.send("This cog does not exist.")
+            return
 
-    commands = client.get_channel(692950528417595453)
-    game_info = client.get_channel(706643007646203975)
-    await channel.send(f"And that's about it! Of course, these are only the basics to get you started. However, there is a shop, fee collection, banking system, and so much more! Feel free to explore these on your own. Looking through {commands.mention} and {game_info.mention} will help you a lot.\n\n*Please consider boosting the server, it will also grant you some premium features such as boosting time!*")
+        current_cogs = list(client.extensions)
+        current_cogs = list(map(lambda cog: cog.replace('cogs.', ''), current_cogs))
 
-    async with channel.typing():
-        await asyncio.sleep(15)
-
-    await channel.send("Have fun, and good luck!")
-        
+        if name in current_cogs:
+            client.unload_extension(f'cogs.{name}')
 
         
+        client.load_extension(f'cogs.{name}')
+        await ctx.send(f"Cog `{name}` successfully reloaded.")
+
+    else:
+
+        current_cogs = list(client.extensions)
+        current_cogs = list(map(lambda cog: cog.replace('cogs.', ''), current_cogs))
+
+        for filename in files:
+            if filename in current_cogs:
+                client.unload_extension(f'cogs.{filename}')
+                client.load_extension(f'cogs.{filename}')
+
+        await ctx.send("All cogs succesfully reloaded.")
 
 
-client.load_extension('debug')        
-client.load_extension('info')
-client.load_extension('games')
-client.load_extension('actions')
-client.load_extension('gambling')
-client.load_extension('misc')
+
 
 
 client.run(os.environ.get("main"))

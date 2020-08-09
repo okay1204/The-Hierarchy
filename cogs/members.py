@@ -52,6 +52,12 @@ class members(commands.Cog):
 
         await channel.send(f"Hey {member.mention}, welcome to **The Hierarchy**! Please check <#692951648410140722> before you do anything else!")
         await member.add_roles(poor)
+        
+        generalchannel = self.client.get_channel(692906379203313698)
+        joinEmbed = discord.Embed(color=0x2feb61)
+        joinEmbed.set_author(name=f"{member.name} just joined!", icon_url=member.avatar_url_as(static_format='jpg'))
+        await generalchannel.send(embed=joinEmbed)
+
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
         c.execute('SELECT id FROM members')
@@ -79,8 +85,10 @@ class members(commands.Cog):
             if not member:
                 return
             
-            await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')
-
+            try:
+                await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')
+            except:
+                pass
 
         else:
             conn.close()
@@ -101,5 +109,69 @@ class members(commands.Cog):
         membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
         await membercountchannel.edit(name=f"Members: {membercount}")
 
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, role_id, img_location FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+
+            if str(member.id) in gang[2].split():
+                
+                members = gang[2].split()
+                members.remove(str(member.id))
+
+                if len(members) < 2:
+                    
+                    if gang[3]:
+                        role = guild.get_role(gang[3])
+
+                        await role.delete(reason="Gang role deleted")
+
+                        conn = sqlite3.connect('./storage/databases/gangs.db')
+                        c = conn.cursor()
+                        c.execute('UPDATE gangs SET role_id = null WHERE name = ?', (gang[0],))
+                        conn.commit()
+                        conn.close()
+                        
+
+                members = " ".join(members)
+
+                conn = sqlite3.connect('./storage/databases/gangs.db')
+                c = conn.cursor()
+                c.execute('UPDATE gangs SET members = ? WHERE name = ?', (members, gang[0]))
+                conn.commit()
+                conn.close()
+                return
+                
+
+
+            elif member.id == gang[1]:
+                
+
+                if gang[3]:
+                    role = guild.get_role(gang[3])
+
+                    await role.delete(reason="Gang role deleted")
+
+                    conn = sqlite3.connect('./storage/databases/gangs.db')
+                    c = conn.cursor()
+                    c.execute('UPDATE gangs SET role_id = null WHERE name = ?', (gang[0],))
+                    conn.commit()
+                    conn.close()
+                
+                
+                if gang[4]:
+                    os.remove(gang[4])
+
+                conn = sqlite3.connect('./storage/databases/gangs.db')
+                c = conn.cursor()
+                c.execute('DELETE FROM gangs WHERE name = ?', (gang[0],))
+                conn.commit()
+                conn.close()
+                
+                
 def setup(client):
     client.add_cog(members(client))

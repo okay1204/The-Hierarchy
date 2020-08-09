@@ -22,6 +22,7 @@ import bottoken
 
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
+client.case_insensitive = True
 
 @client.event
 async def on_command_error(ctx, error):
@@ -141,14 +142,15 @@ async def on_ready():
     commands = list(map(lambda command: command.name, commands))
     commands.extend(aliases)
     client.every_command = commands
+
     
 
-    cogs_to_unload = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'polls', 'admin', 'reactions', 'timers', 'events']
+    cogs_to_unload = ['events']
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
 
 
-    # TODO: add all the cogs back afterward
+    # TODO: add all the cogs back afterward AND install all modules on server
     
     await leaderboard(client)
 

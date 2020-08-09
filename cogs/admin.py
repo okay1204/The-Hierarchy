@@ -692,8 +692,11 @@ class admin(commands.Cog):
         # Getting report cooldown
         conn = sqlite3.connect('./storage/databases/offenses.db')
         c = conn.cursor()
-        c.execute('SELECT reportc FROM offenses WHERE id = ?', (member.id,))
-        read_reportc = c.fetchone()[0]
+        try:
+            c.execute('SELECT reportc FROM offenses WHERE id = ?', (member.id,))
+            read_reportc = c.fetchone()[0]
+        except:
+            read_reportc = 0
         conn.close()
 
 

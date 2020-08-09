@@ -238,12 +238,19 @@ class actions(commands.Cog):
         if not member: 
             await ctx.send("Incorrect command usage:\n`.bail member`")
             return
-        
-        if not await bot_check(self.client, ctx, member):
-            return
 
+        # No heist jail check function here because of special command
         if member==author:
             await ctx.send("You can't bail yourself.")
+            return
+        
+        heist = open_heist()
+        if heist["heistv"] == ctx.author.id:
+            await ctx.send(f"You are currently being targeted for a heist.")
+            return
+
+        if ctx.author.id in heist["heistp"]:
+            await ctx.send(f"You are participating in a heist right now.")
             return
 
         jailtime = read_value(member.id, 'jailtime')
@@ -842,7 +849,7 @@ class actions(commands.Cog):
                 await ctx.send(f"You can only carry a maximum {storage} items. Do you want to discard the shop item you recieve automatically? (Yes/No)")
                 try:
                     answer = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == author, timeout=20)
-                    if answer.content.lower() == 'yes':
+                    if answer.content.lower() == 'yes' or answer.content.lower() == 'y':
                         skip = True
                     else:
                         await ctx.send('Reward not taken.')

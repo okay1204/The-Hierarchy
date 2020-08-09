@@ -1,12 +1,14 @@
 # pylint: disable=import-error
 
 import asyncio
-import json
 import random
+import json
 import sqlite3
 import time
 import os
 import datetime
+import aiohttp
+import re
 from sqlite3 import Error
 
 import discord
@@ -223,10 +225,190 @@ class fun(commands.Cog):
     
     @commands.group(invoke_without_command=True)
     async def gang(self, ctx):
-        await ctx.send("Incorrect command usage:\n`.gang create/settings/join/leave/disband`")
+        await ctx.send("Incorrect command usage:\n`.gang about/members/membersm/create/invite/uninvite/settings/leave/promote/kick/disband`")
 
     @gang.command()
-    async def create(self, ctx, name=None):
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def about(self, ctx, *, name=None):
+        
+        if not name:
+            conn = sqlite3.connect('./storage/databases/gangs.db')
+            c = conn.cursor()
+            c.execute('SELECT name, owner, members FROM gangs')
+            gangs = c.fetchall()
+            conn.close()
+
+            for gang in gangs:
+                if ctx.author.id == gang[1] or str(ctx.author.id) in gang[2].split():
+                    name = gang[0]
+                    break
+            
+            if not name:
+                await ctx.send("You are not in a gang.")
+                return
+
+
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        try:
+            c.execute('SELECT owner, description, created_at, role_id, color, img_location FROM gangs WHERE name = ?', (name,))
+            owner, description, created_at, role_id, color, img_location = c.fetchone()
+            conn.close()
+        except:
+            conn.close()
+            await ctx.send(f"There is no gang called {name}.")
+            return
+        
+        # Converts into hexadecimal
+        color = int(color, 16)
+        if not description:
+            description = "No description set."
+
+        guild = self.client.mainGuild
+        
+        if role_id:
+            role = guild.get_role(role_id)
+            description = f"Role: {role.mention}\n{description}"
+
+        # Convert string to datetime
+        created_at = datetime.datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S.%f')
+
+        embed = discord.Embed(color=color, title=name, description=description, timestamp=created_at)
+
+        owner = guild.get_member(owner)
+        embed.set_author(name=f"Owner: {owner.name}#{owner.discriminator}", icon_url=owner.avatar_url_as(static_format='jpg'))
+
+        embed.set_footer(text="Created at")
+
+        if img_location:
+            filename = img_location.split('/')[-1]
+            f = discord.File(img_location, filename=filename)
+            embed.set_image(url=f'attachment://{filename}')
+            await ctx.send(embed=embed, file=f)
+        else:
+            await ctx.send(embed=embed)
+
+    @gang.command()
+    async def members(self, ctx, *, name=None):
+        
+        if not name:
+            conn = sqlite3.connect('./storage/databases/gangs.db')
+            c = conn.cursor()
+            c.execute('SELECT name, owner, members FROM gangs')
+            gangs = c.fetchall()
+            conn.close()
+
+            for gang in gangs:
+                if ctx.author.id == gang[1] or str(ctx.author.id) in gang[2].split():
+                    name = gang[0]
+                    break
+            
+            if not name:
+                await ctx.send("You are not in a gang.")
+                return
+
+
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        try:
+            c.execute('SELECT owner, members, color, img_location FROM gangs WHERE name = ?', (name,))
+            owner, members, color, img_location = c.fetchone()
+            conn.close()
+        except:
+            conn.close()
+            await ctx.send(f"There is no gang called {name}.")
+            return
+        
+        # Converts into hexadecimal
+        color = int(color, 16)
+
+        guild = self.client.mainGuild
+
+        if members:
+            members = members.split()
+            members = list(map(lambda id: f"<@{id}>", members))
+            members = "\n".join(members)
+        else:
+            members = "No members."
+
+        embed = discord.Embed(color=color, title=name, description=members)
+
+        owner = guild.get_member(owner)
+        embed.set_author(name=f"Owner: {owner.name}#{owner.discriminator}", icon_url=owner.avatar_url_as(static_format='jpg'))
+
+        if img_location:
+            filename = img_location.split('/')[-1]
+            f = discord.File(img_location, filename=filename)
+            embed.set_image(url=f'attachment://{filename}')
+            await ctx.send(embed=embed, file=f)
+        else:
+            await ctx.send(embed=embed)
+        
+
+
+    @gang.command()
+    async def membersm(self, ctx, *, name=None):
+        
+        if not name:
+            conn = sqlite3.connect('./storage/databases/gangs.db')
+            c = conn.cursor()
+            c.execute('SELECT name, owner, members FROM gangs')
+            gangs = c.fetchall()
+            conn.close()
+
+            for gang in gangs:
+                if ctx.author.id == gang[1] or str(ctx.author.id) in gang[2].split():
+                    name = gang[0]
+                    break
+            
+            if not name:
+                await ctx.send("You are not in a gang.")
+                return
+
+
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        try:
+            c.execute('SELECT owner, members, color, img_location FROM gangs WHERE name = ?', (name,))
+            owner, members, color, img_location = c.fetchone()
+            conn.close()
+        except:
+            conn.close()
+            await ctx.send(f"There is no gang called {name}.")
+            return
+        
+        # Converts into hexadecimal
+        color = int(color, 16)
+
+        guild = self.client.mainGuild
+
+        if members:
+            members = members.split()
+            members = list(map(lambda id: f"**{guild.get_member(int(id)).name}**", members))
+            members = "\n".join(members)
+        else:
+            members = "No members."
+
+        embed = discord.Embed(color=color, title=name, description=members)
+
+        owner = guild.get_member(owner)
+        embed.set_author(name=f"Owner: {owner.name}#{owner.discriminator}", icon_url=owner.avatar_url_as(static_format='jpg'))
+
+        if img_location:
+            filename = img_location.split('/')[-1]
+            f = discord.File(img_location, filename=filename)
+            embed.set_image(url=f'attachment://{filename}')
+            await ctx.send(embed=embed, file=f)
+        else:
+            await ctx.send(embed=embed)
+        
+
+
+    @gang.command()
+    async def create(self, ctx, *, name=None):
         
         if not name:
             await ctx.send("Incorrect command usage:\n`.gang create gangname`")
@@ -234,26 +416,882 @@ class fun(commands.Cog):
         
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
-        try:
-            c.execute('INSERT INTO gangs (name, owner, created_at) VALUES (?, ?, ?)', (name, ctx.author.id, datetime.datetime.utcnow()))
-            conn.commit()
-        except Exception as e:
-
-            if str(e).endswith('name'):
+        c.execute('SELECT name, owner, members FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+        for gang in gangs:
+            if ctx.author.id == gang[1]:
+                await ctx.send("You already own a gang.")
+                return
+            
+            elif str(ctx.author.id) in gang[2].split():
+                await ctx.send("You are already in another gang.")
+                return
+            
+            elif name == gang[0]:
                 await ctx.send("A gang with that name already exists.")
+                return
+        
 
-            else:
-                await ctx.send("You already own another gang.")
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('INSERT INTO gangs (name, owner, created_at) VALUES (?, ?, ?)', (name, ctx.author.id, datetime.datetime.utcnow()))
+        conn.commit()
+        conn.close()
+        await ctx.send(f"Successfully created gang: **{name}**")
+
+    
+    @gang.command()
+    async def invite(self, ctx, member:discord.Member=None):
+
+
+        if not member:
+            await ctx.send("Incorrect command usage:\n`.gang invite member`")
+            return
+
+        if member == ctx.author:
+            await ctx.send("You can't invite yourself.")
+            return
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, members, all_invite, owner, img_location, color FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        gangname = None
+
+    
+
+        for gang in gangs:
+
+
+            if str(ctx.author.id) in gang[1].split() or ctx.author.id == gang[3]:
+
+                if str(member.id) in gang[1].split():
+                    await ctx.send("This user is already in your gang.")
+                    return
+
+                elif member.id == gang[3]:
+                    await ctx.send("This user is the owner of your gang.")
+                    return
+
+
+                if gang[2] == "True" or gang[3] == ctx.author.id:
+                    gangname = gang[0]
+                    img_location = gang[4]
+                    color = int(gang[5], 16)
+                else:
+                    await ctx.send("All invite is disabled for your gang.")
+                    return
+
+                break
+
+            elif str(member.id) in gang[1].split() or member.id == gang[3]:
+                await ctx.send("This user is already in another gang.")
+                return
+            
+        
+        if not gangname: 
+            await ctx.send("You are not in a gang.")
+            return
+
+        for gang in gangs:
+            
+            if (str(member.id) in gang[1].split() or member.id == gang[3]) and gang[0] != gangname:
+                await ctx.send("This user is already in another gang.")
+                return
+
+        for task in asyncio.all_tasks():
+            if task.get_name() == f'gang invite {ctx.author.id} {member.id}':
+                await ctx.send("You already sent an invite to this user.")
+                return
+        
+        asyncio.create_task(self.invite_req_task(ctx, member, gangname, img_location, color), name=f"gang invite {ctx.author.id} {member.id}")
+
+
+
+
+    async def invite_req_task(self, ctx, member, gangname, img_location, color):
+
+        embed = discord.Embed(color=color, title="Gang invite", description=f"To: {member.mention}\nFrom {ctx.author.mention}\nGang: {gangname}")
+
+
+        if img_location:
+            filename = img_location.split('/')[-1]
+            f = discord.File(img_location, filename=filename)
+            embed.set_image(url=f'attachment://{filename}')
+            message = await ctx.send(embed=embed, file=f)
+
         else:
-            await ctx.send(f"Successfully created gang: {name}")
-        finally:
+            message = await ctx.send(embed=embed)
+        await message.add_reaction('✅')
+        await message.add_reaction('❌')
+        try:
+            reaction, user = await self.client.wait_for('reaction_add', check=lambda reaction, user: (str(reaction.emoji) == '✅' or str(reaction.emoji) == '❌') and reaction.message.id == message.id and user == member, # noqa pylint: disable=unused-variable
+             timeout=300)
+        except asyncio.TimeoutError:
+            await ctx.send("Gang invite timed out.")
+            return
+
+        if str(reaction.emoji) == '✅':
+            conn = sqlite3.connect('./storage/databases/gangs.db')
+            c = conn.cursor()
+            c.execute('SELECT name, members, owner, role_id FROM gangs')
+            gangs = c.fetchall()
             conn.close()
+
+            for gang in gangs:
+                
+                if str(member.id) in gang[1].split() or member.id == gang[2]:
+                    await ctx.send("You already in a gang.")
+                    return
+
+                elif gang[0] == gangname:
+                    members = gang[1].split()
+                    role_id = gang[3]
+                    break
+                
+
+            members.append(str(member.id))
+            members = " ".join(members)
+            conn = sqlite3.connect('./storage/databases/gangs.db')
+            c = conn.cursor()
+            c.execute('UPDATE gangs SET members = ? WHERE name = ?', (members, gangname))
+            conn.commit()
+            conn.close()
+
+            await ctx.send(f"**{member.name}** joined **{gangname}**.")
+
+            if role_id:
+                guild = self.client.mainGuild
+                role = guild.get_role(role_id)
+
+                await member.add_roles(role)
+
+            
+            
+
+
+            
+        else:
+            await ctx.send(f"**{member.name}** denied the invite to **{gangname}**.")
+
+    @gang.command()
+    async def uninvite(self, ctx, member:discord.Member=None):
+        if not member:
+            await ctx.send("Incorrect command usage:\n`.gang uninvite member`")
+            return
+
+        for task in asyncio.all_tasks():
+            if task.get_name() == f'gang invite {ctx.author.id} {member.id}':
+                task.cancel()
+                await ctx.send(f"Invite to **{member.name}** cancelled.")
+                return
+        await ctx.send(f"You do not have a pending invite for **{member.name}**.")
 
     @gang.group(invoke_without_command=True)
     async def settings(self, ctx):
-        pass
+        await ctx.send("Incorrect command usage:\n`.gang settings rename/description/icon/role/color/allinvite`")
     
+    @settings.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def rename(self, ctx, *, name=None):
         
+        if not name:
+            await ctx.send("Incorrect command usage:\n`.gang settings name newname`")
+            return
+        
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, role_id FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+            
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send(f"You do not own the gang **{gang[0]}**.")
+                return
+
+            elif gang[0] == name:
+                await ctx.send(f"A gang called {name} already exists.")
+                return
+            
+            elif ctx.author.id == gang[1]:
+
+                if gang[3]:
+                    guild = self.client.mainGuild
+                    role = guild.get_role(gang[3])
+
+                    await role.edit(name=name)
+
+                conn = sqlite3.connect('./storage/databases/gangs.db')
+                c = conn.cursor()
+                c.execute('UPDATE gangs SET name = ? WHERE name = ?', (name, gang[0]))
+                conn.commit()
+                conn.close()
+
+
+                await ctx.send(f"Gang name updated from {gang[0]} to {name}.")
+                
+                return
+
+                
+            
+        await ctx.send("You are not in a gang.")
+
+
+    @settings.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def description(self, ctx, *, description=None):
+
+        if not description:
+            await ctx.send("Incorrect command usage:\n`.gang settings description newdescription`")
+            return
+        
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+            
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send(f"You do not own the gang **{gang[0]}**.")
+                return
+
+            
+            elif ctx.author.id == gang[1]:
+
+                conn = sqlite3.connect('./storage/databases/gangs.db')
+                c = conn.cursor()
+                c.execute('UPDATE gangs SET description = ? WHERE name = ?', (description, gang[0]))
+                conn.commit()
+                conn.close()
+
+                await ctx.send(f"Gang description successfully updated.")
+                
+                return
+
+                
+            
+        await ctx.send("You are not in a gang.")
+
+    
+    @settings.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def icon(self, ctx, *, image_link=None):
+
+        if not image_link and not ctx.message.attachments:
+            await ctx.send("Incorrect command usage:\n`.gang settings icon imagelink` or `.gang settings icon` *with the image attached.*\n`.gang settings icon delete` to delete icon.")
+            return
+        
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, img_location FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+            
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send(f"You do not own the gang **{gang[0]}**.")
+                return
+
+            
+            elif ctx.author.id == gang[1]:
+
+                if image_link:
+
+                    if image_link.lower() == 'delete':
+                        conn = sqlite3.connect('./storage/databases/gangs.db')
+                        c = conn.cursor()
+                        c.execute('SELECT img_location FROM gangs WHERE name = ?', (gang[0],))
+
+                        img_location = c.fetchone()[0]
+
+                        if not img_location:
+                            conn.close()
+                            await ctx.send("Your gang does not have an icon saved.")
+                            return
+                        
+
+                        c.execute('UPDATE gangs SET img_location = null WHERE name = ?', (gang[0],))
+                        conn.commit()
+                        conn.close()
+
+                       
+
+                        os.remove(img_location)
+
+                        await ctx.send("Successfully deleted gang icon.")
+                        return
+                            
+                # to get a free file name
+
+                if not gang[3]:
+
+                    files = [f for f in os.listdir('./storage/images/gang-icons') if os.path.isfile(os.path.join('./storage/images/gang-icons', f))]
+                    files = list(map(lambda filename: os.path.splitext(filename)[0], files))
+                    
+                    save_path = gang[0].lower().replace(' ', '_')
+                    regex = re.compile('[^a-zA-Z1-9_]')
+
+                    save_path = regex.sub('', save_path)
+
+                    if save_path in files:
+                        number = 1
+                        save_path += f'({number})'
+                        while save_path in files:
+                            save_path = save_path.replace(f'({number})', f'({number+1})')
+                            number += 1
+
+                    save_path = f"./storage/images/gang-icons/{save_path}"
+                
+                else:
+                    
+                    save_path = os.path.splitext(gang[3])[0]
+                
+                
+
+
+                # to download the image
+
+                if image_link:
+
+                    try:
+                        async with aiohttp.ClientSession() as session:
+
+                            async with session.get(image_link) as resp:
+
+                                allowed_formats = ['png', 'jpg', 'jpeg', 'gif']
+                                allowed_formats = list(map(lambda extension: f"image/{extension}", allowed_formats))
+
+                                if resp.content_type not in allowed_formats:
+                                    await ctx.send("Only files with `.png`, `.jpg`, `jpeg`, and `gif` file extensions are supported.")
+                                    return
+
+                                data = await resp.read()
+
+                                img_location = f"{save_path}.{resp.content_type.split('/')[1]}"
+
+                                with open(img_location, "wb") as f:
+                                    f.write(data)
+                                    
+                    except aiohttp.client_exceptions.InvalidURL:
+                        await ctx.send("Invalid image link.")
+                        return
+
+                
+                else:
+                    image = ctx.message.attachments[0]
+                    if not image.filename.endswith(('png', 'jpg', 'jpeg', 'gif')):
+                        await ctx.send("Only files with `.png`, `.jpg`, `jpeg`, and `gif` file extensions are supported.")
+                        return
+
+                    img_location = save_path + os.path.splitext(image.filename)[1]
+
+                    await image.save(fp=img_location)
+                    
+
+
+                conn = sqlite3.connect('./storage/databases/gangs.db')
+                c = conn.cursor()
+                c.execute('UPDATE gangs SET img_location = ? WHERE name = ?', (img_location, gang[0]))
+                gangs = c.fetchall()
+                conn.commit()
+                conn.close()
+
+                await ctx.send(f"Gang icon successfully updated.")
+                
+                return
+
+                
+            
+        await ctx.send("You are not in a gang.")
+
+
+    @settings.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def role(self, ctx, action = ''):
+        
+        action = action.lower()
+
+        if action != 'create' and action != 'delete':
+            await ctx.send("Incorrect command usage:\n`.gang settings role create/delete`")
+            return
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, color, role_id FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+
+        for gang in gangs:
+            
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send(f"You do not own the gang **{gang[0]}**.")
+                return
+
+            
+            elif ctx.author.id == gang[1]:
+
+                members = gang[2].split()
+                
+    
+
+                guild = self.client.mainGuild
+
+                if action == 'create':
+
+                    # owner counts as one also
+                    if len(members) < 2:
+                        await ctx.send("You must have at least three members in your gang to create a role.")
+                        return
+
+                    if gang[4]:
+                        await ctx.send("You already have a gang role.")
+                        return
+
+                    color = discord.Color(int(gang[3], 16))
+                    role = await guild.create_role(reason="Gang role created", name=gang[0], color=color, mentionable=True)
+
+                    conn = sqlite3.connect('./storage/databases/gangs.db')
+                    c = conn.cursor()
+                    c.execute('UPDATE gangs SET role_id = ? WHERE name = ?', (role.id, gang[0]))
+                    conn.commit()
+                    conn.close()
+
+                    members.append(gang[1])
+                    members = list(map(lambda member: guild.get_member(int(member)), members))
+                    members = list(filter(lambda member: member, members))
+                    
+
+                    await ctx.send(f"Your gang role, {role.mention}, was successfully created.")
+
+                    for member in members:
+                        await member.add_roles(role)
+                
+                else:
+
+                    if not gang[4]:
+                        await ctx.send("Your gang does not have a role.")
+                        return
+
+                    role = guild.get_role(gang[4])
+                    await role.delete(reason="Gang role deleted")
+
+                    conn = sqlite3.connect('./storage/databases/gangs.db')
+                    c = conn.cursor()
+                    c.execute('UPDATE gangs SET role_id = null WHERE name = ?', (gang[0],))
+                    conn.commit()
+                    conn.close()
+
+                    await ctx.send(f"Your gang role has been deleted.")
+
+
+                
+                return
+
+                
+            
+        await ctx.send("You are not in a gang.")
+
+    @settings.command()
+    async def color(self, ctx, color=None):
+        
+
+        if not color:
+            await ctx.send("Incorrect command usage:\n`.gang settings color #ffffff`\nWhere `#ffffff` is the hex color code.")
+            return
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, role_id FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+            
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send(f"You do not own the gang **{gang[0]}**.")
+                return
+
+            
+            elif ctx.author.id == gang[1]:
+
+                color = color.replace('#', '')
+
+                if len(color) != 6:
+                    await ctx.send("Enter a valid hex color code.")
+                    return
+
+                try:
+                    color_code = int(color, 16)
+
+                    if color_code > 16777215 or color_code < 0: # Equivilant to ffffff
+                        await ctx.send("Enter a valid hex color code.")
+                        return
+
+                except:
+                    await ctx.send("Enter a valid hex color code.")
+                    return
+
+                conn = sqlite3.connect('./storage/databases/gangs.db')
+                c = conn.cursor()
+                c.execute('UPDATE gangs SET color = ? WHERE name = ?', (color, gang[0]))
+                conn.commit()
+                conn.close()
+
+
+
+                await ctx.send(f"Gang color set to #{color}.")
+
+                if gang[3]:
+                    guild = self.client.mainGuild
+                    role = guild.get_role(gang[3])
+                    
+                    await role.edit(color=discord.Color(color_code))
+                
+                return
+
+                
+            
+        await ctx.send("You are not in a gang.")
+
+    @settings.command()
+    async def allinvite(self, ctx, state=''):
+
+        state = state.lower()
+
+        if state != 'on' and state != 'off':
+            await ctx.send("Incorrect command usage:\n`.gang settings allinvite on/off`")
+            return
+
+        if state == 'on':
+            state = 'True'
+        else:
+            state = 'False'
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+            
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send(f"You do not own the gang **{gang[0]}**.")
+                return
+
+            
+            elif ctx.author.id == gang[1]:
+
+                conn = sqlite3.connect('./storage/databases/gangs.db')
+                c = conn.cursor()
+                c.execute('UPDATE gangs SET all_invite = ? WHERE name = ?', (state, gang[0]))
+                conn.commit()
+                conn.close()
+
+                if state == 'True':
+                    state = 'enabled'
+                else:
+                    state = 'disabled'
+
+                await ctx.send(f"All invite {state}.")
+                
+                return
+
+                
+            
+        await ctx.send("You are not in a gang.")
+
+        
+        
+
+
+    @gang.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def leave(self, ctx):
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, role_id FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+
+            if ctx.author.id == gang[1]:
+                await ctx.send("You own this gang.")
+                return
+
+
+            elif str(ctx.author.id) in gang[2].split():
+
+                await ctx.send(f"Are you sure you want to leave **{gang[0]}**? Respond with `yes` or `y` to proceed.")
+
+                try:
+                    response = await self.client.wait_for('message', check=lambda message: message.channel == ctx.channel and message.author == ctx.author, timeout=20)
+                except:
+                    await ctx.send("Leave cancelled due to inactivity.")
+                    return
+                
+                response = response.content.lower()
+
+                if response == 'yes' or response == 'y':
+
+                    conn = sqlite3.connect('./storage/databases/gangs.db')
+                    c = conn.cursor()
+                    c.execute('SELECT members FROM gangs WHERE name = ?', (gang[0],))
+
+                    members = c.fetchone()[0].split()
+                    members.remove(str(ctx.author.id))
+                    members = " ".join(members)
+
+                    c.execute('UPDATE gangs SET members = ? WHERE name = ?', (members, gang[0]))
+                    
+                    conn.commit()
+                    conn.close()
+
+                    await ctx.send(f"**{ctx.author.name}** has left **{gang[0]}**.")
+
+                    if gang[3]:
+                        guild = self.client.mainGuild
+                        role = guild.get_role(gang[3])
+
+                        await ctx.author.remove_roles(role)
+
+                        members = members.split()
+                        if len(members) < 2:
+                            await role.delete(reason="Gang role deleted")
+
+                            conn = sqlite3.connect('./storage/databases/gangs.db')
+                            c = conn.cursor()
+                            c.execute('UPDATE gangs SET role_id = null WHERE name = ?', (gang[0],))
+                            conn.commit()
+                            conn.close()
+
+                else:
+                    await ctx.send("Leave cancelled.")
+                
+                return
+
+
+        
+
+        await ctx.send("You are not in a gang.")
+
+    @gang.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def promote(self, ctx, member:discord.Member=None):
+
+        if not member:
+            await ctx.send("Incorrect command usage:\n`.gang promote member`")
+            return
+
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send("You do not own this gang.")
+                return
+
+
+            elif ctx.author.id == gang[1]:
+
+                members = gang[2].split()
+                if str(member.id) not in members:
+                    await ctx.send("This user is not in your gang.")
+                    return
+
+                await ctx.send(f"Are you sure you want to promote **{member.name}** to the gang owner? Respond with `yes` or `y` to proceed.")
+
+                try:
+                    response = await self.client.wait_for('message', check=lambda message: message.channel == ctx.channel and message.author == ctx.author, timeout=20)
+                except:
+                    await ctx.send("Promotion cancelled due to inactivity.")
+                    return
+                
+                response = response.content.lower()
+
+                if response == 'yes' or response == 'y':
+
+                    guild = self.client.mainGuild
+
+                    members.remove(str(member.id))
+                    members.append(str(ctx.author.id))
+                    
+                    members = " ".join(members)
+
+                    conn = sqlite3.connect('./storage/databases/gangs.db')
+                    c = conn.cursor()
+                    c.execute('UPDATE gangs SET members = ? WHERE name = ?', (members, gang[0]))
+                    c.execute('UPDATE gangs SET owner = ? WHERE name = ?', (member.id, gang[0]))
+                    conn.commit()
+                    conn.close()
+
+                    await ctx.send(f"**{member.name}** was promoted to the gang owner by **{ctx.author.name}**.")
+
+                else:
+                    await ctx.send("Kick cancelled.")
+                
+                return
+
+
+        
+
+        await ctx.send("You are not in a gang.")
+
+
+    @gang.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def kick(self, ctx, member:discord.Member=None):
+
+        if not member:
+            await ctx.send("Incorrect command usage:\n`.gang kick member`")
+            return
+
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, role_id FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send("You do not own this gang.")
+                return
+
+
+            elif ctx.author.id == gang[1]:
+
+                members = gang[2].split()
+                if str(member.id) not in members:
+                    await ctx.send("This user is not in your gang.")
+                    return
+
+                await ctx.send(f"Are you sure you want to kick **{member.name}** from the gang? Respond with `yes` or `y` to proceed.")
+
+                try:
+                    response = await self.client.wait_for('message', check=lambda message: message.channel == ctx.channel and message.author == ctx.author, timeout=20)
+                except:
+                    await ctx.send("Disband cancelled due to inactivity.")
+                    return
+                
+                response = response.content.lower()
+
+                if response == 'yes' or response == 'y':
+
+                    guild = self.client.mainGuild
+
+                    members.remove(str(member.id))
+
+                    if gang[3]: # role id
+
+                        role = guild.get_role(gang[3])
+
+                        await member.remove_roles(role)
+
+                        if len(members) < 2:
+                    
+                            await role.delete(reason="Gang role deleted")
+                    
+                    members = " ".join(members)
+
+                    conn = sqlite3.connect('./storage/databases/gangs.db')
+                    c = conn.cursor()
+                    c.execute('UPDATE gangs SET members = ? WHERE name = ?', (members, gang[0]))
+                    conn.commit()
+                    conn.close()
+
+                    await ctx.send(f"**{member.name}** was kicked from **{gang[0]}**.")
+
+                else:
+                    await ctx.send("Kick cancelled.")
+                
+                return
+
+
+        
+
+        await ctx.send("You are not in a gang.")
+
+
+    @gang.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def disband(self, ctx):
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members, role_id, img_location FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+
+            if str(ctx.author.id) in gang[2].split():
+                await ctx.send("You do not own this gang.")
+                return
+
+
+            elif ctx.author.id == gang[1]:
+
+                await ctx.send(f"Are you sure you want to disband **{gang[0]}**? Respond with the gang name to proceed.")
+
+                try:
+                    response = await self.client.wait_for('message', check=lambda message: message.channel == ctx.channel and message.author == ctx.author, timeout=20)
+                except:
+                    await ctx.send("Disband cancelled due to inactivity.")
+                    return
+                
+                response = response.content.lower()
+
+                if response == gang[0].lower():
+
+                    if gang[3]: # role id
+                        guild = self.client.mainGuild
+                        role = guild.get_role(gang[3])
+
+                        await role.delete(reason="Gang role deleted")
+                    
+                    if gang[4]:
+                        os.remove(gang[4])
+
+                    conn = sqlite3.connect('./storage/databases/gangs.db')
+                    c = conn.cursor()
+                    c.execute('DELETE FROM gangs WHERE name = ?', (gang[0],))
+                    conn.commit()
+                    conn.close()
+
+                    await ctx.send(f"The gang **{gang[0]}** has been disbanded.")
+
+                else:
+                    await ctx.send("Disband cancelled.")
+                
+                return
+
+
+        
+
+        await ctx.send("You are not in a gang.")
+
+
+        
+        
+
 
 
 def setup(client):

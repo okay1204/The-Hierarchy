@@ -143,10 +143,9 @@ class timers(commands.Cog):
             embed.add_field(name=f'{x}. ${newprice} - {stat[0].capitalize()} {stat[6]}', value=f'{stat[5]}', inline=False)
             x += 1
 
-
         await channel.send(text)
         shopchannel = self.client.get_channel(702654620291563600)
-        message = await shopchannel.fetch_message(717499489627275337)
+        message = await shopchannel.fetch_message(740680266086875243)
         await message.edit(embed=embed)
         conn.commit()
         conn.close()
@@ -172,6 +171,7 @@ class timers(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def eventtimer(self):
+
         embed = discord.Embed(color=0x442391)
 
         feechannel = self.client.get_channel(698322322834063430)
@@ -259,7 +259,7 @@ class timers(commands.Cog):
             newinfo["continue"] = "True"
             with open('./storage/jsons/wallet.json','w') as json_file:
                 json.dump(newinfo, json_file, indent=2)
-        
+
 
 
 def setup(client):

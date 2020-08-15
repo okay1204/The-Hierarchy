@@ -185,7 +185,7 @@ class info(commands.Cog):
         guild = self.client.mainGuild
 
         avatar = guild.get_member(member.id)
-        avatar = avatar.avatar_url_as(static_format='jpg',size=256)
+        avatar = avatar.avatar_url_as(static_format='jpg')
         embed = discord.Embed(color=0x4785ff)
 
 
@@ -219,7 +219,9 @@ class info(commands.Cog):
     @commands.command()
     async def around(self, ctx, find=None, member:discord.Member=None):
 
-        if not member: member = ctx.author
+        if not member: 
+            member = ctx.author
+        
 
         if not await bot_check(self.client, ctx, member):
             return
@@ -237,10 +239,6 @@ class info(commands.Cog):
             await ctx.send('Enter a number from 1-25 for `range`.')
             return
 
-        else:
-            member = ctx.author
-
-        author = ctx.author
 
 
         userid = member.id
@@ -274,7 +272,7 @@ class info(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg',size=256)
+        avatar = member.avatar_url_as(static_format='jpg')
         embed = discord.Embed(color=0xffd24a)
         embed.set_author(name=f"Around {member.name}",icon_url=avatar)
 
@@ -297,7 +295,7 @@ class info(commands.Cog):
 
         if find > 5:
             await ctx.send('Embed too large, check your DMs.')
-            await author.send(embed=embed)
+            await ctx.author.send(embed=embed)
 
         else:
             await ctx.send(embed=embed)
@@ -305,10 +303,13 @@ class info(commands.Cog):
     @commands.command()
     async def aroundm(self, ctx, find=None, member:discord.Member=None):
         
-        if not member: member = ctx.author
+        if not member: 
+            member = ctx.author
+        
 
         if not await bot_check(self.client, ctx, member):
             return
+
 
         if not find:
             find = 3
@@ -322,11 +323,6 @@ class info(commands.Cog):
         if find < 1 or find > 25:
             await ctx.send('Enter a number from 1-25 for `range`.')
             return
-
-        else:
-            member = ctx.author
-
-        author = ctx.author
 
 
         userid = member.id
@@ -360,7 +356,7 @@ class info(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg',size=256)
+        avatar = member.avatar_url_as(static_format='jpg')
         embed = discord.Embed(color=0xffd24a)
         embed.set_author(name=f"Around {member.name}",icon_url=avatar)
 
@@ -383,7 +379,7 @@ class info(commands.Cog):
 
         if find > 5:
             await ctx.send('Embed too large, check your DMs.')
-            await author.send(embed=embed)
+            await ctx.author.send(embed=embed)
 
         else:
             await ctx.send(embed=embed)

@@ -31,7 +31,14 @@ class premium(commands.Cog):
         if not ctx.author.premium_since:
             await ctx.send("You don't have __premium__. Get __premium__ by boosting the server!")
             return
+
+        with open('./storage/jsons/mode.json') as f:
+            mode = json.load(f)
             
+        if mode == "event":
+            await ctx.send("Premium perks are disabled during events.")
+            return
+
         boosts = read_value(author.id, 'boosts')
         if boosts <= 0:
             await ctx.send("You're don't have any boosts.")
@@ -60,7 +67,7 @@ class premium(commands.Cog):
             boosts = read_value(author.id, 'boosts')
             await ctx.send(f"⏱️ **{author.name}**'s boosts: {boosts}")
 
-        if not await bot_check(self.client, ctx, member):
+        elif not await bot_check(self.client, ctx, member):
             return
 
         else:

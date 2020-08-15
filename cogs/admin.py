@@ -1,4 +1,4 @@
-
+# pylint: disable=import-error
 
 import discord
 from discord.ext import commands
@@ -10,6 +10,13 @@ import asyncio
 from sqlite3 import Error
 from datetime import timezone 
 import os
+
+
+# To import from different path
+import sys
+sys.path.insert(1 , os.getcwd())
+
+from utils import timestring
 
 
 
@@ -28,19 +35,21 @@ def increment(userid, offense):
         c.execute(f'SELECT {offense} FROM offenses WHERE id = ?', (userid,))
         number = c.fetchone()[0]
     except:
+        warns = mutes = kicks = bans = 0
         if offense == 'warns':
             warns = 1
-            kicks = bans = 0
+
+        elif offense == 'mutes':
+            mutes = 1
 
         elif offense == 'kicks':
-            warns = bans = 0
             kicks = 1
 
         elif offense == 'bans':
-            warns = kicks = 0
             bans = 1
+        
 
-        c.execute('INSERT INTO offenses (id, warns, kicks, bans) VALUES (?, ?, ?, ?)', (userid, warns, kicks, bans))
+        c.execute('INSERT INTO offenses (id, warns, mutes, kicks, bans) VALUES (?, ?, ?, ?)', (userid, warns, mutes, kicks, bans))
 
     else:
         number += 1
@@ -65,12 +74,50 @@ class admin(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+        with open('./storage/jsons/mutes.json') as f:
+            mutes = json.load(f)
+        
+        for mute in mutes:
+
+            asyncio.create_task(self.wait_until_unmute(mute, mutes[mute]))
+    
+    def cog_unload(self):
+
+        for task in asyncio.all_tasks():
+            if task.get_name().startswith("unmute "):
+                task.cancel()
+
+    
+    async def wait_until_unmute(self, userid, duration):
+
+        duration = duration - int(time.time())
+        if duration < 0:
+            duration = 0
+
+
+        await asyncio.sleep(duration)
+
+        guild = self.client.mainGuild
+        mute_role = guild.get_role(743255783055163392)
+        member = guild.get_member(int(userid))
+
+        await member.remove_roles(mute_role)
+
+        with open('./storage/jsons/mutes.json') as f:
+            mutes = json.load(f)
+        
+        del mutes[userid]
+
+        with open(f'./storage/jsons/mutes.json', 'w') as f:
+            json.dump(mutes, f, indent=2)
+        
+
     @commands.command()
     @commands.has_any_role(*modroles)
     async def warn(self, ctx, member:discord.Member=None, reason="None", messageid=None, channel:discord.TextChannel=None):
 
         if not member:
-            await ctx.send("Incorrect command usage:\n`.warn member (reason) (messageid) (textchannel)`")
+            await ctx.send("Incorrect command usage:\n`.warn member \"(reason)\" (messageid) (textchannel)`")
             return
 
         author = ctx.author
@@ -94,9 +141,9 @@ class admin(commands.Cog):
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
         embed = discord.Embed(color=0xf56451, title=f"User Warned", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg',size=256)
+        member_avatar = member.avatar_url_as(static_format='jpg')
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg',size=256)
+        author_avatar = author.avatar_url_as(static_format='jpg')
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -146,9 +193,211 @@ class admin(commands.Cog):
 
     @commands.command()
     @commands.has_any_role(*modroles)
+    async def mute(self, ctx, member:discord.Member=None, duration=None, reason="None", messageid=None, channel:discord.TextChannel=None):
+
+        if not member or not duration:
+            await ctx.send("Incorrect command usage:\n`.mute member \"duration\" \"(reason)\" (messageid) (textchannel)`")
+            return
+        
+
+        seconds = timestring(duration)
+
+        if not seconds:
+            await ctx.send("Duration must be in this format: `1d 2h 3m 4s`")
+            return
+
+
+        author = ctx.author
+
+        if author.top_role <= member.top_role:
+            await ctx.send('This member has a higher or same role as you.')
+            return
+
+        #Grabbing next id
+
+        with open(f'./storage/jsons/auditcount.json') as json_file:
+            auditcount = json.load(json_file)
+
+        auditid = auditcount["count"]
+        auditcount["count"] += 1
+
+        with open(f'./storage/jsons/auditcount.json', 'w') as f:
+            json.dump(auditcount, f, indent=2)
+
+
+        #Building embed
+        datetime = str(ctx.message.created_at.utcnow())
+        embed = discord.Embed(color=0xf56451, title=f"User Muted", description=f"Reason: {reason}")
+        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
+        author_avatar = author.avatar_url_as(static_format='jpg')
+        embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
+        embed.add_field(name='User ID:', value=member.id, inline=True)
+        embed.add_field(name='Audit ID:', value=auditid, inline=True)
+        embed.add_field(name='Duration', value=duration, inline=True)
+        if messageid != None:
+            try:
+                if channel == None:
+                    message = await ctx.channel.fetch_message(messageid)
+                else:
+                    message = await channel.fetch_message(messageid)
+                content = message.content
+                embed.add_field(name='Message ID:', value=messageid, inline=True)
+            except:
+                content = "Error: Message not found"
+                pass
+        else:
+            content = None
+        await ctx.send(embed=embed)
+        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        audit_log_channel = self.client.get_channel(723339632145596496)
+        await audit_log_channel.send(embed=embed)
+
+        guild = self.client.mainGuild
+        mute_role = guild.get_role(743255783055163392)
+
+        await member.add_roles(mute_role)
+
+        # Saving when mute will end
+
+        with open(f'./storage/jsons/mutes.json') as f:
+            mutes = json.load(f)
+
+        time_to_mute = int(time.time()) + seconds
+        mutes[str(member.id)] = time_to_mute
+
+        with open(f'./storage/jsons/mutes.json','w') as f:
+            json.dump(mutes, f, indent=2)
+
+        asyncio.create_task(self.wait_until_unmute(str(member.id), time_to_mute), name=f"unmute {member.id}")
+
+
+
+        #Saving mute data
+        try:
+            with open(f'./storage/member-audits/{member.id}.json') as json_file:
+                audits = json.load(json_file)
+            
+            with open(f'./storage/member-audits/{member.id}.json','w') as f:
+                    
+                if content == None:
+                    audits.append({'audit id':auditid, 'action':'mute', 'duration': duration, 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url})
+                    json.dump(audits, f, indent=2)
+                else:
+                    audits.append({'audit id':auditid, 'action':'mute', 'duration': duration, 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url, 'message content':content})
+                    json.dump(audits, f, indent=2)
+        except: 
+
+            with open(f'./storage/member-audits/{member.id}.json','w') as f:
+                if content == None:
+                    json.dump([{'audit id':auditid, 'action':'mute', 'duration': duration, 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url}], f, indent=2)
+                else:
+                    json.dump([{'audit id':auditid, 'action':'mute', 'duration': duration, 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url, 'message content':content}], f, indent=2)
+        
+        #Adding to count
+        increment(member.id, 'mutes')
+
+    @commands.command()
+    @commands.check(modChannel)
+    @commands.has_any_role(*modroles)
+    async def unmute(self, ctx, member:discord.Member=None, *, reason="None"):
+        
+        if not member:
+            await ctx.send("Incorrect command usage:\n`.unmute member \"(reason)\" (messageid) (textchannel)`")
+            return
+        
+
+        author = ctx.author
+
+        if author.top_role <= member.top_role:
+            await ctx.send('This member has a higher or same role as you.')
+            return
+
+        # Checking if not muted
+
+        with open(f'./storage/jsons/mutes.json') as f:
+            mutes = json.load(f)
+
+        if str(member.id) not in mutes:
+            await ctx.send("This user is not muted.")
+            return
+
+        #Grabbing next id
+
+        with open(f'./storage/jsons/auditcount.json') as json_file:
+            auditcount = json.load(json_file)
+
+        auditid = auditcount["count"]
+        auditcount["count"] += 1
+
+        with open(f'./storage/jsons/auditcount.json', 'w') as f:
+            json.dump(auditcount, f, indent=2)
+
+
+        #Building embed
+        datetime = str(ctx.message.created_at.utcnow())
+        embed = discord.Embed(color=0xf56451, title=f"User Unmuted", description=f"Reason: {reason}")
+        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
+        author_avatar = author.avatar_url_as(static_format='jpg')
+        embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
+        embed.add_field(name='User ID:', value=member.id, inline=True)
+        embed.add_field(name='Audit ID:', value=auditid, inline=True)
+
+        await ctx.send(embed=embed)
+        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        audit_log_channel = self.client.get_channel(723339632145596496)
+        await audit_log_channel.send(embed=embed)
+
+        guild = self.client.mainGuild
+        mute_role = guild.get_role(743255783055163392)
+
+        await member.remove_roles(mute_role)
+
+        # Removing mute duration
+
+        with open(f'./storage/jsons/mutes.json') as f:
+            mutes = json.load(f)
+
+        del mutes[str(member.id)]
+
+        with open(f'./storage/jsons/mutes.json','w') as f:
+            json.dump(mutes, f, indent=2)
+
+        # Cancelling unmute task, if any
+
+        for task in asyncio.all_tasks():
+            if task.get_name() == f'unmute {member.id}':
+                task.cancel()
+                break
+
+
+
+        #Saving unmute data
+        try:
+            with open(f'./storage/member-audits/{member.id}.json') as json_file:
+                audits = json.load(json_file)
+            
+            with open(f'./storage/member-audits/{member.id}.json','w') as f:
+                    
+                audits.append({'audit id':auditid, 'action':'unmute', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url})
+                json.dump(audits, f, indent=2)
+        except: 
+
+            with open(f'./storage/member-audits/{member.id}.json','w') as f:
+
+                json.dump([{'audit id':auditid, 'action':'unmute', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url}], f, indent=2)
+        
+
+        
+
+        
+
+    @commands.command()
+    @commands.has_any_role(*modroles)
     async def kick(self, ctx, member:discord.Member=None, reason="None", messageid=None, channel:discord.TextChannel=None):
         if not member:
-            await ctx.send("Incorrect command usage:\n`.kick member (reason) (messageid) (textchannel)`")
+            await ctx.send("Incorrect command usage:\n`.kick member \"(reason)\" (messageid) (textchannel)`")
             return
 
         author = ctx.author
@@ -172,9 +421,9 @@ class admin(commands.Cog):
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
         embed = discord.Embed(color=0xf56451, title=f"User Kicked", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg',size=256)
+        member_avatar = member.avatar_url_as(static_format='jpg')
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg',size=256)
+        author_avatar = author.avatar_url_as(static_format='jpg')
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -231,7 +480,7 @@ class admin(commands.Cog):
     @commands.has_any_role(*modroles)
     async def ban(self, ctx, member:discord.Member=None, reason="None", messageid=None, daysdelete=0, channel:discord.TextChannel=None):
         if not member:
-            await ctx.send("Incorrect command usage:\n`.ban member (reason) (messageid) (daystodelete) (textchannel)`")
+            await ctx.send("Incorrect command usage:\n`.ban member (reason) \"(messageid)\" (daystodelete) (textchannel)`")
             return
 
         author = ctx.author
@@ -265,9 +514,9 @@ class admin(commands.Cog):
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
         embed = discord.Embed(color=0xf56451, title=f"User Banned", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg',size=256)
+        member_avatar = member.avatar_url_as(static_format='jpg')
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg',size=256)
+        author_avatar = author.avatar_url_as(static_format='jpg')
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -320,7 +569,7 @@ class admin(commands.Cog):
     @commands.command()
     @commands.check(modChannel)
     @commands.has_any_role(*modroles)
-    async def unban(self, ctx, member:int=None, reason="None"):
+    async def unban(self, ctx, member:int=None, *, reason="None"):
 
         if not member:
             await ctx.send("Incorrect command usage:\n`.unban member (reason)`")
@@ -364,10 +613,10 @@ class admin(commands.Cog):
 
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
-        embed = discord.Embed(color=0xf56451, title=f"User unbanned", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg',size=256)
+        embed = discord.Embed(color=0xf56451, title=f"User Unbanned", description=f"Reason: {reason}")
+        member_avatar = member.avatar_url_as(static_format='jpg')
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg',size=256)
+        author_avatar = author.avatar_url_as(static_format='jpg')
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -433,7 +682,7 @@ class admin(commands.Cog):
                 audit = audit[::-1]
                 for pairs in audit:
                     embed = discord.Embed(color=0xf56451)
-                    memberavatar = member.avatar_url_as(static_format='jpg',size=256)
+                    memberavatar = member.avatar_url_as(static_format='jpg')
                     embed.set_author(name=f'{member.name} (Page: {page}/{pages})', icon_url=memberavatar)
                     for cur_audit in pairs:
                         if cur_audit != "message content":
@@ -443,9 +692,8 @@ class admin(commands.Cog):
                         else:
                             embed.add_field(name=cur_audit, value=pairs[cur_audit][0:1024])
                     await ctx.send(embed=embed)
-            except Exception as e:
+            except:
                 await ctx.send('This member does not have that many pages.')
-                print(e)
 
         except:
             await ctx.send('Member has no audit history.')
@@ -463,6 +711,10 @@ class admin(commands.Cog):
         #Fetching member
         try:
             member = await commands.MemberConverter().convert(ctx, member)
+
+            if ctx.author.top_role <= member.top_role:
+                await ctx.send('This member has a higher or same role as you.')
+                return
         except:
             try:
                 member = int(member)
@@ -471,9 +723,6 @@ class admin(commands.Cog):
                 await ctx.send('Member not found.')
                 return
 
-        if ctx.author.top_role <= member.top_role:
-            await ctx.send('This member has a higher or same role as you.')
-            return
 
         #Verifying audit id
         try:
@@ -539,17 +788,20 @@ class admin(commands.Cog):
         conn = sqlite3.connect('./storage/databases/offenses.db')
         c = conn.cursor()
         try:
-            c.execute('SELECT warns, kicks, bans FROM offenses WHERE id = ?', (member.id,))
-            warns, kicks, bans = c.fetchone()
+            c.execute('SELECT warns, kicks, bans, mutes FROM offenses WHERE id = ?', (member.id,))
+            warns, kicks, bans, mutes = c.fetchone()
         except:
-            warns = kicks = bans = 0
+            warns = kicks = bans = mutes = 0
         conn.close()
 
-        await ctx.send(f'{member.name}#{member.discriminator} offense count:\nWarns: {warns}\nKicks: {kicks}\nBans: {bans}')
+        await ctx.send(f'{member.name}#{member.discriminator} offense count:\nWarns: {warns}\nKicks: {kicks}\nBans: {bans}\nMutes: {mutes}')
 
     @commands.command()
     @commands.has_any_role(*modroles)
-    async def purge(self, ctx, amount=5, channel:discord.TextChannel=None):
+    async def purge(self, ctx, amount=None, channel:discord.TextChannel=None):
+        if not amount:
+            amount = 5
+
         try:
             amount = int(amount)
         except:
@@ -653,9 +905,9 @@ class admin(commands.Cog):
         #Building and sending embed
         embed = discord.Embed(color=0xf56451, title="User Reported", description=f"Reason: {reason}")
         datetime = str(ctx.message.created_at.utcnow())
-        member_avatar = member.avatar_url_as(static_format='jpg',size=256)
+        member_avatar = member.avatar_url_as(static_format='jpg')
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg',size=256)
+        author_avatar = author.avatar_url_as(static_format='jpg')
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)

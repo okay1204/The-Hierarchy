@@ -17,7 +17,7 @@ class reactions(commands.Cog):
         user = payload.user_id
         user = guild.get_member(user)
 
-        if user == client.user:
+        if user.id == self.client.user.id:
             return
 
 
@@ -122,20 +122,23 @@ class reactions(commands.Cog):
 
 
             # Prevent 2 reactions on one message
-            selfrole = client.get_channel(725065871554510848)
+            selfrole = self.client.get_channel(725065871554510848)
             message = await selfrole.fetch_message(payload.message_id)
             for reaction in message.reactions:
                 if str(reaction.emoji) != str(payload.emoji):
-                    await client.http.remove_reaction(payload.channel_id, payload.message_id, reaction.emoji, payload.user_id)
+                    await self.client.http.remove_reaction(payload.channel_id, payload.message_id, reaction.emoji, payload.user_id)
 
-    @client.event
+    @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
+
+
         guild = self.client.mainGuild
         user = payload.user_id
         user = guild.get_member(user)
 
-        if user == self.client.user:
-            return
+        if user:
+            if user.id == self.client.user.id:
+                return
         
         if payload.message_id == 716819696346857524: # Ping roles
 

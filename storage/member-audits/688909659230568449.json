@@ -1,0 +1,171 @@
+[
+  {
+    "audit id": 9,
+    "action": "mute",
+    "reason": "None",
+    "date": "2020-08-13 00:40:39.303218",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950055602094130/743267741615652978"
+  },
+  {
+    "audit id": 10,
+    "action": "mute",
+    "reason": "test",
+    "date": "2020-08-13 00:55:21.947065",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950055602094130/743271444011810957"
+  },
+  {
+    "audit id": 11,
+    "action": "unmute",
+    "reason": "test",
+    "date": "2020-08-13 00:56:14.645872",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950055602094130/743271665068146708"
+  },
+  {
+    "audit id": 12,
+    "action": "mute",
+    "reason": "None",
+    "date": "2020-08-13 17:30:44.365603",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743521937438933062"
+  },
+  {
+    "audit id": 13,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-08-13 17:33:31.610732",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743522638722367572"
+  },
+  {
+    "audit id": 14,
+    "action": "mute",
+    "duration": "20s",
+    "reason": "None",
+    "date": "2020-08-13 17:35:38.379994",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743523170706784276"
+  },
+  {
+    "audit id": 15,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-08-13 17:35:47.424583",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743523208593932347"
+  },
+  {
+    "audit id": 16,
+    "action": "mute",
+    "duration": "20s",
+    "reason": "None",
+    "date": "2020-08-13 17:36:34.694183",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743523406561148971"
+  },
+  {
+    "audit id": 17,
+    "action": "mute",
+    "duration": "5s",
+    "reason": "None",
+    "date": "2020-08-13 17:37:44.802456",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743523700565082194"
+  },
+  {
+    "audit id": 18,
+    "action": "mute",
+    "duration": "1m",
+    "reason": "None",
+    "date": "2020-08-13 17:40:34.215502",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743524410597834882"
+  },
+  {
+    "audit id": 19,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-08-13 17:43:05.670791",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743525046861037588"
+  },
+  {
+    "audit id": 20,
+    "action": "mute",
+    "duration": "1m",
+    "reason": "None",
+    "date": "2020-08-13 17:43:08.796432",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743525059917905970"
+  },
+  {
+    "audit id": 21,
+    "action": "mute",
+    "duration": "2s",
+    "reason": "None",
+    "date": "2020-08-13 17:54:01.464754",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743527797024096307"
+  },
+  {
+    "audit id": 22,
+    "action": "mute",
+    "duration": "2s",
+    "reason": "None",
+    "date": "2020-08-13 17:54:13.556886",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743527848173633607"
+  },
+  {
+    "audit id": 23,
+    "action": "mute",
+    "duration": "2s",
+    "reason": "None",
+    "date": "2020-08-13 17:54:51.734907",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743528008299708416"
+  },
+  {
+    "audit id": 24,
+    "action": "mute",
+    "duration": "2s",
+    "reason": "None",
+    "date": "2020-08-13 17:56:55.873018",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743528528980738110"
+  },
+  {
+    "audit id": 25,
+    "action": "mute",
+    "duration": "10s",
+    "reason": "None",
+    "date": "2020-08-13 17:57:03.212585",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743528559372665003"
+  },
+  {
+    "audit id": 26,
+    "action": "mute",
+    "duration": "1m",
+    "reason": "None",
+    "date": "2020-08-13 17:57:18.983778",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743528625696931942"
+  },
+  {
+    "audit id": 27,
+    "action": "mute",
+    "duration": "1m",
+    "reason": "None",
+    "date": "2020-08-13 18:26:51.826060",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743536061371777067"
+  },
+  {
+    "audit id": 28,
+    "action": "mute",
+    "duration": "1m",
+    "reason": "None",
+    "date": "2020-08-13 18:27:30.809991",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743536224916209696"
+  },
+  {
+    "audit id": 29,
+    "action": "mute",
+    "duration": "1m",
+    "reason": "None",
+    "date": "2020-08-13 18:29:01.190623",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743536604173565963"
+  },
+  {
+    "audit id": 30,
+    "action": "mute",
+    "duration": "30m",
+    "reason": "None",
+    "date": "2020-08-13 18:33:35.716183",
+    "jump link": "https://discordapp.com/channels/692906379203313695/692950118978027540/743537755719467048"
+  }
+]

@@ -18,7 +18,7 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import (read_value, write_value, update_total, leaderboard,
 rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use)
+remove_item, remove_use, add_item, write_heist, add_use, level_check)
 
 async def heist_group_jailcheck(ctx):
 
@@ -68,10 +68,18 @@ class actions(commands.Cog):
 
         flag = 0
 
-        if ctx.author.premium_since:
+        with open('./storage/jsons/mode.json') as f:
+            mode = json.load(f)
+
+        if ctx.author.premium_since and mode != "event":
             premium = True
         else:
             premium = False
+
+        if ctx.author.premium_since and mode == "event":
+            await ctx.send("*Premium perks are disabled during events*")
+            await asyncio.sleep(2)
+
         for x in range(5):
             if x >= 3 and not premium:
                 break
@@ -230,7 +238,20 @@ class actions(commands.Cog):
 
     @commands.command()
     async def bail(self, ctx, member:discord.Member=None):
+
         author = ctx.author
+
+        if not await level_check(ctx, author.id, 2, "bail someone"):
+            return
+
+        if member==author:
+            await ctx.send("You can't bail yourself.")
+
+            if 'pass' in read_value(author.id, 'items').split():
+                await asyncio.sleep(2)
+                await ctx.send("*Have a pass? Use the command `.use pass` to use it.*")
+
+            return
 
         if not await jail_heist_check(ctx, ctx.author):
             return
@@ -240,9 +261,6 @@ class actions(commands.Cog):
             return
 
         # No heist jail check function here because of special command
-        if member==author:
-            await ctx.send("You can't bail yourself.")
-            return
         
         heist = open_heist()
         if heist["heistv"] == ctx.author.id:
@@ -312,15 +330,45 @@ class actions(commands.Cog):
         if money < amount:
             await ctx.send("You don't have enough money for that.")
         else:
+            with open('./storage/jsons/mode.json') as f:
+                mode = json.load(f)
+
             money -= amount
             write_value(author.id, 'money', money)
             update_total(author.id)
+
+            # Make sure does not count towards event progress
+            if mode == "event":
+                conn = sqlite3.connect('./storage/databases/events.db')
+                c = conn.cursor()
+                c.execute('SELECT total FROM members WHERE id = ?', (author.id,))
+                total = c.fetchone()[0]
+                total -= amount
+                c.execute('UPDATE members SET total = ? WHERE id = ?', (total, author.id))
+                conn.commit()
+                conn.close()
+
+
             money = read_value(member.id, 'money')
             money += amount
             write_value(member.id, 'money', money)
+
+            if mode == "event":
+                conn = sqlite3.connect('./storage/databases/events.db')
+                c = conn.cursor()
+                c.execute('SELECT total FROM members WHERE id = ?', (member.id,))
+                total = c.fetchone()[0]
+                total += amount
+                c.execute('UPDATE members SET total = ? WHERE id = ?', (total, member.id))
+                conn.commit()
+                conn.close()
+
+
+
             update_total(author.id)
             update_total(member.id)
             await ctx.send(f"**{author.name}** payed **{member.name}** ${amount}.")
+
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
         await rolecheck(self.client, member.id)
@@ -428,10 +476,11 @@ class actions(commands.Cog):
     async def deposit(self, ctx, amount=None):
         author = ctx.author
         
-        
+        if not await level_check(ctx, author.id, 2, "use the bank"):
+            return
+
         if not await jail_heist_check(ctx, ctx.author):
             return
-        
 
         bankc = read_value(author.id, 'bankc')
         if bankc > time.time():
@@ -477,6 +526,9 @@ class actions(commands.Cog):
     @commands.command(aliases=['with'])
     async def withdraw(self, ctx, amount=None):
         author = ctx.author
+
+        if not await level_check(ctx, author.id, 2, "use the bank"):
+            return
 
         if not await jail_heist_check(ctx, ctx.author):
             return        
@@ -648,8 +700,12 @@ class actions(commands.Cog):
         write_heist(heist)
 
     @commands.command(aliases=['purchase'])
+    @commands.max_concurrency(1, per=commands.BucketType.member)
     async def buy(self, ctx, item=None):
         author = ctx.author
+
+        if not await level_check(ctx, author.id, 4, "use items"):
+            return
 
         if not await jail_heist_check(ctx, ctx.author):
             return
@@ -661,11 +717,11 @@ class actions(commands.Cog):
          
         conn = sqlite3.connect('./storage/databases/shop.db')
         c = conn.cursor()
-        c.execute('SELECT name, price FROM shop')
+        c.execute('SELECT name, price, article FROM shop')
         temp = c.fetchall()
         conn.close()
 
-        items = list(map(lambda x: {'name':x[0], 'cost':x[1]}, temp))
+        items = list(map(lambda x: {'name':x[0], 'cost':x[1], 'article': x[2]}, temp))
 
         for x in items:
 
@@ -673,36 +729,70 @@ class actions(commands.Cog):
 
                 money = read_value(author.id, 'money')
                 if money < x["cost"]:
-                    await ctx.send("You don't have enough money for that.")
-                    return
+                    
+                    bank = read_value(author.id, 'bank')
+                    if bank + money >= x["cost"] and read_value(author.id, 'bankc') < time.time():
+                        missing = x["cost"] - money
+                        await ctx.send(f"Would you like to automatically withdraw the missing ${missing} from your bank? Respond with `yes` or `y` to proceed.")
+
+                        try:
+                            response = await self.client.wait_for('message', check=lambda msg: msg.author == author and msg.channel == ctx.channel, timeout=20)
+                        except asyncio.TimeoutError:
+                            await ctx.send("Bank withdrawal timed out.")
+                            return
+                        
+                        response = response.content.lower()
+                        if response == 'yes' or response == 'y':
+                            bank -= missing
+                            money += missing
+                            write_value(author.id, 'bank', bank)
+                            write_value(author.id, 'money', money)
+                            write_value(author.id, 'bankc', 600)
+                            await ctx.send(f"Withdrawed ${missing} from your bank.")
+                            await asyncio.sleep(1)
+
+                        else:
+                            await ctx.send("Bank withdrawal cancelled.")
+                            return
+                        
+
+                    else:
+                        await ctx.send("You don't have enough money for that.")
+                        return
+
                 storage = read_value(author.id, 'storage')
 
                 if len(read_value(author.id, 'items').split()) >= storage:
-                    await ctx.send(f"You can only carry a maximum {storage} items.")
+                    await ctx.send(f"You can only carry a maximum of {storage} items.")
                     return
 
                 money -= x["cost"]
                 write_value(author.id, 'money', money)
                 update_total(author.id)
                 add_item(x['name'], author.id)
-                await ctx.send(f"**{author.name}** purchased a **{x['name']}** for ${x['cost']}.")
+                await ctx.send(f"**{author.name}** purchased {x['article']}**{x['name']}** for ${x['cost']}.")
                 await rolecheck(self.client, author.id)
                 await leaderboard(self.client)
                 return
             
-        await ctx.send(f"There is no such item called {item}.")
+        await ctx.send(f"There is no such item called \"{item}\".")
 
 
     @commands.command()
     async def use(self, ctx, item=None):
         author = ctx.author
 
+        if not await level_check(ctx, author.id, 4, "use items"):
+            return
+
         jailtime = read_value(author.id, 'jailtime')     
         # Don't use checks here because pass is an exception   
-        if item.lower() != 'pass':
-            if jailtime > time.time():
-                await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
-                return
+
+        if item:
+            if item.lower() != 'pass':
+                if jailtime > time.time():
+                    await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
+                    return
 
         heist = open_heist()
         if heist["heistv"] == author.id:
@@ -716,48 +806,63 @@ class actions(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.use item`")
             return
             
-        items = []
         conn = sqlite3.connect('./storage/databases/shop.db')
         c = conn.cursor()
-        c.execute('SELECT name FROM shop')
-        temp = c.fetchall()
+        c.execute('SELECT name, article FROM shop')
+        items = c.fetchall()
         conn.close()
 
-        items = list(map(lambda x: x[0], temp))
+        items = list(map(lambda x: {'name': x[0], 'article': x[1]}, items))
 
         item = item.lower()
-        if item not in items:
-            await ctx.send(f"There is no such item called {item}.")
+
+        exists = False
+        for shopitem in items:
+            if item in shopitem.values():
+                exists = True
+                break
+
+        if not exists:
+            await ctx.send(f"There is no such item called \"{item}\".")
             return
 
-        elif item not in read_value(author.id, 'items').split():
-            await ctx.send(f"You do not own a **{item}**.")
+        for shopitem in items:
+            if item == shopitem['name']:
+                article = shopitem['article']
+                break
+
+        if item not in read_value(author.id, 'items').split():
+            await ctx.send(f"You do not own {article}**{item}**.")
             return
 
         if item in in_use(author.id):
-            await ctx.send(f"You already have a **{item}** in use.")
+            await ctx.send(f"You already have {article}**{item}** in use.")
             return
+
 
         if item == 'padlock':
             timer = int(time.time()) + 172800
             add_use('padlock', timer, author.id)
             remove_item('padlock', author.id)
-            await ctx.send(f"**{author.name}** used a **{item}**.")
+            await ctx.send(f"**{author.name}** used a **padlock**.")
 
-        if item == 'gun':
+
+        elif item == 'gun':
             timer = int(time.time()) + 46800
             add_use('gun', timer, author.id)
             remove_item('gun', author.id)
-            await ctx.send(f"**{author.name}** used a **{item}**.")
+            await ctx.send(f"**{author.name}** used a **gun**.")
 
-        if item == 'backpack':
+
+        elif item == 'backpack':
             storage = read_value(author.id, 'storage')
             storage += 1
             write_value(author.id, 'storage', storage)
             remove_item('backpack', author.id)
-            await ctx.send(f"**{author.name}** used a **{item}**.\nYou can now carry up to {storage} items.")
+            await ctx.send(f"**{author.name}** used a **backpack**.\nYou can now carry up to {storage} items.")
+            
 
-        if item.lower() == 'pass':
+        elif item == 'pass':
             jailtime = read_value(author.id, 'jailtime')
             if jailtime < time.time():
                 await ctx.send('You are not in jail.')
@@ -772,12 +877,53 @@ class actions(commands.Cog):
                     write_value(author.id, 'money', money)
                     write_value(author.id, 'jailtime', int(time.time()))
                     remove_item('pass', author.id)
-                    await ctx.send(f"**{author.name}** used **{item.capitalize()}**.")
+                    await ctx.send(f"**{author.name}** used a **pass**.")
                     await ctx.send(f'💸 You bailed yourself for ${bailprice}. 💸')
+        
+        elif item == 'handcuffs':
+            
+            await ctx.send("Who do you want to handcuff?")
+            try:
+                member = await self.client.wait_for('message', check=lambda x: x.channel == ctx.channel and x.author == ctx.author, timeout=20)
+            except asyncio.TimeoutError:
+                await ctx.send("Handcuff timed out.")
+                return
+
+            member = member.content.lower()
+
+            member = await commands.MemberConverter().convert(ctx, member)
+    
+            if not member:
+                await ctx.send("Member not found.")
+                return
+            
+            elif author == member:
+                await ctx.send("You can't handcuff yourself.")
+                return
+            
+            elif read_value(member.id, 'jailtime') > time.time():
+                await ctx.send("This user is already in jail.")
+                return
+
+            remove_item('handcuffs', author.id)
+
+            if random.randint(1, 10) > 3:
+                random_time = int(time.time()) + random.randint(5400, 7200) # 1h 30m to 2h
+                write_value(member.id, 'jailtime', random_time)
+                await ctx.send(f"You successfully jailed **{member.name}** for {splittime(random_time)}.")
+            
+            else:
+                random_time = int(time.time()) + random.randint(600, 1800) # 10m to 30m
+                write_value(author.id, 'jailtime', random_time)
+                await ctx.send(f"Your plan backfired and you got jailed for {splittime(random_time)}!")    
+    
+            
+
 
     @commands.command()
     async def discard(self, ctx, item=None):
         author = ctx.author
+
         
         if not await jail_heist_check(ctx, ctx.author):
             return
@@ -833,7 +979,11 @@ class actions(commands.Cog):
                 await ctx.send(f"You've earned ${reward}. Come back tomorrow for ${nextreward}!\n*Current streak: {streak}*")
             
             else:
-                await ctx.send(f"You've earned ${reward}. Come back tomorrow for ${nextreward}, along with a random shop item!\n*Current streak: {streak}*")
+                level = read_value(author.id, 'level')
+                if level >= 4:
+                    await ctx.send(f"You've earned ${reward}. Come back tomorrow for ${nextreward}, along with a random shop item!\n*Current streak: {streak}*")
+                else:
+                    await ctx.send(f"You've earned ${reward}. Come back tomorrow for ${nextreward}!\n*Current streak: {streak}*")
 
             money = read_value(author.id, 'money')
             money += reward
@@ -845,35 +995,40 @@ class actions(commands.Cog):
 
             skip = False
             storage = read_value(author.id, 'storage')
-            if len(read_value(author.id, 'items').split()) >= storage:
-                await ctx.send(f"You can only carry a maximum {storage} items. Do you want to discard the shop item you recieve automatically? (Yes/No)")
-                try:
-                    answer = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == author, timeout=20)
-                    if answer.content.lower() == 'yes' or answer.content.lower() == 'y':
-                        skip = True
-                    else:
-                        await ctx.send('Reward not taken.')
+            level = read_value(author.id, 'level')
+
+            if level >= 4:
+                if len(read_value(author.id, 'items').split()) >= storage:
+                    await ctx.send(f"You can only carry a maximum {storage} items. Do you want to discard the shop item you recieve automatically? (Yes/No)")
+                    try:
+                        answer = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == author, timeout=20)
+                        if answer.content.lower() == 'yes' or answer.content.lower() == 'y':
+                            skip = True
+                        else:
+                            await ctx.send('Reward not taken.')
+                            return
+                    except asyncio.TimeoutError:
+                        await ctx.send(f"Took too long: Reward not taken.")
                         return
-                except asyncio.TimeoutError:
-                    await ctx.send(f"Took too long: Reward not taken.")
-                    return
 
 
-            # Grabbing shop item
-            if not skip:
+                # Grabbing shop item
+                if not skip:
 
-                conn = sqlite3.connect('./storage/databases/shop.db')
-                c = conn.cursor()
-                c.execute('SELECT name FROM shop')
-                items = c.fetchall()
-                conn.close()
-                item = random.choice(items)
-                item = item[0]
-                
+                    conn = sqlite3.connect('./storage/databases/shop.db')
+                    c = conn.cursor()
+                    c.execute('SELECT name, article FROM shop')
+                    items = c.fetchall()
+                    conn.close()
+                    item = random.choice(items)
+                    item, article = item
+                    
 
-                await ctx.send(f"You've earned ${reward}, along with a {item}!\n*Streak reset to 0.*")
-                add_item(item, author.id)
+                    await ctx.send(f"You've earned ${reward}, along with {article}{item}!\n*Streak reset to 0.*")
+                    add_item(item, author.id)
 
+                else:
+                    await ctx.send(f"You've earned ${reward}!\n*Streak reset to 0.*")
             else:
                 await ctx.send(f"You've earned ${reward}!\n*Streak reset to 0.*")
             streak = 0

@@ -1,4 +1,5 @@
-# pylint: disable=import-error
+# pylint: disable=import-error, anomalous-backslash-in-string
+
 
 import asyncio
 import random
@@ -8,12 +9,19 @@ import time
 import os
 import datetime
 import aiohttp
+import difflib
 import re
 from sqlite3 import Error
 
 import discord
 from discord.ext import commands, tasks
 from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+
+# To import from different path
+import sys
+sys.path.insert(1 , os.getcwd())
+
+from utils import level_check, read_value
 
 
 #Defining own read and write for different database
@@ -129,7 +137,7 @@ class fun(commands.Cog):
         sentences = 721475839153143899
         if payload.channel_id == counting:
             counting = self.client.get_channel(721444345353470002)
-            message = await counting.fetch_message(self, payload.message_id)
+            message = await counting.fetch_message(payload.message_id)
             #Grabing data from here
             conn = sqlite3.connect('./storage/databases/fun.db')
             c = conn.cursor()
@@ -197,7 +205,7 @@ class fun(commands.Cog):
 
 
         elif payload.channel_id == sentences:
-            sentences = self.client.get_channel(self, sentences)
+            sentences = self.client.get_channel(sentences)
             #Grabing last message from here
             conn = sqlite3.connect('./storage/databases/fun.db')
             c = conn.cursor()
@@ -223,9 +231,86 @@ class fun(commands.Cog):
                 #to here
 
     
+    
+
     @commands.group(invoke_without_command=True)
     async def gang(self, ctx):
-        await ctx.send("Incorrect command usage:\n`.gang about/members/membersm/create/invite/uninvite/settings/leave/promote/kick/disband`")
+        await ctx.send("Incorrect command usage:\n`.gang list/which/about/members/membersm/create/invite/uninvite/settings/leave/promote/kick/disband`")
+
+
+    @gang.command(name="list")
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def gang_list(self, ctx, page=1):
+
+        try:
+            page = int(page)
+            if page < 1:
+                await ctx.send("Page not found.")
+                return
+        except:
+            await ctx.send("Incorrect command usage:\n`.gang list pagenumber`")
+            return
+        
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, created_at FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        if len(gangs) == 0:
+            await ctx.send("There are no existing gangs.")
+            return
+
+        regex = re.compile("\..*")
+
+        gangs = sorted(gangs, key=lambda gang: int(datetime.datetime.strptime(regex.sub('', gang[1][2:]), '%y-%m-%d %H:%M:%S').timestamp()))
+        
+        gangs = list(map(lambda gang: gang[0], gangs))
+        
+        gangs = [gangs[x:x+6] for x in range(0, len(gangs), 6)]
+        
+        if page > len(gangs):
+            await ctx.send("Page not found.")
+            return
+        
+        embed = discord.Embed(color=0xffe6a1, title="Gangs")
+
+        for gang in gangs[page-1]:
+            embed.add_field(name="_\_\_\_\_\_\_\_", value=gang, inline=True)
+        
+        embed.set_footer(text=f"Page {page}/{len(gangs)}")
+
+        await ctx.send(embed=embed)
+
+    @gang.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def which(self, ctx, member:discord.Member=None):
+
+        if not member:
+            member = ctx.author
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT name, owner, members FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        for gang in gangs:
+            
+            if member.id == gang[1]:
+                await ctx.send(f"**{member.name}** owns the gang **{gang[0]}**.")
+                return
+
+            elif str(member.id) in gang[2].split():
+                await ctx.send(f"**{member.name}** is in the gang **{gang[0]}**.")
+                return
+
+        await ctx.send(f"**{member.name}** is not in a gang.")
+
+        
+
+        
 
     @gang.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
@@ -256,8 +341,28 @@ class fun(commands.Cog):
             owner, description, created_at, role_id, color, img_location = c.fetchone()
             conn.close()
         except:
+            c.execute('SELECT name FROM gangs')
+            gangs = c.fetchall()
             conn.close()
-            await ctx.send(f"There is no gang called {name}.")
+            gangs = list(map(lambda gang: gang[0], gangs))
+            close = difflib.get_close_matches(name, gangs, n=3, cutoff=0.5)
+            
+
+            if len(close) > 0:
+                
+                close = list(map(lambda word: f"`{word}`", close))
+
+                text = "\n".join(close)
+
+                text = f"There is no gang called **{name}**. Did you mean:\n{text}"
+
+            else:
+                
+                text = f"There is no gang called **{name}**."
+            
+            await ctx.send(text) 
+
+
             return
         
         # Converts into hexadecimal
@@ -317,8 +422,27 @@ class fun(commands.Cog):
             owner, members, color, img_location = c.fetchone()
             conn.close()
         except:
+            c.execute('SELECT name FROM gangs')
+            gangs = c.fetchall()
             conn.close()
-            await ctx.send(f"There is no gang called {name}.")
+            gangs = list(map(lambda gang: gang[0], gangs))
+            close = difflib.get_close_matches(name, gangs, n=3, cutoff=0.5)
+            
+
+            if len(close) > 0:
+                
+                close = list(map(lambda word: f"`{word}`", close))
+
+                text = "\n".join(close)
+
+                text = f"There is no gang called **{name}**. Did you mean:\n{text}"
+
+            else:
+                
+                text = f"There is no gang called **{name}**."
+            
+            await ctx.send(text) 
+
             return
         
         # Converts into hexadecimal
@@ -376,8 +500,27 @@ class fun(commands.Cog):
             owner, members, color, img_location = c.fetchone()
             conn.close()
         except:
+            c.execute('SELECT name FROM gangs')
+            gangs = c.fetchall()
             conn.close()
-            await ctx.send(f"There is no gang called {name}.")
+            gangs = list(map(lambda gang: gang[0], gangs))
+            close = difflib.get_close_matches(name, gangs, n=3, cutoff=0.5)
+            
+
+            if len(close) > 0:
+                
+                close = list(map(lambda word: f"`{word}`", close))
+
+                text = "\n".join(close)
+
+                text = f"There is no gang called **{name}**. Did you mean:\n{text}"
+
+            else:
+                
+                text = f"There is no gang called **{name}**."
+            
+            await ctx.send(text) 
+
             return
         
         # Converts into hexadecimal
@@ -387,7 +530,7 @@ class fun(commands.Cog):
 
         if members:
             members = members.split()
-            members = list(map(lambda id: f"**{guild.get_member(int(id)).name}**", members))
+            members = list(map(lambda userid: guild.get_member(int(userid)).name, members))
             members = "\n".join(members)
         else:
             members = "No members."
@@ -409,6 +552,9 @@ class fun(commands.Cog):
 
     @gang.command()
     async def create(self, ctx, *, name=None):
+
+        if not await level_check(ctx, ctx.author.id, 3, "be in a gang"):
+            return
         
         if not name:
             await ctx.send("Incorrect command usage:\n`.gang create gangname`")
@@ -449,8 +595,12 @@ class fun(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.gang invite member`")
             return
 
-        if member == ctx.author:
+        elif member == ctx.author:
             await ctx.send("You can't invite yourself.")
+            return
+
+        elif read_value(member.id, 'level') < 3:
+            await ctx.send(f"**{member.name}** must be at least level 3 in order to be in a gang.")
             return
 
         conn = sqlite3.connect('./storage/databases/gangs.db')
@@ -531,7 +681,7 @@ class fun(commands.Cog):
             reaction, user = await self.client.wait_for('reaction_add', check=lambda reaction, user: (str(reaction.emoji) == '✅' or str(reaction.emoji) == '❌') and reaction.message.id == message.id and user == member, # noqa pylint: disable=unused-variable
              timeout=300)
         except asyncio.TimeoutError:
-            await ctx.send("Gang invite timed out.")
+            await ctx.send(f"Gang invite to **{member.name}** timed out.")
             return
 
         if str(reaction.emoji) == '✅':
@@ -599,7 +749,7 @@ class fun(commands.Cog):
     async def rename(self, ctx, *, name=None):
         
         if not name:
-            await ctx.send("Incorrect command usage:\n`.gang settings name newname`")
+            await ctx.send("Incorrect command usage:\n`.gang settings rename newname`")
             return
         
         conn = sqlite3.connect('./storage/databases/gangs.db')
@@ -881,8 +1031,6 @@ class fun(commands.Cog):
                         await ctx.send("Your gang does not have a role.")
                         return
 
-                    role = guild.get_role(gang[4])
-                    await role.delete(reason="Gang role deleted")
 
                     conn = sqlite3.connect('./storage/databases/gangs.db')
                     c = conn.cursor()
@@ -932,7 +1080,7 @@ class fun(commands.Cog):
                 try:
                     color_code = int(color, 16)
 
-                    if color_code > 16777215 or color_code < 0: # Equivilant to ffffff
+                    if color_code > 16777215 or color_code < 0: # equivalent to ffffff
                         await ctx.send("Enter a valid hex color code.")
                         return
 
@@ -1127,8 +1275,6 @@ class fun(commands.Cog):
 
                 if response == 'yes' or response == 'y':
 
-                    guild = self.client.mainGuild
-
                     members.remove(str(member.id))
                     members.append(str(ctx.author.id))
                     
@@ -1144,7 +1290,7 @@ class fun(commands.Cog):
                     await ctx.send(f"**{member.name}** was promoted to the gang owner by **{ctx.author.name}**.")
 
                 else:
-                    await ctx.send("Kick cancelled.")
+                    await ctx.send("Promotion cancelled.")
                 
                 return
 
@@ -1208,6 +1354,13 @@ class fun(commands.Cog):
                         if len(members) < 2:
                     
                             await role.delete(reason="Gang role deleted")
+                            
+                            conn = sqlite3.connect('./storage/databases/gangs.db')
+                            c = conn.cursor()
+                            c.execute('UPDATE gangs SET role_id = null WHERE name = ?', (gang[0],))
+                            conn.commit()
+                            conn.close()
+                            
                     
                     members = " ".join(members)
 

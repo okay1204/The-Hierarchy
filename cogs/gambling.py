@@ -387,7 +387,7 @@ class gambling(commands.Cog):
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.channel)
-    async def blackjack(self, ctx, bet):
+    async def blackjack(self, ctx, bet=None):
         author = ctx.author
 
 
@@ -759,7 +759,7 @@ class gambling(commands.Cog):
             for hand in player:
                 index = player.index(hand)
                 if evaluateCards(hand) > dealerValue:
-                    text += f"Hand {index+1}: + ${math.ceil(bet[index/2])}\n"
+                    text += f"Hand {index+1}: + ${math.ceil(bet[index//2])}\n"
                     money += math.ceil(bet[index] * 1.5)
                 elif evaluateCards(hand) == dealerValue:
                     text += f"Hand {index+1}: Tie\n"

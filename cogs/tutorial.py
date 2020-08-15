@@ -203,7 +203,7 @@ class tutorial(commands.Cog):
 
 
             aroundbug = discord.File('./storage/images/aroundbug.png')
-            await channel.send("**If this is what you saw when you did `.around`, it is a common mobile bug. Try using `.aroundm` instead.**", file=aroundbug)
+            await channel.send("**If this is what you saw when you did `.around`, or you saw something like @invalid-user, it is a common mobile bug. Try using `.aroundm` instead.**", file=aroundbug)
 
             async with channel.typing():
                 await asyncio.sleep(12)
@@ -223,7 +223,7 @@ class tutorial(commands.Cog):
                 spoofed = True
             
             if not spoofed:
-                await channel.send(f"Use `.steal @mention amount` to steal from someone. Make sure you replace `@mention` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {client_member.mention} 100\n\nTry out this command now.")
+                await channel.send(f"Use `.steal @mention amount` to steal from someone. Make sure you replace `@mention` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {client_member.mention} 100\n\nTry out this command now (not the example!).")
                 breakOut = False
                 while True:
                     try:

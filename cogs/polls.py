@@ -11,7 +11,7 @@ import os
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import minisplittime
+from utils import minisplittime, timestring
 
 
 class polls(commands.Cog):
@@ -81,14 +81,11 @@ class polls(commands.Cog):
             await ctx.send('Enter a number from 1-9 for your poll options.')
             return
 
-        try:
-            timer = int(timer)
-        except:
-            await ctx.send('Enter a valid amount of minutes.')
+        timer = timestring(timer)
+        if not timer:
+            await ctx.send("Timer must be in this format: `1d 2h 3m 4s`")
             return
-        if option < 0:
-            await ctx.send('Enter a valid amount of minutes.')
-            return
+        timer //= 60
 
         conn = sqlite3.connect('./storage/databases/polls.db')
         c = conn.cursor()

@@ -62,19 +62,41 @@ class members(commands.Cog):
         c = conn.cursor()
         c.execute('SELECT id FROM members')
         users = c.fetchall()
+        conn.close()
         for person in users:
             if member.id == person[0]:
                 alreadyin = True
                 break
 
     
-
         membercountchannel = self.client.membercountchannel
-        membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
-        await membercountchannel.edit(name=f"Members: {membercount}")
+        membercount = len(list(filter(lambda member: not member.bot ,guild.members)))
+        asyncio.create_task(membercountchannel.edit(name=f"Members: {membercount}"))
+        
+        # mutes
+        with open(f'./storage/jsons/mutes.json') as f:
+            mutes = json.load(f)
+
+        if str(member.id) in mutes:
+
+            if mutes[str(member.id)] > time.time():
+                mute_role = guild.get_role(743255783055163392)
+                await member.add_roles(mute_role)
+
+                if self.client.get_cog('admin'):
+                    asyncio.create_task(self.client.get_cog('admin').wait_until_unmute(str(member.id), mutes[str(member.id)]))
             
+            else:
+                del mutes[str(member.id)]
+                with open(f'./storage/jsons/mutes.json', 'w') as f:
+                    json.dump(mutes, f, indent=2)
+
+
+
                         
         if alreadyin == False:
+            conn = sqlite3.connect('./storage/databases/hierarchy.db')
+            c = conn.cursor()
             c.execute(f'INSERT INTO members (id) VALUES ({member.id})')
             conn.commit()
             conn.close()
@@ -89,9 +111,6 @@ class members(commands.Cog):
                 await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')
             except:
                 pass
-
-        else:
-            conn.close()
 
 
     @commands.Cog.listener()
@@ -109,7 +128,7 @@ class members(commands.Cog):
         membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
         await membercountchannel.edit(name=f"Members: {membercount}")
 
-
+        # gangs
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
         c.execute('SELECT name, owner, members, role_id, img_location FROM gangs')
@@ -144,7 +163,6 @@ class members(commands.Cog):
                 c.execute('UPDATE gangs SET members = ? WHERE name = ?', (members, gang[0]))
                 conn.commit()
                 conn.close()
-                return
                 
 
 
@@ -156,11 +174,6 @@ class members(commands.Cog):
 
                     await role.delete(reason="Gang role deleted")
 
-                    conn = sqlite3.connect('./storage/databases/gangs.db')
-                    c = conn.cursor()
-                    c.execute('UPDATE gangs SET role_id = null WHERE name = ?', (gang[0],))
-                    conn.commit()
-                    conn.close()
                 
                 
                 if gang[4]:
@@ -171,6 +184,13 @@ class members(commands.Cog):
                 c.execute('DELETE FROM gangs WHERE name = ?', (gang[0],))
                 conn.commit()
                 conn.close()
+
+        # mutes
+        
+        for task in asyncio.all_tasks():
+            if task.get_name() == f'unmute {member.id}':
+                task.cancel()
+                break
                 
                 
 def setup(client):

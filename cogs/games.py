@@ -44,53 +44,39 @@ class games(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.rps rock/paper/scissors`")
             return
             
-        entry = entry.lower()
+        entry = entry.capitalize()
 
-        if entry != "rock" and entry != "paper" and entry != "scissors" and entry != "r" and entry != "p" and entry != "s":
+        allowed = ["Rock", "Paper", "Scissors", "R", "P", "S"]
+
+        if entry not in allowed:
             await ctx.send("Incorrect command usage:\n`.rps rock/paper/scissors`")
             return
 
-        if entry == 'r':
-            entry = 'rock'
-        elif entry == 'p':
-            entry = 'paper'
-        elif entry == 's':
-            entry = 'scissors'
-        
-        choices = ['Rock','Paper','Scissors']
-        pc = random.choice(choices)
+        if entry == 'R':
+            entry = 'Rock'
+        elif entry == 'P':
+            entry = 'Paper'
+        elif entry == 'S':
+            entry = 'Scissors'
+    
+        pc = random.choice(['Rock','Paper','Scissors'])
         rmoney = random.randint(2,5)
-        await ctx.send(pc)
-        if entry == 'rock' and pc =='Rock':
-            await ctx.send("Tie.")
-        if entry == 'rock' and pc =='Paper':
-            await ctx.send("You lose.")
-        if entry == 'rock' and pc =='Scissors':
-            await ctx.send(f'You win. ${rmoney} was added to your account.')
+
+        key = {"Rock":["Scissors","Paper"], "Paper":["Rock", "Scissors"], "Scissors":["Paper", "Rock"]}
+
+        if entry.capitalize() == pc:
+            await ctx.send(f"{pc}\nTie.")
+
+        elif key[entry][0] == pc:
+            await ctx.send(f"{pc}\nYou win. ${rmoney} was added to your account.")
             money = read_value(author.id, 'money')
             money += rmoney
             write_value(author.id, 'money', money)
             update_total(author.id)
-        if entry == 'paper' and pc =='Rock':
-            await ctx.send(f'You win. ${rmoney} was added to your account.')
-            money = read_value(author.id, 'money')
-            money += rmoney
-            write_value(author.id, 'money', money)
-            update_total(author.id)
-        if entry == 'paper' and pc =='Paper':
-            await ctx.send("Tie.")
-        if entry == 'paper' and pc =='Scissors':
-            await ctx.send("You lose.")  
-        if entry == 'scissors' and pc =='Rock':
-            await ctx.send("You lose.")
-        if entry == 'scissors' and pc =='Paper':
-            await ctx.send(f'You win. ${rmoney} was added to your account.')
-            money = read_value(author.id, 'money')
-            money += rmoney
-            write_value(author.id, 'money', money)
-            update_total(author.id)
-        if entry == 'scissors' and pc =='Scissors':
-            await ctx.send("Tie.")
+
+        elif key[entry][1] == pc:
+            await ctx.send(f"{pc}\nYou lose. L")
+
         rpsc = int(time.time()) + 10
         write_value(author.id, 'rpsc', rpsc)
         await leaderboard(self.client)
@@ -114,21 +100,23 @@ class games(commands.Cog):
 
         rollp = random.randint(1,6)
         rollb = random.randint(1,6)
-        await ctx.send(f'🎲 **{author.name}** rolled {rollp}. 🎲\n🎲 **The Hierarchy** rolled {rollb}. 🎲')
+        text = f'🎲 **{author.name}** rolled {rollp}. 🎲\n🎲 **The Hierarchy** rolled {rollb}. 🎲\n'
         if rollp > rollb:
-            await ctx.send(f'You won. $2 was added to your account.')
+            text += f'You won. $2 was added to your account.'
             money = read_value(author.id, 'money')
             money += 2
             write_value(author.id, 'money', money)
             update_total(author.id)
         elif rollp < rollb:
-            await ctx.send(f'You lost.')
+            text += f'You lost.'
         elif rollp == rollb:
-            await ctx.send(f'Tie. $1 was added to your account.')
+            text += f'Tie. $1 was added to your account.'
             money = read_value(author.id, 'money')
             money += 1
             write_value(author.id, 'money', money)
             update_total(author.id)
+
+        await ctx.send(text)
         rpsc = int(time.time()) + 10
         write_value(author.id, 'rpsc', rpsc)
         await leaderboard(self.client)

@@ -161,13 +161,14 @@ class events(commands.Cog):
         try:
             find = int(find)
         except:
-            await ctx.send('Enter a valid number from 1-25')
+            await ctx.send('Incorrect command usage:\n`.eventaround (range) (member)`')
             return
         if find < 1 or find > 25:
-            await ctx.send('Enter a number from 1-25.')
+            await ctx.send('Enter a range from 1-25.')
             return
+
         if not member:
-            author = ctx.author
+            member = ctx.author
 
         if not await bot_check(self.client, ctx, member):
             return
@@ -262,13 +263,13 @@ class events(commands.Cog):
         try:
             find = int(find)
         except:
-            await ctx.send('Enter a valid number from 1-25')
+            await ctx.send('Incorrect command usage:\n`.eventaroundm (range) (member)`')
             return
         if find < 1 or find > 25:
             await ctx.send('Enter a number from 1-25.')
             return
         if not member:
-            author = ctx.author
+            member = ctx.author
 
         if not await bot_check(self.client, ctx, member):
             return

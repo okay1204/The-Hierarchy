@@ -98,7 +98,7 @@ class heist(commands.Cog):
                     heist["heistl"] = "None"
                     heist["oheist"] = "False"
                     write_heist(heist)
-                    conn = sqlite3.connect('../storage/databases/hierarchy.db')
+                    conn = sqlite3.connect('./storage/databases/heist.db')
                     c = conn.cursor()
                     c.execute(f"UPDATE heist SET cooldown = {int(time.time())+9000}")
                     conn.commit()

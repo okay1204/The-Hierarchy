@@ -32,7 +32,7 @@ class misc(commands.Cog):
     async def partner(self, ctx, member:discord.Member=None):
         
         if not member:
-            await ctx.send('Enter a member to grant the partnership role to.')
+            await ctx.send('Incorrect command usage:\n`partner member`')
             return
         
         guild = self.client.mainGuild
@@ -45,7 +45,7 @@ class misc(commands.Cog):
     async def unpartner(self, ctx, member:discord.Member=None):
         
         if not member:
-            await ctx.send('Enter a member to remove the partnership role from.')
+            await ctx.send('Incorrect command usage:\n`unpartner member`')
             return
         
         guild = self.client.mainGuild

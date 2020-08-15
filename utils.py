@@ -5,7 +5,6 @@ import sqlite3
 from collections import Counter
 from sqlite3 import Error
 
-
 # DATABASE FUNCTIONS
 
 def read_value(userid, value):
@@ -88,7 +87,7 @@ def in_use(userid):
     
     if len(inuse) != 0:
         for x in range(0, len(inuse), 2):
-            if int(inuse[x+1]) > time.time():
+            if int(inuse[x+1]) <= time.time():
                 continue
             items[inuse[x]] = int(inuse[x+1])
 
@@ -113,10 +112,8 @@ def remove_item(name, userid):
 
     items.remove(name)
 
-    itemtext = ""
-    for item in items:
-        itemtext += f"{item} "
-    itemtext = f"{itemtext[:len(itemtext)-1]}"
+    itemtext = " ".join(items)
+
     write_value(userid, 'items', itemtext)
 
 
@@ -148,8 +145,8 @@ def write_heist(data):
         json.dump(data, f, indent=2)
 
 def open_heist():
-    with open('./storage/jsons/heist.json') as json_file:
-        heist = json.load(json_file)
+    with open('./storage/jsons/heist.json') as f:
+        heist = json.load(f)
     return heist
 
 # HEIST FUNCTIONS
@@ -176,10 +173,41 @@ def minisplittime(minutes):
     time = f"{hours}h {rminutes}m"
     return time
 
+def timestring(string):
+    string = string.lower().split()
+    total = 0
+    keys = {'d': 86400, 'h': 3600, 'm': 60, 's': 1}
+
+    try:
+        for combo in string:
+
+            if not combo.endswith(tuple(keys)):
+                raise ValueError()
+            
+            for key in keys:
+                if combo.endswith(key):
+                    total += int(combo[:-1]) * keys[key]
+                    break
+
+    except:
+        total = None
+    
+    return total
+
 # TIME FUNCTIONS
 
 
 # MISC
+
+async def level_check(ctx, userid, required_level, use_what):
+
+    level = read_value(userid, 'level')
+    
+    if level < required_level:
+        await ctx.send(f"You must be at least level {required_level} in order to {use_what}.")
+        return False
+    else:
+        return True
 
 def around(guild, userid, find):
     conn = sqlite3.connect('./storage/databases/hierarchy.db')

@@ -2,7 +2,7 @@
 
 import discord
 from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached, CheckFailure
+from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached, CheckFailure, ExpectedClosingQuoteError
 import random
 import json
 import time
@@ -12,17 +12,126 @@ import sqlite3
 import os
 import difflib
 import traceback
+import string
 from sqlite3 import Error
-
+from captcha.image import ImageCaptcha
 
 from utils import *
 import bottoken
+
+async def do_captcha(ctx):
+
+
+    if ctx.author.id not in client.making_captchas:
+
+        client.making_captchas.append(ctx.author.id)
+
+        async with ctx.channel.typing():
+
+            # generate random word
+            word = ""
+            for x in range(3): word += random.choice(string.ascii_lowercase) # noqa pylint: disable=unused-variable
+
+
+            # generate captcha image
+            image = ImageCaptcha()
+            image.generate(word)
+            image.write(word, f"./storage/images/captchas/{word}.png")
+
+            # making embed
+            embed = discord.Embed(title="Captcha Required", description="Please answer this captcha to prove this is you.\n(There are only lowercase letters)", color=0x15a7c2)
+            embed.set_image(url="attachment://captcha.png")
+            
+
+            # prompt user
+            captcha = await ctx.send(embed=embed, file=discord.File(f'./storage/images/captchas/{word}.png', filename="captcha.png"))
+
+        os.remove(f"./storage/images/captchas/{word}.png")
+
+        try:
+            response = await client.wait_for('message', check = lambda message: message.author == ctx.author and message.channel == ctx.channel, timeout=30)
+        except asyncio.TimeoutError:
+            embed = discord.Embed(color=0xed373a, title="❌ Captcha Timed Out", description="No response was given in the last 30 seconds.")
+            embed.set_image(url="attachment://captcha.png")
+            await captcha.edit(embed=embed)
+
+            client.making_captchas.remove(ctx.author.id)
+            return False
+        
+
+        # decide fate
+        response = response.content.lower()
+
+        if response == word:
+            embed = discord.Embed(color=0x4fed4a, title="✅ Captcha Complete", description="Your command will be run in a moment.")
+            embed.set_image(url="attachment://captcha.png")
+            await captcha.edit(embed=embed)
+            await asyncio.sleep(1.5)
+
+            client.making_captchas.remove(ctx.author.id)
+            return True
+        else:
+            embed = discord.Embed(color=0xed373a, title="❌ Captcha Failed", description="Run another command to try again.")
+            embed.set_image(url="attachment://captcha.png")
+            await captcha.edit(embed=embed)
+
+            client.making_captchas.remove(ctx.author.id)
+            return False
+
+
+    else:
+        return False
+
+    
+
+
+async def macro_check(ctx):
+
+    userid = str(ctx.author.id)
+    
+    if str(userid) not in client.history:
+        
+        client.history[userid] = {"last": [ctx.command.name], "time": int(time.time()+random.randint(1800, 3600)), "useCount": 1, "useMax": random.randint(10,15), "diffMax": random.randint(2,3), "captcha": False}
+    
+    else:
+        if client.history[userid]["captcha"]:
+
+            if await do_captcha(ctx):
+                client.history[userid] = {"last": [ctx.command.name], "time": int(time.time()+random.randint(1800, 3600)), "useCount": 1, "useMax": random.randint(10,15),"diffMax": random.randint(2,3), "captcha": False}
+            else:
+                return False
+
+        elif client.history[userid]["time"] <= time.time():
+            client.history[userid] = {"last": [ctx.command.name], "time": int(time.time()+random.randint(1800, 3600)), "useCount": 1, "useMax": random.randint(10,15),"diffMax": random.randint(2,3), "captcha": False}
+
+
+        elif ctx.command.name in client.history[userid]["last"]:
+            client.history[userid]["useCount"] += 1
+
+            if client.history[userid]["useCount"] >= client.history[userid]["useMax"]:
+                client.history[userid]["captcha"] = True
+                
+                if await do_captcha(ctx):
+                    client.history[userid] = {"last": [ctx.command.name], "time": int(time.time()+random.randint(1800, 3600)), "useCount": 1, "useMax": random.randint(10,15),"diffMax": random.randint(2,3), "captcha": False}
+                else:
+                    return False
+        
+        else:
+            client.history[userid]["last"].append(ctx.command.name)
+
+            if len(client.history[userid]["last"]) - 1 >= client.history[userid]["diffMax"]:
+                client.history[userid] = {"last": [ctx.command.name], "time": int(time.time()+random.randint(1800, 3600)), "useCount": 1, "useMax": random.randint(10,15),"diffMax": random.randint(2,3), "captcha": False}
+        
+
+
+    return True
 
 
 
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
-client.case_insensitive = True
+
+client.add_check(macro_check)
 
 @client.event
 async def on_command_error(ctx, error):
@@ -31,6 +140,9 @@ async def on_command_error(ctx, error):
 
 
     if isinstance(error, CommandNotFound):
+
+        if ctx.message.content.startswith('..'):
+            return
 
         allowed_cogs = ['actions', 'fun', 'gambling', 'games', 'info', 'premium']
 
@@ -77,6 +189,9 @@ async def on_command_error(ctx, error):
             
         else:
             await ctx.send("Member not found.")
+
+    elif isinstance(error, ExpectedClosingQuoteError):
+        await ctx.send("Invalid quote usage.")
     
     elif isinstance(error, MaxConcurrencyReached):
         return
@@ -97,10 +212,17 @@ async def on_command_error(ctx, error):
 
         raise error
 
-
+# ANCHOR on ready
 @client.event
 async def on_ready():
+
+
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
+
+    client.history = {}
+    client.making_captchas = []
+    
+    client.last_messages = {}
 
 
     statuschannel = client.get_channel(698384786460246147)
@@ -128,8 +250,9 @@ async def on_ready():
 
     client.myself = client.mainGuild.get_member(322896727071784960)
 
-
-    cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events']
+    cogs = list(map(lambda filename: filename.replace('.py', ''), [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]))
+    
+    #cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events']
     for cog in cogs:
         client.load_extension(f'cogs.{cog}')
 
@@ -143,14 +266,14 @@ async def on_ready():
     commands.extend(aliases)
     client.every_command = commands
 
-    
+    # ANCHOR default cogs
 
-    cogs_to_unload = ['events']
+    cogs_to_unload = ['misc', 'premium', 'heist', 'members', 'fun', 'reactions', 'timers']
+
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
 
 
-    # TODO: add all the cogs back afterward AND install all modules on server
     
     await leaderboard(client)
 

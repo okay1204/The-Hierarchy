@@ -2,7 +2,7 @@
 
 import discord
 from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached, CheckFailure, ExpectedClosingQuoteError
+from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached, CheckFailure, ExpectedClosingQuoteError, UnexpectedQuoteError
 import random
 import json
 import time
@@ -60,7 +60,7 @@ async def do_captcha(ctx):
         
 
         # decide fate
-        response = response.content.lower()
+        response = response.content.lower().replace(' ', '')
 
         if response == word:
             embed = discord.Embed(color=0x4fed4a, title="✅ Captcha Complete", description="Your command will be run in a moment.")
@@ -190,7 +190,7 @@ async def on_command_error(ctx, error):
         else:
             await ctx.send("Member not found.")
 
-    elif isinstance(error, ExpectedClosingQuoteError):
+    elif isinstance(error, ExpectedClosingQuoteError) or isinstance(error, UnexpectedQuoteError):
         await ctx.send("Invalid quote usage.")
     
     elif isinstance(error, MaxConcurrencyReached):
@@ -252,7 +252,7 @@ async def on_ready():
 
     cogs = list(map(lambda filename: filename.replace('.py', ''), [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]))
     
-    #cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events']
+    #cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
     for cog in cogs:
         client.load_extension(f'cogs.{cog}')
 
@@ -268,8 +268,7 @@ async def on_ready():
 
     # ANCHOR default cogs
 
-    cogs_to_unload = ['misc', 'premium', 'heist', 'members', 'fun', 'reactions', 'timers']
-
+    cogs_to_unload = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
 

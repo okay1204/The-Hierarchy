@@ -18,7 +18,7 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import (read_value, write_value, update_total, leaderboard,
 rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use, level_check)
+remove_item, remove_use, add_item, write_heist, add_use, level_check, event_disabled)
 
 async def heist_group_jailcheck(ctx):
 
@@ -94,12 +94,11 @@ class actions(commands.Cog):
                 opening = open('./storage/other/englishwords.txt')
                 words = opening.read()
                 wordlist = words.splitlines()
-                ucolors = ['\U0001f534','\U000026aa','\U0001f7e1',
+                ucolors = ['\U0001f534','\U000026aa',
                           '\U0001f7e3','\U0001f7e0','\U0001f535',
                           '\U0001f7e4','\U0001f7e2']
                 colorfinder = [{'code':'\U0001f534','name':'red'},
                                {'code':'\U000026aa','name':'white'},
-                               {'code':'\U0001f7e1','name':'yellow'},
                                {'code':'\U0001f7e3','name':'purple'},
                                {'code':'\U0001f7e0','name':'orange'},
                                {'code':'\U0001f535','name':'blue'},
@@ -246,11 +245,11 @@ class actions(commands.Cog):
 
         if member==author:
             await ctx.send("You can't bail yourself.")
+            return
 
-            if 'pass' in read_value(author.id, 'items').split():
-                await asyncio.sleep(2)
-                await ctx.send("*Have a pass? Use the command `.use pass` to use it.*")
-
+        if 'pass' in read_value(author.id, 'items').split():
+            await asyncio.sleep(2)
+            await ctx.send("*Have a pass? Use the command `.use pass` to use it.*")
             return
 
         if not await jail_heist_check(ctx, ctx.author):
@@ -294,6 +293,7 @@ class actions(commands.Cog):
 
                 
     @commands.command()
+    @commands.check(event_disabled)
     async def pay(self, ctx, member:discord.Member=None, amount=None):
         author = ctx.author
 
@@ -330,38 +330,15 @@ class actions(commands.Cog):
         if money < amount:
             await ctx.send("You don't have enough money for that.")
         else:
-            with open('./storage/jsons/mode.json') as f:
-                mode = json.load(f)
 
             money -= amount
             write_value(author.id, 'money', money)
             update_total(author.id)
 
-            # Make sure does not count towards event progress
-            if mode == "event":
-                conn = sqlite3.connect('./storage/databases/events.db')
-                c = conn.cursor()
-                c.execute('SELECT total FROM members WHERE id = ?', (author.id,))
-                total = c.fetchone()[0]
-                total -= amount
-                c.execute('UPDATE members SET total = ? WHERE id = ?', (total, author.id))
-                conn.commit()
-                conn.close()
-
 
             money = read_value(member.id, 'money')
             money += amount
             write_value(member.id, 'money', money)
-
-            if mode == "event":
-                conn = sqlite3.connect('./storage/databases/events.db')
-                c = conn.cursor()
-                c.execute('SELECT total FROM members WHERE id = ?', (member.id,))
-                total = c.fetchone()[0]
-                total += amount
-                c.execute('UPDATE members SET total = ? WHERE id = ?', (total, member.id))
-                conn.commit()
-                conn.close()
 
 
 
@@ -438,7 +415,7 @@ class actions(commands.Cog):
 
         money = read_value(member.id, 'money')
         if money < amount:
-            await ctx.send("This user does not have that much money in cash.")
+            await ctx.send("This user does not have that much money in cash.") # linked to tutorial, change tutorial if this message changes
             return
 
         else:
@@ -748,7 +725,7 @@ class actions(commands.Cog):
                             write_value(author.id, 'bank', bank)
                             write_value(author.id, 'money', money)
                             write_value(author.id, 'bankc', 600)
-                            await ctx.send(f"Withdrawed ${missing} from your bank.")
+                            await ctx.send(f"Withdrew ${missing} from your bank.")
                             await asyncio.sleep(1)
 
                         else:
@@ -904,12 +881,18 @@ class actions(commands.Cog):
             elif read_value(member.id, 'jailtime') > time.time():
                 await ctx.send("This user is already in jail.")
                 return
+            
+            cuffc = read_value(member.id, 'cuffc')
+            if cuffc > time.time():
+                await ctx.send(f"You must wait {splittime(cuffc)} before you can handcuff this user again.")
+                return
 
             remove_item('handcuffs', author.id)
 
             if random.randint(1, 10) > 3:
                 random_time = int(time.time()) + random.randint(5400, 7200) # 1h 30m to 2h
                 write_value(member.id, 'jailtime', random_time)
+                write_value(member.id, 'cuffc', int(time.time()) + 10800) # three hours
                 await ctx.send(f"You successfully jailed **{member.name}** for {splittime(random_time)}.")
             
             else:
@@ -934,22 +917,30 @@ class actions(commands.Cog):
 
         conn = sqlite3.connect('./storage/databases/shop.db')
         c = conn.cursor()
-        c.execute('SELECT name FROM shop')
-        temp = c.fetchall()
+        c.execute('SELECT name, article FROM shop')
+        items = c.fetchall()
         conn.close()
-
-        items = list(map(lambda x: x[0], temp))
 
         item = item.lower()
 
-        if item not in items:
+        picked_item = None
+
+        for shopitem in items:
+            if item == shopitem[0]:
+                picked_item = shopitem
+                break
+
+        if not picked_item:
             await ctx.send(f"There is no such item called {item}.")
             return
+
+
         elif item not in read_value(author.id, 'items').split():
-            await ctx.send(f"You do not own {item.capitalize()}.")
+            await ctx.send(f"You do not own {picked_item[1]}**{picked_item[0]}**.")
             return
+
         remove_item(item.lower() , author.id)
-        await ctx.send(f'**{author.name}** discarded {item.capitalize()}.')
+        await ctx.send(f'**{author.name}** discarded {picked_item[1]}**{picked_item[0]}**.')
         
     @commands.command()
     async def daily(self, ctx):

@@ -100,12 +100,6 @@ class members(commands.Cog):
             c.execute(f'INSERT INTO members (id) VALUES ({member.id})')
             conn.commit()
             conn.close()
-            await asyncio.sleep(30)
-                
-            #checking if member is still in server
-            member = guild.get_member(member.id)
-            if not member:
-                return
             
             try:
                 await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')

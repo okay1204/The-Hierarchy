@@ -66,7 +66,7 @@ class leveling(commands.Cog):
 
                 progress -= 100
 
-                embed = discord.Embed(color=0x3e41de, title="Level up", description=f"Advanced to level {level}! Keep going to unlock more features!")
+                embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level}! Keep going to unlock more features!")
                 embed.set_author(name=message.author.name, icon_url=message.author.avatar_url_as(static_format="jpg"))
 
                 await message.channel.send(embed=embed)

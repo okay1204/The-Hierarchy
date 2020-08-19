@@ -74,6 +74,16 @@ async def jail_heist_check(ctx, member):
     
     return True
 
+async def event_disabled(ctx):
+
+    with open('./storage/jsons/mode.json') as f:
+        mode = json.load(f)
+
+    if mode == "event":
+        await ctx.send("This command is disabled during events.")
+        return False
+    else:
+        return True
 
 
 # CHECK FUNCTIONS
@@ -154,24 +164,22 @@ def open_heist():
 # TIME FUNCTIONS
 
 def splittime(seconds):
-    seconds -= time.time()
-    seconds = int(seconds)
-    minutes = seconds/60
-    rseconds = seconds%60
-    minutes = int(minutes)
-    hours = minutes/60
-    rminutes = minutes%60
-    hours = int(hours)
-    timestring = f"{hours}h {rminutes}m {rseconds}s"
-    return timestring
+    seconds -= int(time.time())
+
+    minutes = seconds // 60
+    rseconds = seconds % 60
+
+    hours = minutes // 60
+    rminutes = minutes % 60
+
+    return f"{hours}h {rminutes}m {rseconds}s"
 
 def minisplittime(minutes):
-    minutes = int(minutes)
-    hours = minutes/60
-    rminutes = minutes%60
-    hours = int(hours)
-    time = f"{hours}h {rminutes}m"
-    return time
+
+    hours = minutes // 60
+    rminutes = minutes % 60
+    
+    return f"{hours}h {rminutes}m"
 
 def timestring(string):
     string = string.lower().split()

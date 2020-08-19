@@ -382,7 +382,7 @@ class fun(commands.Cog):
         embed = discord.Embed(color=color, title=name, description=description, timestamp=created_at)
 
         owner = guild.get_member(owner)
-        embed.set_author(name=f"Owner: {owner.name}#{owner.discriminator}", icon_url=owner.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
 
         embed.set_footer(text="Created at")
 
@@ -460,7 +460,7 @@ class fun(commands.Cog):
         embed = discord.Embed(color=color, title=name, description=members)
 
         owner = guild.get_member(owner)
-        embed.set_author(name=f"Owner: {owner.name}#{owner.discriminator}", icon_url=owner.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
 
         if img_location:
             filename = img_location.split('/')[-1]
@@ -538,7 +538,7 @@ class fun(commands.Cog):
         embed = discord.Embed(color=color, title=name, description=members)
 
         owner = guild.get_member(owner)
-        embed.set_author(name=f"Owner: {owner.name}#{owner.discriminator}", icon_url=owner.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
 
         if img_location:
             filename = img_location.split('/')[-1]

@@ -49,7 +49,7 @@ def increment(userid, offense):
             bans = 1
         
 
-        c.execute('INSERT INTO offenses (id, warns, mutes, kicks, bans) VALUES (?, ?, ?, ?)', (userid, warns, mutes, kicks, bans))
+        c.execute('INSERT INTO offenses (id, warns, mutes, kicks, bans) VALUES (?, ?, ?, ?, ?)', (userid, warns, mutes, kicks, bans))
 
     else:
         number += 1

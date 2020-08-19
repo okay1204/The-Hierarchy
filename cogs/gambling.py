@@ -18,7 +18,7 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import (read_value, write_value, update_total, leaderboard,
 rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use)
+remove_item, remove_use, add_item, write_heist, add_use, event_disabled)
 def evaluateCards(cards):
     aceCount = 0
     reducedAces = 0
@@ -74,6 +74,7 @@ class gambling(commands.Cog):
 
 
     @commands.command()
+    @commands.check(event_disabled)
     async def fight(self, ctx, action=None, member:discord.Member=None, bet=None):
         
         if not action:
@@ -362,8 +363,6 @@ class gambling(commands.Cog):
             money2 = read_value(member.id, 'money')
             money1 -= bet
             money2 += bet
-            write_value(author.id, 'money', money1)
-            write_value(member.id, 'money', money2)
 
         elif health2 == 0:
             await author.send(f'You have won the fight against **{member.name}** and earned ${bet}.')
@@ -373,7 +372,9 @@ class gambling(commands.Cog):
             money2 = read_value(member.id, 'money')
             money1 += bet
             money2 -= bet
-            write_value(author.id, 'money', money1)
+
+        write_value(author.id, 'money', money1)
+        write_value(member.id, 'money', money2)
 
         update_total(author.id)
         update_total(member.id)

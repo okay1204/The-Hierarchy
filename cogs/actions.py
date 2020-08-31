@@ -12,6 +12,8 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
+from cogs.extra.itemuse import ItemUses
+
 # To import from different path
 import sys
 sys.path.insert(1 , os.getcwd())
@@ -245,11 +247,11 @@ class actions(commands.Cog):
 
         if member==author:
             await ctx.send("You can't bail yourself.")
-            return
 
-        if 'pass' in read_value(author.id, 'items').split():
-            await asyncio.sleep(2)
-            await ctx.send("*Have a pass? Use the command `.use pass` to use it.*")
+            if 'pass' in read_value(author.id, 'items').split():
+                await asyncio.sleep(2)
+                await ctx.send("*Have a pass? Use the command `.use pass` to use it.*")
+
             return
 
         if not await jail_heist_check(ctx, ctx.author):
@@ -351,6 +353,7 @@ class actions(commands.Cog):
         await rolecheck(self.client, member.id)
 
     @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
     async def steal(self, ctx, member:discord.Member=None, amount=None):
         author = ctx.author
 
@@ -396,6 +399,42 @@ class actions(commands.Cog):
                 write_value(author.id, 'rangeinformed', '"True"')
             return
 
+        # gang warning
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute('SELECT owner, members FROM gangs')
+        gangs = c.fetchall()
+        conn.close()
+
+        money = read_value(member.id, 'money')
+        if money < amount:
+            await ctx.send("This user does not have that much money in cash.") # linked to tutorial, change tutorial if this message changes
+            return
+
+        for owner, members in gangs:
+
+            if str(ctx.author.id) in members or ctx.author.id == owner:
+
+                if str(member.id) in members or member.id == owner:
+
+                    await ctx.send("This user is in your gang. Are you sure you want to continue? Respond with `y` or `yes` to proceed.")
+
+                    try:
+                        response = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=20)
+                    except asyncio.TimeoutError:
+                        await ctx.send("Steal timed out.")
+                        return
+                    
+                    response = response.content.lower()
+
+                    if response == 'y' or response == 'yes':
+                        await ctx.send("Steal proceeded.")
+                        await asyncio.sleep(1)
+                    else:
+                        await ctx.send("Steal cancelled.")
+                        return
+
+
 
         if 'padlock' in in_use(member.id):
             remove_use('padlock', member.id)
@@ -411,11 +450,6 @@ class actions(commands.Cog):
                 write_value(author.id, 'jailtime', jailtime)
             else:
                 await ctx.send(f"**{member.name}** had a padlock in use and **{author.name}** broke the padlock instead.")
-            return
-
-        money = read_value(member.id, 'money')
-        if money < amount:
-            await ctx.send("This user does not have that much money in cash.") # linked to tutorial, change tutorial if this message changes
             return
 
         else:
@@ -556,7 +590,7 @@ class actions(commands.Cog):
 
     @heist.command()
     @commands.check(heist_group_jailcheck)
-    async def start(self, ctx, member:discord.Member=None):
+    async def start(self, ctx, *, member:discord.Member=None):
         conn = sqlite3.connect('./storage/databases/heist.db')
         c = conn.cursor()
         c.execute(f'SELECT cooldown FROM heist')
@@ -678,7 +712,7 @@ class actions(commands.Cog):
 
     @commands.command(aliases=['purchase'])
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def buy(self, ctx, item=None):
+    async def buy(self, ctx, *, item=None):
         author = ctx.author
 
         if not await level_check(ctx, author.id, 4, "use items"):
@@ -705,6 +739,17 @@ class actions(commands.Cog):
             if x["name"] == item.lower():
 
                 money = read_value(author.id, 'money')
+
+                with open('./storage/jsons/mode.json') as f:
+                    mode = json.load(f)
+
+                if ctx.author.premium_since and mode == "event":
+                    await ctx.send("*Premium perks are disabled during events*")
+                    await asyncio.sleep(2)
+
+                elif ctx.author.premium_since:
+                    x["cost"] -= int(x["cost"] * 0.3)
+
                 if money < x["cost"]:
                     
                     bank = read_value(author.id, 'bank')
@@ -756,7 +801,7 @@ class actions(commands.Cog):
 
 
     @commands.command()
-    async def use(self, ctx, item=None):
+    async def use(self, ctx, *, item=None):
         author = ctx.author
 
         if not await level_check(ctx, author.id, 4, "use items"):
@@ -815,96 +860,57 @@ class actions(commands.Cog):
         if item in in_use(author.id):
             await ctx.send(f"You already have {article}**{item}** in use.")
             return
-
-
-        if item == 'padlock':
-            timer = int(time.time()) + 172800
-            add_use('padlock', timer, author.id)
-            remove_item('padlock', author.id)
-            await ctx.send(f"**{author.name}** used a **padlock**.")
-
-
-        elif item == 'gun':
-            timer = int(time.time()) + 46800
-            add_use('gun', timer, author.id)
-            remove_item('gun', author.id)
-            await ctx.send(f"**{author.name}** used a **gun**.")
-
-
-        elif item == 'backpack':
-            storage = read_value(author.id, 'storage')
-            storage += 1
-            write_value(author.id, 'storage', storage)
-            remove_item('backpack', author.id)
-            await ctx.send(f"**{author.name}** used a **backpack**.\nYou can now carry up to {storage} items.")
             
-
-        elif item == 'pass':
-            jailtime = read_value(author.id, 'jailtime')
-            if jailtime < time.time():
-                await ctx.send('You are not in jail.')
-                return
-            else:
-                bailprice = int(int(jailtime-time.time())/3600*40)
-                money = read_value(author.id, 'money')
-                if bailprice > money:
-                    await ctx.send(f'You must have at least ${bailprice} to bail yourself.')
-                else:
-                    money -= bailprice
-                    write_value(author.id, 'money', money)
-                    write_value(author.id, 'jailtime', int(time.time()))
-                    remove_item('pass', author.id)
-                    await ctx.send(f"**{author.name}** used a **pass**.")
-                    await ctx.send(f'💸 You bailed yourself for ${bailprice}. 💸')
+        await ItemUses(self.client).dispatch(ctx, item)
         
-        elif item == 'handcuffs':
-            
-            await ctx.send("Who do you want to handcuff?")
-            try:
-                member = await self.client.wait_for('message', check=lambda x: x.channel == ctx.channel and x.author == ctx.author, timeout=20)
-            except asyncio.TimeoutError:
-                await ctx.send("Handcuff timed out.")
-                return
-
-            member = member.content.lower()
-
-            member = await commands.MemberConverter().convert(ctx, member)
-    
-            if not member:
-                await ctx.send("Member not found.")
-                return
-            
-            elif author == member:
-                await ctx.send("You can't handcuff yourself.")
-                return
-            
-            elif read_value(member.id, 'jailtime') > time.time():
-                await ctx.send("This user is already in jail.")
-                return
-            
-            cuffc = read_value(member.id, 'cuffc')
-            if cuffc > time.time():
-                await ctx.send(f"You must wait {splittime(cuffc)} before you can handcuff this user again.")
-                return
-
-            remove_item('handcuffs', author.id)
-
-            if random.randint(1, 10) > 3:
-                random_time = int(time.time()) + random.randint(5400, 7200) # 1h 30m to 2h
-                write_value(member.id, 'jailtime', random_time)
-                write_value(member.id, 'cuffc', int(time.time()) + 10800) # three hours
-                await ctx.send(f"You successfully jailed **{member.name}** for {splittime(random_time)}.")
-            
-            else:
-                random_time = int(time.time()) + random.randint(600, 1800) # 10m to 30m
-                write_value(author.id, 'jailtime', random_time)
-                await ctx.send(f"Your plan backfired and you got jailed for {splittime(random_time)}!")    
-    
-            
-
 
     @commands.command()
-    async def discard(self, ctx, item=None):
+    @commands.check(event_disabled)
+    async def give(self, ctx, member: discord.Member=None, *, item=None):
+        
+        if not member or not item:
+            await ctx.send("Incorrect command usage:\n`.give member item`")
+            return
+
+        elif not await jail_heist_check(ctx, ctx.author): return
+        
+        elif not await bot_check(self.client, ctx, member): return
+
+        elif read_value(member.id, 'level') < 4:
+            await ctx.send(f"**{member.name}** must be at least level 4 in order to use items.")
+            return
+        
+        conn = sqlite3.connect('./storage/databases/shop.db')
+        c = conn.cursor()
+        c.execute('SELECT name, article FROM shop')
+        items = c.fetchall()
+        conn.close()
+
+        item = item.lower()
+
+        for shopitem in items:
+            if item == shopitem[0]:
+                picked_item = shopitem
+                break
+        else:
+            await ctx.send(f"There is no such item called **{item}**.")
+            return
+
+        if item not in read_value(ctx.author.id, 'items').split():
+            await ctx.send(f"You do not own {picked_item[1]}**{picked_item[0]}**.")
+            return
+
+        elif len(read_value(member.id, 'items').split()) >= read_value(member.id, 'storage'):
+            await ctx.send(f"**{member.name}**'s item inventory is full.")
+            return
+
+        remove_item(item, ctx.author.id)
+        add_item(item, member.id)
+        await ctx.send(f"You gave {picked_item[1]}**{picked_item[0]}** to **{member.name}**.")
+    
+
+    @commands.command()
+    async def discard(self, ctx, *, item=None):
         author = ctx.author
 
         
@@ -923,26 +929,25 @@ class actions(commands.Cog):
 
         item = item.lower()
 
-        picked_item = None
-
         for shopitem in items:
             if item == shopitem[0]:
                 picked_item = shopitem
                 break
 
-        if not picked_item:
-            await ctx.send(f"There is no such item called {item}.")
+        else:
+            await ctx.send(f"There is no such item called **{item}**.")
             return
 
 
-        elif item not in read_value(author.id, 'items').split():
+        if item not in read_value(author.id, 'items').split():
             await ctx.send(f"You do not own {picked_item[1]}**{picked_item[0]}**.")
             return
 
-        remove_item(item.lower() , author.id)
+        remove_item(item, author.id)
         await ctx.send(f'**{author.name}** discarded {picked_item[1]}**{picked_item[0]}**.')
         
     @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
     async def daily(self, ctx):
         author = ctx.author
         dailytime = read_value(author.id, 'dailytime')
@@ -1015,7 +1020,7 @@ class actions(commands.Cog):
                     item, article = item
                     
 
-                    await ctx.send(f"You've earned ${reward}, along with {article}{item}!\n*Streak reset to 0.*")
+                    await ctx.send(f"You've earned ${reward}, along with {article}**{item}**!\n*Streak reset to 0.*")
                     add_item(item, author.id)
 
                 else:

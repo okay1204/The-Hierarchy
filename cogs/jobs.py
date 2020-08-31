@@ -5,16 +5,17 @@ from discord.ext import commands
 import random
 import time
 import os
-import inspect
 import asyncio
 import sqlite3
+import json
+from cogs.extra.minigames import Studygames
 
 # To import from different path
 import sys
 sys.path.insert(1 , os.getcwd())
 
 from utils import (read_value, write_value, update_total, leaderboard,
-rolecheck, level_check, minisplittime)
+rolecheck, level_check, minisplittime, jail_heist_check, splittime)
 
 
 def days_hours_minutes(minutes):
@@ -42,11 +43,11 @@ class University:
 
 universities = [
             University('Culinary Arts Academy', 'Culinary', 7, 4, 8, 180, 100, 90),
-            University('Emory', 'Medical', 12, 9, 12, 360, 95, 80),
+            University('Emory', 'Medical', 12, 8, 12, 360, 95, 80),
             University('East Bay', 'Science', 5, 10, 15, 60, 65, 70),
-            University('Harvard', 'Science', 11, 2, 4, 15, 95, 85),
-            University('Apicius', 'Culinary', 5, 7, 9, 120, 90, 110),
-            University('Duke', 'Medical', 7, 5, 8, 120, 100, 100)
+            University('Harvard', 'Science', 11, 3, 7, 15, 95, 85),
+            University('Apicius', 'Culinary', 4, 9, 9, 120, 90, 110),
+            University('Duke', 'Medical', 7, 4, 8, 120, 100, 100)
         ]
 
 def find_university(name: str):
@@ -57,6 +58,7 @@ def find_university(name: str):
             return university
     
     return None
+
 
 def find_next_day(university: University, study_start: int) -> int:
 
@@ -106,6 +108,17 @@ class jobs(commands.Cog):
             if task.get_name().startswith('school '):
                 task.cancel()
 
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+
+        error = getattr(error, 'original', error)
+
+        if isinstance(error, commands.MaxConcurrencyReached):
+            if ctx.command.name == 'final':
+                await ctx.send("Someone is already taking their finals in this channel.")
+            elif ctx.command.name == 'study':
+                await ctx.send("Someone is already studying in this channel.")
+
 
     async def cog_check(self, ctx):
         if ctx.channel.category.id != self.client.rightCategory:
@@ -113,7 +126,19 @@ class jobs(commands.Cog):
         else:
             return True
 
+
     async def school_fee(self, duration, userid, payment):
+
+        if duration != 0:
+            can_pay = True
+        else:
+            if read_value(userid, 'final_announced') == "True":
+                can_pay = False
+            else:
+                can_pay = True
+
+        if not can_pay:
+            return
 
         await asyncio.sleep(duration)
 
@@ -159,12 +184,13 @@ class jobs(commands.Cog):
         
         if duration == 0:
 
-            if read_value(userid, 'final_announced') == "False":
-
-                school_announcements = self.client.get_channel(744988365082067034)
-                
-                await school_announcements.send(f"<@{userid}> can take their finals.")
-                write_value(userid, 'final_announced', 'True')
+            school_announcements = self.client.get_channel(744988365082067034)
+            
+            await school_announcements.send(f"<@{userid}> can take their finals. Use `.final` to take it!")
+            write_value(userid, 'final_announced', 'True')
+        
+        else:
+            asyncio.create_task(self.school_fee(int(time.time()) + 86400, userid, payment), name=f"school {userid}")
 
 
     @commands.command()
@@ -212,16 +238,32 @@ class jobs(commands.Cog):
         started = read_value(member.id, 'study_start')
 
 
-        time_left = (( started + current.days * 86400 ) - int(time.time()) ) // 60
+        time_left = ( started + current.days * 86400 ) - int(time.time())
+
+        if time_left <= 0:
+            time_left = "Ready to take finals"
+        else:
+            time_left //= 60
+            time_left = days_hours_minutes(time_left)
+            
+
+        next_payment = find_next_day(current, started)
+        if next_payment <= 0:
+            next_payment = "No more payments"
+        else:
+            next_payment //= 60
+            next_payment = days_hours_minutes(next_payment)
+
 
         embed = discord.Embed(color=0x48157a, description=f"""Enrolled at: **{current.name}**
 Majoring in: {current.major}
 Chance to pass final: {progress}%
-Time left until final: {days_hours_minutes(time_left)}
-Time left until next payment: {days_hours_minutes(find_next_day(current, started) // 60)}""")
+Time left until final: {time_left}
+Time left until next payment: {next_payment}""")
         embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
         
         await ctx.send(embed=embed)
+
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
@@ -246,6 +288,14 @@ Time left until next payment: {days_hours_minutes(find_next_day(current, started
         
         university = find_university(name.capitalize())
 
+        majors = read_value(ctx.author.id, 'majors').split('|')
+        
+        if university.major in majors:
+            await ctx.send(f"You already have a **{university.major}** major.")
+            return
+
+        if not await jail_heist_check(ctx, ctx.author):
+            return
 
         if university.price > read_value(ctx.author.id, 'total'):
             await ctx.send("You do not have enough money to pay for the first day.")
@@ -259,7 +309,7 @@ Time left until next payment: {days_hours_minutes(find_next_day(current, started
                 bank = read_value(ctx.author.id, 'bank')
                 bank += money # adding negative amount
                 money = 0
-                write_value(ctx.author.id, 'bank')
+                write_value(ctx.author.id, 'bank', bank)
 
             write_value(ctx.author.id, 'money', money)
             write_value(ctx.author.id, 'university', name.capitalize())
@@ -286,6 +336,9 @@ Good luck on the finals!""")
             await ctx.send("You are not enrolling at a university.")
             return
 
+        if not await jail_heist_check(ctx, ctx.author):
+            return
+
         await ctx.send(f"Are you sure you want to unenroll from **{current}**? You will not be refunded any payments you made. Respond with `yes` or `y` to proceed.")
 
         try:
@@ -304,12 +357,219 @@ Good luck on the finals!""")
             
             conn = sqlite3.connect('./storage/databases/hierarchy.db')
             c = conn.cursor()
-            c.execute('UPDATE members SET university = null, study_prog = 0, study_start = 0 WHERE id = ?', (ctx.author.id,))
+            c.execute('UPDATE members SET university = null, study_prog = 0, study_start = 0, final_annouced = "False" WHERE id = ?', (ctx.author.id,))
             conn.commit()
             conn.close()
 
             await ctx.send(f"**{ctx.author.name}** unenrolled from **{current.capitalize()}**.")
+
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.channel)
+    async def final(self, ctx):
+        
+        current = read_value(ctx.author.id, 'university')
+        if not current:
+            await ctx.send("You are not enrolling at a university.")
+            return
+
+        university = find_university(current)
+        
+        if find_next_day(university, read_value(ctx.author.id, 'study_start')) != 0:
+            await ctx.send("You cannot take your finals yet.")
+            return
+
+        if not await jail_heist_check(ctx, ctx.author):
+            return
+
+        # confirmation
+        await ctx.send("Are you sure you want to take your finals? Respond with `yes` or `y` to proceed.")
+        try:
+            response = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=20)
+        except asyncio.TimeoutError:
+            await ctx.send("Finals timed out.")
+            return
+        
+        response = response.content.lower()
+        if response != 'y' and response != 'yes':
+            await ctx.send("Finals cancelled.")
+            return
+
+        await ctx.send("You have began taking your finals...")
+
+        test = 0
+        while test < 100:
             
+            await asyncio.sleep(random.randint(1,3))
+            test += random.randint(8, 14)
+            if test > 100:
+                test = 100
+
+            await ctx.send(f"Test progress: {test}%")
+
+            if test == 100:
+                await asyncio.sleep(2)
+                await ctx.send("Test done!")
+    
+        await asyncio.sleep(2)
+        await ctx.send("Waiting for test results...")
+
+        async with ctx.channel.typing():
+            await asyncio.sleep(10)
+        
+        
+        prog = read_value(ctx.author.id, 'study_prog')
+        prog = 100
+
+        if prog >= random.randint(1, 100):
+            await ctx.send(f"✅ You passed the finals from **{university.name}** and got your major in **{university.major}**! ✅")
+
+            majors = read_value(ctx.author.id, 'majors').split("|")
+            majors.append(university.major)
+            majors = "|".join(majors)
+            write_value(ctx.author.id, 'majors', majors)
+        else:
+            await ctx.send(f"❌ You failed the final.. well looks like you have to try again. ❌")
+
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute('UPDATE members SET university = null, study_prog = 0, study_start, final_announced = "False" WHERE id = ?', (ctx.author.id,))
+        conn.commit()
+        conn.close()
+
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.member)
+    async def majors(self, ctx, member:discord.Member=None):
+
+        if not member:
+            member = ctx.author
+
+        majors = read_value(member.id, 'majors').split('|')
+        
+
+        if not majors:
+            embed = discord.Embed(color=0x48157a, title="Majors", description="None")
+        else:
+            embed = discord.Embed(color=0x48157a, title="Majors")
+
+            for major in majors:
+                embed.add_field(name="\_\_\_\_\_\_\_\_\_\_", value=major, inline=True) # noqa pylint: disable=anomalous-backslash-in-string
+        embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
+
+        await ctx.send(embed=embed)
+
+    
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.channel)
+    async def study(self, ctx):
+
+        university = read_value(ctx.author.id, 'university')
+
+        if not university:
+            await ctx.send('You are not enrolling at a university.')
+            return
+
+        if not await jail_heist_check(ctx, ctx.author):
+            return
+
+        studyc = read_value(ctx.author.id, 'studyc')
+        if studyc > time.time():
+            await ctx.send(f'You must wait {splittime(studyc)} before you can study again.')
+            return
+
+        correct = 0
+
+        with open('./storage/jsons/mode.json') as f:
+            mode = json.load(f)
+
+        if ctx.author.premium_since and mode == 'event':
+
+            await ctx.send("*Premium perks are disabled during events*")
+            premium = False
+            await asyncio.sleep(2)
+
+        elif ctx.author.premium_since:
+            premium = True
+        else:
+            premium = False
+
+        studygames = Studygames(self.client)
+        for x in range(4):
+
+            if x == 3:
+                if premium:
+                    await ctx.send(f"**{ctx.author.name}** has __premium__ and gets one extra task!")
+                    await asyncio.sleep(2)
+                else:
+                    break
+
+            await ctx.send("Get ready...")
+            await asyncio.sleep(3)
+
+            if await studygames.random_game(ctx, correct, x + 1):
+                correct += 1
+            
+            await asyncio.sleep(2)
+
+        extra = False
+
+        if x > 3:
+            x = 3
+            extra = True
+        
+        university = find_university(university)
+        
+        end_range = university.low_increment
+        start_range = university.high_increment
+
+        # SECTION getting point value 
+        output_start_range = 0
+        output_end_range = 0
+        r = (end_range - start_range)//3 
+        if x == 0:
+            output_start_range = start_range
+            output_end_range +=  output_start_range + r
+
+        else:
+            if x == 1:
+                output_start_range += start_range + r 
+                output_end_range += output_start_range + r
+            elif x == 2:
+                output_start_range += start_range + 2*r
+                output_end_range += output_start_range + r - (end_range - start_range)//9
+            elif x == 3:
+                output_start_range += start_range + 3*r - (end_range - start_range)//9
+                output_end_range = end_range
+            
+        points = random.randint(output_start_range, output_end_range)
+        if extra:
+            points += random.randint(1, 3)
+
+        # !SECTION
+        
+
+        study_prog = read_value(ctx.author.id, 'study_prog')
+        study_prog += points
+
+        text = f"**{ctx.author.name}** studied and got a {points}% higher chance of passing the finals.\n"
+
+        if study_prog > university.max_study:
+            study_prog = university.max_study
+            text += f"They have hit their maximum study limit of {university.max_study}%."
+        else:
+            text += f"They now have a total of {study_prog}% to pass the finals."
+
+        write_value(ctx.author.id, 'study_prog', study_prog)
+
+        write_value(ctx.author.id, 'studyc', int(time.time()) + university.cooldown_minutes * 60)
+
+        await ctx.send(text)
+        
+
+        
+
+            
+
+# NOTE when deploying make sure to update premium as well
         
     
 

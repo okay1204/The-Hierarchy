@@ -139,6 +139,8 @@ class reactions(commands.Cog):
         if user:
             if user.id == self.client.user.id:
                 return
+        else:
+            return
         
         if payload.message_id == 716819696346857524: # Ping roles
 

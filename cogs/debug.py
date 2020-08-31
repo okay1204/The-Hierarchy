@@ -123,7 +123,63 @@ class debug(commands.Cog):
                 await ctx.send("Output too long to display.")
             else:
                 await ctx.send(f"```{output}```")
+
+    @commands.command()
+    async def shopupdate(self, ctx):
+
+        conn = sqlite3.connect('./storage/databases/shop.db')
+        c = conn.cursor()
+        c.execute('SELECT name, price, desc, emoji FROM shop')
+        shopitems = c.fetchall()
+        conn.close()
+
+        embed = discord.Embed(color=0x30ff56, title='Shop')
+
+        x = 1
+        for name, price, desc, emoji in shopitems:
+
+            embed.add_field(name=f'{x}. ${price} - {name.capitalize()} {emoji}', value=desc, inline=False)
+
+            x += 1
+
+        shopchannel = self.client.get_channel(702654620291563600)
+        message = await shopchannel.fetch_message(740680266086875243)
+        await message.edit(embed=embed)
+
+        await ctx.send("Shop successfully updated.")
+
+    @commands.command()
+    async def money(self, ctx, member: discord.Member=None, add=None):
+
+        if not member or not add:
+            await ctx.send("Incorrect command usage:\n`.money member +amount` or `.money member -amount`")
+            return
+
+        if not add.startswith('+'):
+            await ctx.send("Incorrect command usage:\n`.money member +amount` or `.money member -amount`")
+            return
+
+        try:
+            add = int(add)
+        except:
+            await ctx.send("Incorrect command usage:\n`.money member +amount` or `.money member -amount`")
+            return
+
         
+        money = read_value(member.id, 'money')
+        money += add
+        write_value(member.id, 'money', money)
+        update_total(member.id)
+
+        if add >= 0:
+            await ctx.send(f"Added ${add} to **{member.name}**'s balance.")
+        else:
+            await ctx.send(f"Subtracted ${add} from **{member.name}**'s balance.")
+
+        await rolecheck(self.client, member.id)
+        await leaderboard(self.client)
+        
+
 
     
 def setup(client):

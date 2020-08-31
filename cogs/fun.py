@@ -285,7 +285,7 @@ class fun(commands.Cog):
 
     @gang.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def which(self, ctx, member:discord.Member=None):
+    async def which(self, ctx, *, member:discord.Member=None):
 
         if not member:
             member = ctx.author
@@ -920,7 +920,7 @@ class fun(commands.Cog):
                                 allowed_formats = list(map(lambda extension: f"image/{extension}", allowed_formats))
 
                                 if resp.content_type not in allowed_formats:
-                                    await ctx.send("Only files with `.png`, `.jpg`, `jpeg`, and `gif` file extensions are supported.")
+                                    await ctx.send("Only files with `.png`, `.jpg`, `.jpeg`, and `.gif` file extensions are supported.")
                                     return
 
                                 data = await resp.read()
@@ -937,7 +937,7 @@ class fun(commands.Cog):
                 
                 else:
                     image = ctx.message.attachments[0]
-                    if not image.filename.endswith(('png', 'jpg', 'jpeg', 'gif')):
+                    if not image.filename.lower().endswith(('png', 'jpg', 'jpeg', 'gif')):
                         await ctx.send("Only files with `.png`, `.jpg`, `jpeg`, and `gif` file extensions are supported.")
                         return
 

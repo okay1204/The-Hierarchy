@@ -21,30 +21,29 @@ import bottoken
 
 async def do_captcha(ctx):
 
-
+                   
     if ctx.author.id not in client.making_captchas:
 
         client.making_captchas.append(ctx.author.id)
 
-        async with ctx.channel.typing():
 
-            # generate random word
-            word = ""
-            for x in range(3): word += random.choice(string.ascii_lowercase) # noqa pylint: disable=unused-variable
+        # generate random word
+        word = ""
+        for x in range(3): word += random.choice(string.ascii_lowercase) # noqa pylint: disable=unused-variable
 
 
-            # generate captcha image
-            image = ImageCaptcha()
-            image.generate(word)
-            image.write(word, f"./storage/images/captchas/{word}.png")
+        # generate captcha image
+        image = ImageCaptcha()
+        image.generate(word)
+        image.write(word, f"./storage/images/captchas/{word}.png")
 
-            # making embed
-            embed = discord.Embed(title="Captcha Required", description="Please answer this captcha to prove this is you.\n(There are only lowercase letters)", color=0x15a7c2)
-            embed.set_image(url="attachment://captcha.png")
-            
+        # making embed
+        embed = discord.Embed(title="Captcha Required", description="Please answer this captcha to prove this is you.\n(There are only lowercase letters)", color=0x15a7c2)
+        embed.set_image(url="attachment://captcha.png")
+        
 
-            # prompt user
-            captcha = await ctx.send(embed=embed, file=discord.File(f'./storage/images/captchas/{word}.png', filename="captcha.png"))
+        # prompt user
+        captcha = await ctx.send(embed=embed, file=discord.File(f'./storage/images/captchas/{word}.png', filename="captcha.png"))
 
         os.remove(f"./storage/images/captchas/{word}.png")
 
@@ -131,6 +130,7 @@ async def macro_check(ctx):
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
 
+client.add_check(lambda ctx: not ctx.author.bot)
 client.add_check(macro_check)
 
 @client.event
@@ -142,6 +142,9 @@ async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
 
         if ctx.message.content.startswith('..'):
+            return
+        
+        elif ctx.channel.category.id != client.rightCategory:
             return
 
         allowed_cogs = ['actions', 'fun', 'gambling', 'games', 'info', 'premium']
@@ -219,6 +222,7 @@ async def on_ready():
 
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
 
+
     client.history = {}
     client.making_captchas = []
     
@@ -251,8 +255,7 @@ async def on_ready():
     client.myself = client.mainGuild.get_member(322896727071784960)
 
     cogs = list(map(lambda filename: filename.replace('.py', ''), [f for f in os.listdir('./cogs') if os.path.isfile(os.path.join('./cogs', f))]))
-    
-    #cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
+
     for cog in cogs:
         client.load_extension(f'cogs.{cog}')
 
@@ -265,15 +268,18 @@ async def on_ready():
     commands = list(map(lambda command: command.name, commands))
     commands.extend(aliases)
     client.every_command = commands
+    client.every_command.append('featured')
 
     # ANCHOR default cogs
 
-    cogs_to_unload = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
+    #cogs_to_unload = ['events']
+    #cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
+    cogs_to_unload = ['debug', 'actions', 'games', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'info', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
+    #NOTE add cog info back to unloaded cogs
+
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
 
-
-    
     await leaderboard(client)
 
 client.adminChannel = 706953015415930941

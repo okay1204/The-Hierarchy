@@ -35,8 +35,16 @@ class info(commands.Cog):
     async def help(self, ctx):
         await ctx.send(self.client.commandsChannel.mention)
 
+    @commands.command(aliases=['richlist'])
+    async def leaderboard(self, ctx):
+        await ctx.send(self.client.leaderboardChannel.mention)
+
+    @commands.command()
+    async def shop(self, ctx):
+        await ctx.send(self.client.get_channel(702654620291563600).mention)
+
     @commands.command(aliases=['balance'])
-    async def bal(self, ctx, member:discord.Member=None):
+    async def bal(self, ctx, *, member:discord.Member=None):
 
         if not member: member = ctx.author
         
@@ -58,7 +66,7 @@ class info(commands.Cog):
         await ctx.send(embed=embed)
           
     @commands.command()
-    async def jailtime(self, ctx, member:discord.Member=None):
+    async def jailtime(self, ctx, *, member:discord.Member=None):
 
         if not member: member = ctx.author
 
@@ -76,7 +84,7 @@ class info(commands.Cog):
             await ctx.send(f'**{member.name}** is not in jail.')
 
     @commands.command()
-    async def worktime(self, ctx, member:discord.Member=None):
+    async def worktime(self, ctx, *, member:discord.Member=None):
 
         if not member: member = ctx.author
 
@@ -91,7 +99,7 @@ class info(commands.Cog):
             await ctx.send(f'**{member.name}** can work.')
 
     @commands.command()
-    async def stealtime(self, ctx, member:discord.Member=None):
+    async def stealtime(self, ctx, *, member:discord.Member=None):
 
         if not member: member = ctx.author
 
@@ -106,7 +114,7 @@ class info(commands.Cog):
             await ctx.send(f'**{member.name}** can steal.')
 
     @commands.command()
-    async def banktime(self, ctx, member:discord.Member=None):
+    async def banktime(self, ctx, *, member:discord.Member=None):
 
         if not member: member = ctx.author
 
@@ -142,7 +150,7 @@ class info(commands.Cog):
             await ctx.send(f'A heist can be made.')
         
     @commands.command()
-    async def place(self, ctx, member:discord.Member=None):
+    async def place(self, ctx, *, member:discord.Member=None):
 
         if not member: member = ctx.author
 
@@ -172,8 +180,8 @@ class info(commands.Cog):
 
         await ctx.send(f"**{member.name}** is **#{place}** in The Hierarchy.")
 
-    @commands.command()
-    async def items(self, ctx, member:discord.Member=None):
+    @commands.command(aliases=['inventory'])
+    async def items(self, ctx, *, member:discord.Member=None):
 
         if not member: member = ctx.author
 
@@ -217,7 +225,7 @@ class info(commands.Cog):
         await ctx.send(embed=embed2)
 
     @commands.command()
-    async def around(self, ctx, find=None, member:discord.Member=None):
+    async def around(self, ctx, find=None, *, member:discord.Member=None):
 
         if not member: 
             member = ctx.author
@@ -301,7 +309,7 @@ class info(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def aroundm(self, ctx, find=None, member:discord.Member=None):
+    async def aroundm(self, ctx, find=None, *, member:discord.Member=None):
         
         if not member: 
             member = ctx.author
@@ -385,7 +393,7 @@ class info(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def dailyinfo(self, ctx, member:discord.Member=None):
+    async def dailyinfo(self, ctx, *, member:discord.Member=None):
         if not member: member = ctx.author
 
         if not await bot_check(self.client, ctx, member):
@@ -394,6 +402,51 @@ class info(commands.Cog):
         streak = read_value(member.id, 'dailystreak')
 
         await ctx.send(f"**{member.name}**'s streak: {streak}")
+
+    @commands.command()
+    async def profile(self, ctx, member:discord.Member =None):
+        
+        if not member:
+            member = ctx.author
+        
+        if not await bot_check(self.client, ctx, member):
+            return
+
+        status = str(member.status)
+        
+        if status == "offline":
+            status = "<:offline:747627832624283720> Offline"
+        elif status == "online":
+            status = "<:online:747627823551873045> Online"
+        elif status == "dnd":
+            status = "<:do_not_disturb:747627854358904894> Do Not Disturb"
+        elif status == "idle":
+            status = "<:idle:747627839565856789> Idle"
+
+        # get gang
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        c.execute(f'SELECT name FROM gangs WHERE members LIKE "%{member.id}%" OR owner = ?', (member.id,))
+        gang = c.fetchone()
+        conn.close()
+
+        if not gang:
+            gang = "None"
+        else:
+            gang = gang[0]
+
+        embed = discord.Embed(color=0xffa047, title=f"{member.name}#{member.discriminator}", description=f"""ID: {member.id}
+Status: {status}
+
+Money: ${read_value(member.id, 'total')}
+Gang: {gang}
+""", timestamp=member.joined_at)
+        embed.set_footer(text="Joined at")
+
+        embed.set_thumbnail(url=member.avatar_url_as(static_format='jpg'))
+        
+        await ctx.send(embed=embed)
+
 
 
         

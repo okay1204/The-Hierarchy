@@ -223,7 +223,7 @@ class tutorial(commands.Cog):
                 spoofed = True
             
             if not spoofed:
-                await channel.send(f"Use `.steal member amount` to steal from someone. Make sure you replace `member` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {client_member.mention} 100\n\nTry out this command now (not the example!).")
+                await channel.send(f"Use `.steal member amount` to steal from someone. Make sure you replace `member` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {client_member.mention} 100\n\nTry out this command now. (Not the example!)")
                 breakOut = False
                 while True:
                     try:
@@ -244,7 +244,6 @@ class tutorial(commands.Cog):
                             elif message.content == 'This user does not have that much money in cash.':
                                 await asyncio.sleep(2)
                                 await channel.send("This user probably does not have enough money, or they are keeping their money in their bank. Don't worry about the bank for now, but try to steal from someone else. You can use `.balance member` to check the balance of another user.")
-                                breakOut = True
                             break
 
                     if breakOut:

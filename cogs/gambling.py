@@ -169,6 +169,7 @@ class gambling(commands.Cog):
                 if 'fighting' in name and str(member.id) in name:
                     await ctx.send(f"**{member.name}** is already fighting.")
                     return
+        
             asyncio.create_task(self.fighting(ctx, member, bet), name=f"fighting {author.id} {member.id}")
 
         elif str(rreaction.emoji) == '❌':
@@ -354,6 +355,7 @@ class gambling(commands.Cog):
             await author.send(f'There was a tie and no one earned any money.')
             await member.send(f'There was a tie and no one earned any money.')
             await ctx.send(f'There was a tie between **{author.name}** and **{member.name}**, and no one earned any money.')
+            return
 
         elif health1 == 0:
             await member.send(f'You have won the fight against **{author.name}** and earned ${bet}.')

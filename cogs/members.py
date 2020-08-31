@@ -84,12 +84,17 @@ class members(commands.Cog):
                 await member.add_roles(mute_role)
 
                 if self.client.get_cog('admin'):
-                    asyncio.create_task(self.client.get_cog('admin').wait_until_unmute(str(member.id), mutes[str(member.id)]))
+                    asyncio.create_task(self.client.get_cog('admin').wait_until_unmute(str(member.id), mutes[str(member.id)]), name=f"unmute {member.id}")
             
             else:
                 del mutes[str(member.id)]
                 with open(f'./storage/jsons/mutes.json', 'w') as f:
                     json.dump(mutes, f, indent=2)
+
+        
+        # rank leaderboard
+        if self.client.get_cog('leveling'):
+            asyncio.create_task(self.client.get_cog('leveling').rank_leaderboard())
 
 
 
@@ -128,6 +133,10 @@ class members(commands.Cog):
         c.execute('SELECT name, owner, members, role_id, img_location FROM gangs')
         gangs = c.fetchall()
         conn.close()
+
+
+        if self.client.get_cog('leveling'):
+            asyncio.create_task(self.client.get_cog('leveling').rank_leaderboard())
 
         for gang in gangs:
 

@@ -97,8 +97,7 @@ class timers(commands.Cog):
         c = conn.cursor()
         c.execute('SELECT * FROM shop')
         stats = c.fetchall()
-        embed = discord.Embed(color=0x30ff56)
-        embed.set_author(name='Shop')
+        embed = discord.Embed(color=0x30ff56, title='Shop')
         guild = self.client.mainGuild
         shopping = guild.get_role(716818790947618857)
         x = 1
@@ -137,18 +136,18 @@ class timers(commands.Cog):
                 text = f'{text}\n{stat[0].capitalize()}: No change'
 
 
-            c.execute(f"UPDATE shop SET price = {newprice} WHERE name = '{stat[0]}'")
-            c.execute(f"UPDATE shop SET last = '{change}' WHERE name = '{stat[0]}'")
+            c.execute(f"UPDATE shop SET price = {newprice}, last = '{change}' WHERE name = '{stat[0]}'")
 
-            embed.add_field(name=f'{x}. ${newprice} - {stat[0].capitalize()} {stat[6]}', value=f'{stat[5]}', inline=False)
+            embed.add_field(name=f'{x}. ${newprice} - {stat[0].capitalize()} {stat[6]}', value=stat[5], inline=False)
             x += 1
+
+        conn.commit()
+        conn.close()
 
         await channel.send(text)
         shopchannel = self.client.get_channel(702654620291563600)
         message = await shopchannel.fetch_message(740680266086875243)
         await message.edit(embed=embed)
-        conn.commit()
-        conn.close()
 
     async def boosts(self):
         conn = sqlite3.connect('./storage/databases/hierarchy.db')

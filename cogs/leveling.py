@@ -1,15 +1,17 @@
-# pylint: disable=import-error
+# pylint: disable=import-error, anomalous-backslash-in-string
 import discord
 from discord.ext import commands
 import time
 import os
 import random
+import asyncio
+import sqlite3
 
 # To import from different path
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import read_value, write_value, bot_check
+from utils import read_value, write_value, bot_check, update_total
 
 class leveling(commands.Cog):
 
@@ -17,11 +19,45 @@ class leveling(commands.Cog):
         self.client = client
         self.last_messages = {}
 
+        asyncio.create_task(self.rank_leaderboard())
+
     async def cog_check(self, ctx):
         if ctx.channel.category.id != self.client.rightCategory:
             return False
         else:
             return True
+
+    async def rank_leaderboard(self):
+
+        channel = self.client.get_channel(746062853244715008)
+        message = await channel.fetch_message(746063162708721815)
+
+        embed = discord.Embed(color=0x3e41de, title="⭐ Rank Leaderboard ⭐")
+        
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute('SELECT id, level FROM members ORDER BY level DESC')
+        users = c.fetchall()
+        conn.close()
+
+        guild = self.client.mainGuild
+        users = list(filter(lambda x: guild.get_member(x[0]), users))
+
+        for x in range(10):
+
+            medal = ''
+            if x == 0:
+                medal = ' 🥇'
+            elif x == 1:
+                medal = ' 🥈'
+            elif x == 2:
+                medal = ' 🥉'
+
+            embed.add_field(name='\_\_\_\_\_\_\_', value=f"{x+1}. <@{users[x][0]}>{medal} - {users[x][1]}", inline=False)
+        
+        await message.edit(embed=embed)
+
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -66,16 +102,26 @@ class leveling(commands.Cog):
 
                 progress -= 100
 
-                embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level}! Keep going to unlock more features!")
+                embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level} and earned $15! Keep going to unlock more features!")
                 embed.set_author(name=message.author.name, icon_url=message.author.avatar_url_as(static_format="jpg"))
 
                 await message.channel.send(embed=embed)
+
+                money = read_value(message.author.id, 'money')
+                money += 15
+                write_value(message.author.id, 'money', money)
+                update_total(message.author.id)
+                
+
+                asyncio.create_task(self.rank_leaderboard())
+
+
 
 
             write_value(message.author.id, 'progress', progress)
 
     @commands.command(aliases=["level"])
-    async def rank(self, ctx, member:discord.Member=None):
+    async def rank(self, ctx, *, member:discord.Member=None):
         
         if not member:
             member = ctx.author

@@ -79,7 +79,7 @@ class admin(commands.Cog):
         
         for mute in mutes:
 
-            asyncio.create_task(self.wait_until_unmute(mute, mutes[mute]))
+            asyncio.create_task(self.wait_until_unmute(mute, mutes[mute]), name=f"unmute {mute}")
     
     def cog_unload(self):
 
@@ -845,10 +845,11 @@ class admin(commands.Cog):
                 return
 
         try:
-            with open(f'./storage/jsons/member-audits/{member.id}.json') as json_file:
+            with open(f'./storage/member-audits/{member.id}.json') as json_file:
                 audits = json.load(json_file)
         except:
             await ctx.send('Audit not found.')
+            return
         
         for audit in audits:
             if audit["audit id"] == audit_id:
@@ -868,6 +869,8 @@ class admin(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.report member (reason)`")
             return
 
+        elif member.bot:
+            await ctx.send("You cannot report bots..")
 
         author = ctx.author
         if member == author:
@@ -877,8 +880,13 @@ class admin(commands.Cog):
         # Getting report cooldown
         conn = sqlite3.connect('./storage/databases/offenses.db')
         c = conn.cursor()
-        c.execute('SELECT reportc FROM offenses WHERE id = ?', (member.id,))
-        member_reportc = c.fetchone()[0]
+        try:
+            c.execute('SELECT reportc FROM offenses WHERE id = ?', (member.id,))
+            member_reportc = c.fetchone()[0]
+        except:
+            c.execute('INSERT INTO offenses (id) VALUES (?)', (member.id,))
+            conn.commit()
+            member_reportc = 0
         conn.close()
 
         if time.time() < member_reportc:

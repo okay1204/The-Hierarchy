@@ -23,6 +23,11 @@ class premium(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+    async def cog_check(self, ctx):
+        if ctx.channel.category.id != self.client.rightCategory:
+            return False
+        else:
+            return True
 
     @commands.command()
     async def boost(self, ctx):
@@ -44,7 +49,7 @@ class premium(commands.Cog):
             await ctx.send("You're don't have any boosts.")
             return
         
-        timers = ["workc", "jailtime", "stealc", "rpsc", "bankc", "dailytime"]
+        timers = ["workc", "jailtime", "stealc", "rpsc", "bankc", "dailytime", "studyc"]
         for timer in timers:
             current = read_value(author.id, timer)
             current -= 3600
@@ -55,7 +60,7 @@ class premium(commands.Cog):
         await ctx.send('⏱️ You boosted 1 hour! ⏱️')
 
     @commands.command()
-    async def boostcount(self, ctx, member:discord.Member=None):
+    async def boostcount(self, ctx, *, member:discord.Member=None):
         if not member:
 
             author = ctx.author

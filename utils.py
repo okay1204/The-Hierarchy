@@ -1,3 +1,5 @@
+# pylint: disable=anomalous-backslash-in-string
+
 import discord
 import json
 import time
@@ -250,25 +252,25 @@ def around(guild, userid, find):
 async def leaderboard(client):
     guild = client.get_guild(692906379203313695)
 
-    embed = discord.Embed(color = 0xffd24a)
-    embed.set_author(name='\U0001f3c6 Leaderboard \U0001f3c6')
+    embed = discord.Embed(color = 0xffd24a, title='\U0001f3c6 Leaderboard \U0001f3c6')
     conn = sqlite3.connect('./storage/databases/hierarchy.db')
     c = conn.cursor()
-    c.execute('SELECT id, total FROM members')
+    c.execute('SELECT id, total FROM members ORDER BY total DESC')
     hierarchy = c.fetchall()
     conn.close()
-    sorted_list = sorted(hierarchy, key=lambda k: k[1], reverse=True)
-    sorted_list = tuple(filter(lambda x: guild.get_member(x[0]), sorted_list))
+
+    hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
     for x in range(10):
-        member = guild.get_member(sorted_list[x][0])
+
+        medal = ''
         if x == 0:
-            embed.add_field(name='__________',value=f'1. {member.mention} 🥇 - ${sorted_list[x][1]}',inline=False)
+            medal = ' 🥇'
         elif x == 1:
-            embed.add_field(name='__________',value=f'2. {member.mention} 🥈 - ${sorted_list[x][1]}',inline=False)
+            medal = ' 🥈'
         elif x == 2:
-            embed.add_field(name='__________',value=f'3. {member.mention} \U0001f949 - ${sorted_list[x][1]}',inline=False)
-        else:
-            embed.add_field(name='__________',value=f'{x+1}. {member.mention} - ${sorted_list[x][1]}',inline=False)
+            medal = ' 🥉'
+
+        embed.add_field(name='\_\_\_\_\_\_\_',value=f'{x+1}. <@{hierarchy[x][0]}>{medal} - ${hierarchy[x][1]}',inline=False)
 
 
     await client.leaderboardMessage.edit(embed=embed)
@@ -279,30 +281,27 @@ async def rolecheck(client, user):
     poor = guild.get_role(692952611141451787)
     middle = guild.get_role(692952792016355369)
     rich = guild.get_role(692952919947083788)
-    totalmoney = 0
-    bots = 0
-    for member in guild.members:
-        if member.bot:
-            bots += 1
-    active = len(guild.members)-bots
+
     conn = sqlite3.connect('./storage/databases/hierarchy.db')
     c = conn.cursor()
-    c.execute('SELECT id, total FROM members')
+    c.execute('SELECT id, total FROM members WHERE total != 0')
     hierarchy = c.fetchall()
     conn.close()
-    for person in hierarchy:
-        member = guild.get_member(person[0])
-        if not member:
-            continue
-        if person[1] == 0:
-            active-=1
-            continue
-        totalmoney += read_value(person[0], 'total')
-    average = int(totalmoney/active)
+
+    hierarchy = list(filter(lambda member: guild.get_member(member[0]), hierarchy))
+
+    members = len(list(filter(lambda member: member.id in map(lambda user: user[0], hierarchy) and not member.bot, guild.members)))
+
+    totalmoney = sum(map(lambda member: member[1], hierarchy))
+
+    average = int(totalmoney/members)
+
     haverage = average + average/2
     laverage = average - average/2
+
     total = read_value(user, 'total')
     member = guild.get_member(user)
+
     if total < laverage:
         await member.add_roles(poor)
         await member.remove_roles(middle, rich)

@@ -759,7 +759,8 @@ class admin(commands.Cog):
 
         #Removing from count
         action += 's'
-        decrement(member.id, action)
+        if action != "unmutes":
+            decrement(member.id, action)
 
         await ctx.send(f'Audit {audit_id} successfully revoked from {member.name}#{member.discriminator}.')
 

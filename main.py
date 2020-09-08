@@ -144,8 +144,11 @@ async def on_command_error(ctx, error):
         if ctx.message.content.startswith('..'):
             return
         
-        elif ctx.channel.category.id != client.rightCategory:
-            return
+        try:
+            if ctx.channel.category.id != client.rightCategory:
+                return
+        except:
+            pass
 
         allowed_cogs = ['actions', 'fun', 'gambling', 'games', 'info', 'premium']
 

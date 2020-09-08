@@ -155,7 +155,7 @@ class debug(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.money member +amount` or `.money member -amount`")
             return
 
-        if not add.startswith('+'):
+        if not add.startswith(('+', '-')):
             await ctx.send("Incorrect command usage:\n`.money member +amount` or `.money member -amount`")
             return
 
@@ -171,10 +171,11 @@ class debug(commands.Cog):
         write_value(member.id, 'money', money)
         update_total(member.id)
 
+
         if add >= 0:
             await ctx.send(f"Added ${add} to **{member.name}**'s balance.")
         else:
-            await ctx.send(f"Subtracted ${add} from **{member.name}**'s balance.")
+            await ctx.send(f"Subtracted ${add * -1} from **{member.name}**'s balance.")
 
         await rolecheck(self.client, member.id)
         await leaderboard(self.client)

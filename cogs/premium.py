@@ -49,7 +49,7 @@ class premium(commands.Cog):
             await ctx.send("You're don't have any boosts.")
             return
         
-        timers = ["workc", "jailtime", "stealc", "rpsc", "bankc", "dailytime", "studyc"]
+        timers = ["workc", "jailtime", "stealc", "rpsc", "bankc", "dailytime", "studyc", "applyc"]
         for timer in timers:
             current = read_value(author.id, timer)
             current -= 3600

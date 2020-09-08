@@ -8,7 +8,7 @@ import os
 import asyncio
 import sqlite3
 import json
-from cogs.extra.minigames import Studygames
+from cogs.extra import minigames
 
 # To import from different path
 import sys
@@ -16,6 +16,30 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import (read_value, write_value, update_total, leaderboard,
 rolecheck, level_check, minisplittime, jail_heist_check, splittime)
+
+
+def get_range_value(start_range, end_range, x):
+
+    output_start_range = 0
+    output_end_range = 0
+    r = (end_range - start_range)//3 
+    if x == 0:
+        output_start_range = start_range
+        output_end_range +=  output_start_range + r
+
+    else:
+        if x == 1:
+            output_start_range += start_range + r 
+            output_end_range += output_start_range + r
+        elif x == 2:
+            output_start_range += start_range + 2*r
+            output_end_range += output_start_range + r - (end_range - start_range)//9
+        elif x == 3:
+            output_start_range += start_range + 3*r - (end_range - start_range)//9
+            output_end_range = end_range
+    
+    return random.randint(output_start_range, output_end_range)
+
 
 
 def days_hours_minutes(minutes):
@@ -26,7 +50,6 @@ def days_hours_minutes(minutes):
     rhours = hours % 24
 
     return f"{days}d {rhours}h {rminutes}m"
-
 
 
 class University:
@@ -46,7 +69,7 @@ universities = [
             University('Emory', 'Medical', 12, 8, 12, 360, 95, 80),
             University('East Bay', 'Science', 5, 10, 15, 60, 65, 70),
             University('Harvard', 'Science', 11, 3, 7, 15, 95, 85),
-            University('Apicius', 'Culinary', 4, 9, 9, 120, 90, 110),
+            University('Apicius', 'Culinary', 4, 9, 14, 120, 90, 110),
             University('Duke', 'Medical', 7, 4, 8, 120, 100, 100)
         ]
 
@@ -83,6 +106,69 @@ def find_next_day(university: University, study_start: int) -> int:
     
     next_time -= int(time.time())
     return next_time
+
+
+
+class Job:
+
+    def __init__(self, name, emoji, salary, cooldown, requirements):
+
+        self.name = name
+        self.emoji = emoji
+        self.salary = salary
+        self.cooldown = cooldown
+        self.requirements = requirements
+
+
+work_jobs = [
+
+    Job('Garbage Collector', '🗑️', [
+        (30, 40),
+        (45, 55),
+        (60, 70),
+        (70, 80)
+    ], 60, []),
+
+    Job('Streamer', '⌨️', [
+        (5, 15),
+        (15, 25),
+        (25, 32),
+        (32, 40)
+    ], 15, []),
+
+    Job('Chef', '🔪', [
+        (20, 30),
+        (30, 40),
+        (40, 45),
+        (45, 50)
+    ], 30, ['Culinary']),
+
+    Job('Scientist', '🧪', [
+        (25, 32),
+        (33, 42),
+        (43, 51),
+        (52, 60)
+    ], 45, ['Science']),
+
+    Job('Doctor', '💉', [
+        (50, 65),
+        (65, 82),
+        (82, 90),
+        (110, 120)
+    ], 120, ['Medical'])
+]
+
+def find_job(name: str):
+    
+    global work_jobs
+
+    for work_job in work_jobs:
+        if work_job.name == name:
+            return work_job
+    
+    return None
+
+
  
 class jobs(commands.Cog):
 
@@ -118,6 +204,10 @@ class jobs(commands.Cog):
                 await ctx.send("Someone is already taking their finals in this channel.")
             elif ctx.command.name == 'study':
                 await ctx.send("Someone is already studying in this channel.")
+            elif ctx.command.name == 'work':
+                await ctx.send("Someone is already working in this channel.")
+            elif ctx.command.name == 'practice':
+                await ctx.send("Someone is already practicing in this channel.")
 
 
     async def cog_check(self, ctx):
@@ -201,7 +291,9 @@ class jobs(commands.Cog):
 ⏫ - Finals percentage gain on each study
 🕑 - Study Cooldown
 📚 - Maximum finals percentage
-💸 - Cost""")
+💸 - Cost
+
+_ _""")
 
         for university in universities:
 
@@ -269,7 +361,6 @@ Time left until next payment: {next_payment}""")
     @commands.max_concurrency(1, per=commands.BucketType.member)
     async def enroll(self, ctx, *, name=None):
 
-        #TODO cannot enroll if working at a job
 
         if not name:
             await ctx.send("Incorrect command usage:\n`.enroll universityname`")
@@ -279,6 +370,13 @@ Time left until next payment: {next_payment}""")
 
         if not university:
             await ctx.send(f"There is no university called **{name}**.")
+            return
+
+        if not await level_check(ctx, ctx.author.id, 7, "study at a university"):
+            return
+
+        if read_value(ctx.author.id, 'job'):
+            await ctx.send("You cannot have a job in order to enroll at a university.")
             return
 
         current = read_value(ctx.author.id, 'university')
@@ -320,7 +418,6 @@ Time left until next payment: {next_payment}""")
 If you do not have enough money to pay the cost every 24 hours, your enrollment will automatically end and no refund will be given.
 Good luck on the finals!""")
             
-
             asyncio.create_task(self.school_fee( find_next_day(university, int(time.time())), ctx.author.id, university.price), name=f"school {ctx.author.id}")
 
             update_total(ctx.author.id)
@@ -357,7 +454,7 @@ Good luck on the finals!""")
             
             conn = sqlite3.connect('./storage/databases/hierarchy.db')
             c = conn.cursor()
-            c.execute('UPDATE members SET university = null, study_prog = 0, study_start = 0, final_annouced = "False" WHERE id = ?', (ctx.author.id,))
+            c.execute('UPDATE members SET university = null, study_prog = 0, study_start = 0, final_announced = "False" WHERE id = ?', (ctx.author.id,))
             conn.commit()
             conn.close()
 
@@ -380,6 +477,7 @@ Good luck on the finals!""")
 
         if not await jail_heist_check(ctx, ctx.author):
             return
+
 
         # confirmation
         await ctx.send("Are you sure you want to take your finals? Respond with `yes` or `y` to proceed.")
@@ -476,6 +574,15 @@ Good luck on the finals!""")
             await ctx.send(f'You must wait {splittime(studyc)} before you can study again.')
             return
 
+        university = find_university(university)
+
+        started = read_value(ctx.author.id, 'study_start')
+        time_left = ( started + university.days * 86400 ) - int(time.time())
+
+        if time_left <= 0:
+            await ctx.send("You may no longer study, you must take your finals now.")
+            return
+
         correct = 0
 
         with open('./storage/jsons/mode.json') as f:
@@ -492,7 +599,7 @@ Good luck on the finals!""")
         else:
             premium = False
 
-        studygames = Studygames(self.client)
+        studygames = minigames.Studygames(self.client)
         for x in range(4):
 
             if x == 3:
@@ -512,45 +619,25 @@ Good luck on the finals!""")
 
         extra = False
 
-        if x > 3:
-            x = 3
+        if correct > 3:
+            correct = 3
             extra = True
         
         university = find_university(university)
         
-        end_range = university.low_increment
-        start_range = university.high_increment
 
-        # SECTION getting point value 
-        output_start_range = 0
-        output_end_range = 0
-        r = (end_range - start_range)//3 
-        if x == 0:
-            output_start_range = start_range
-            output_end_range +=  output_start_range + r
+        points = get_range_value(university.low_increment, university.high_increment, correct)
 
-        else:
-            if x == 1:
-                output_start_range += start_range + r 
-                output_end_range += output_start_range + r
-            elif x == 2:
-                output_start_range += start_range + 2*r
-                output_end_range += output_start_range + r - (end_range - start_range)//9
-            elif x == 3:
-                output_start_range += start_range + 3*r - (end_range - start_range)//9
-                output_end_range = end_range
-            
-        points = random.randint(output_start_range, output_end_range)
         if extra:
             points += random.randint(1, 3)
 
-        # !SECTION
+
         
 
         study_prog = read_value(ctx.author.id, 'study_prog')
         study_prog += points
 
-        text = f"**{ctx.author.name}** studied and got a {points}% higher chance of passing the finals.\n"
+        text = f"**{ctx.author.name}** studied at **{university.name}** and got a {points}% higher chance of passing the finals.\n"
 
         if study_prog > university.max_study:
             study_prog = university.max_study
@@ -564,14 +651,249 @@ Good luck on the finals!""")
 
         await ctx.send(text)
         
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    @commands.command()
+    async def jobs(self, ctx):
+
+        embed = discord.Embed(color=0x3d9c17, title="Jobs", description="""__**Key**__:\n💸 - Salary
+🕑 - Work Cooldown
+🎓 - Major Requirements
+
+_ _""")
+
+        for work_job in work_jobs:
+            if not (requirements := work_job.requirements):
+                requirements = ["None"]
+
+            embed.add_field(name=f"{work_job.emoji} {work_job.name}", value=f"""💸 - ${work_job.salary[0][0]} - ${work_job.salary[-1][-1]}
+🕑 - {minisplittime(work_job.cooldown)}
+🎓 - {", ".join(requirements)}""", inline=True)
+
+        await ctx.send(embed=embed)
+
+    
+    @commands.command()
+    async def apply(self, ctx, *, name=None):
+        
+        if not name:
+            await ctx.send("Incorrect command usage:\n`.apply jobname`")
+            return
+
+        if not (job := find_job(name.capitalize())):
+            await ctx.send(f"There is no job called **{name}**.")
+            return
+
+        if (applyc := read_value(ctx.author.id, 'applyc')) > time.time():
+            await ctx.send(f"You must wait {splittime(applyc)} before you can apply for another job.")
+            return
+        
+        if read_value(ctx.author.id, 'job'):
+            await ctx.send("You already have a job.")
+            return
+
+        if read_value(ctx.author.id, 'university'):
+            await ctx.send("You cannot be studying at a university to apply for a job.")
+            return
+
+        majors = read_value(ctx.author.id, 'majors').split('|')
+        for major in job.requirements:
+            if major not in majors:
+                await ctx.send("You do not have all the required majors to apply for this job.")
+                return
+
+        write_value(ctx.author.id, 'job', job.name)
+        await ctx.send(f"You have successfully recieved the job **{job.name}**.")
+
+    
+    @commands.command(aliases=["retire", "unapply"])
+    async def quit(self, ctx):
+
+        if not (job := read_value(ctx.author.id, 'job')):
+            await ctx.send("You do not have a job.")
+            return
+
+        await ctx.send("Are you sure you want to quit your job? You will not be able to apply to another job for 12 hours. Respond with `y` or `yes` to proceed.")
+
+        try:
+            response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author.id == ctx.author.id, timeout=20)
+        except asyncio.TimeoutError:
+            await ctx.send("Quit timed out.")
+
+        response = response.content.lower()
+        
+        if response == 'yes' or response == 'y':   
+            conn = sqlite3.connect('./storage/databases/hierarchy.db')
+            c = conn.cursor()                                                         # 12 hours
+            c.execute('UPDATE members SET job = null, applyc = ? WHERE id = ?', (int(time.time()) + 43200, ctx.author.id))
+            conn.commit()
+            conn.close()
+
+            if job.lower().startswith(('a', 'e', 'i', 'o', 'u')):
+                article = 'an'
+            else:
+                article = 'a'
+
+            await ctx.send(f"You have quit your job as {article} **{job}**.")
+
+        else:
+            await ctx.send("Quit cancelled.")
+
+
+    @commands.command()
+    async def job(self, ctx, *, member:discord.Member=None):
+
+        if not member:
+            member = ctx.author
+
+        if not (job := read_value(member.id, 'job')):
+            await ctx.send(f"**{member.name}** does not have a job.")
+
+        if job.lower().startswith(('a', 'e', 'i', 'o', 'u')):
+            article = 'an'
+        else:
+            article = 'a'
+
+        await ctx.send(f"**{member.name}** is working as {article} **{job}**.")
+
+
+        
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.channel)
+    async def tempwork(self, ctx):
+
+        if not (job := read_value(ctx.author.id, 'job')):
+            await ctx.send(f"You do not have a job.")
+            return
+        
+        if not await jail_heist_check(ctx, ctx.author): return
+
+        elif (workc := read_value(ctx.author.id, 'workc')) > time.time():
+            await ctx.send(f'You must wait {splittime(workc)} before you can work again.')
+            return
+
+        correct = 0
+
+        with open('./storage/jsons/mode.json') as f:
+            mode = json.load(f)
+
+        if ctx.author.premium_since and mode == 'event':
+
+            await ctx.send("*Premium perks are disabled during events*")
+            premium = False
+            await asyncio.sleep(2)
+
+        elif ctx.author.premium_since:
+            premium = True
+        else:
+            premium = False
+
+
+        for x in range(5):
+
+            if x == 3:
+                if premium:
+                    await ctx.send(f"**{ctx.author.name}** has __premium__ and gets two extra tasks!")
+                    await asyncio.sleep(2)
+                else:
+                    break
+
+            await ctx.send("Get ready...")
+            await asyncio.sleep(3)
+
+            if await minigames.work_game(self.client, job, ctx, correct, x+1):
+                correct += 1
+            
+            await asyncio.sleep(2)
+
+        extra = 0
+
+        if correct > 3:
+            extra = correct - 3
+            correct = 3
+        
+        job = find_job(job)
+
+        earnings = job.salary[correct]
+        earnings = random.randint(earnings[0], earnings[1])
+
+        while extra > 0:
+            earnings += random.randint(1,10)
+            extra -= 1
+        
+        money = read_value(ctx.author.id, 'money')
+        money += earnings
+        write_value(ctx.author.id, 'money', money)
+
+        write_value(ctx.author.id, 'workc', int(time.time()) + (job.cooldown * 60))
+
+        if job.name.lower().startswith(('a', 'e', 'i', 'o', 'u')):
+            article = 'an'
+        else:
+            article = 'a'
+
+        await ctx.send(f"💰 **{ctx.author.name}** worked as {article} **{job.name}** and successfully completed {correct} tasks, earning ${earnings}. 💰")
+
+
+    
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.channel)
+    async def practice(self, ctx):
+
+        if not (job := read_value(ctx.author.id, 'job')):
+            await ctx.send(f"You do not have a job.")
+            return
+
+        correct = 0
+
+        for x in range(3):
+
+            await ctx.send("Get ready...")
+            await asyncio.sleep(3)
+
+            if await minigames.work_game(self.client, job, ctx, correct, x+1):
+                correct += 1
+            
+            await asyncio.sleep(2)
+
+
+        if job.lower().startswith(('a', 'e', 'i', 'o', 'u')):
+            article = 'an'
+        else:
+            article = 'a'
+
+        await ctx.send(f"**{ctx.author.name}** practiced as {article} **{job}** and successfully completed {correct} tasks.")
+        
+        
+
 
         
 
             
 
 # NOTE when deploying make sure to update premium as well
-        
-    
+# NOTE update boosts channel to unclude perks like extra study tasks and work tasks
+
+# NOTE when deploying be sure to also transfer new text files from storage
+
+# NOTE restart bot and transfer main.py when deploying
 
 
 def setup(client):

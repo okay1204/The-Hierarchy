@@ -243,8 +243,8 @@ class info(commands.Cog):
             await ctx.send('Incorrect command usage:\n`.around (range) (member)`')
             return
 
-        if find < 1 or find > 25:
-            await ctx.send('Enter a number from 1-25 for `range`.')
+        if find < 1 or find > 12:
+            await ctx.send('Enter a number from 1-12 for `range`.')
             return
 
 
@@ -328,8 +328,8 @@ class info(commands.Cog):
             await ctx.send('Incorrect command usage:\n`.aroundm (range) (member)`')
             return
 
-        if find < 1 or find > 25:
-            await ctx.send('Enter a number from 1-25 for `range`.')
+        if find < 1 or find > 12:
+            await ctx.send('Enter a number from 1-12 for `range`.')
             return
 
 

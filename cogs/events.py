@@ -163,8 +163,8 @@ class events(commands.Cog):
         except:
             await ctx.send('Incorrect command usage:\n`.eventaround (range) (member)`')
             return
-        if find < 1 or find > 25:
-            await ctx.send('Enter a range from 1-25.')
+        if find < 1 or find > 12:
+            await ctx.send('Enter a range from 1-12.')
             return
 
         if not member:
@@ -265,8 +265,8 @@ class events(commands.Cog):
         except:
             await ctx.send('Incorrect command usage:\n`.eventaroundm (range) (member)`')
             return
-        if find < 1 or find > 25:
-            await ctx.send('Enter a number from 1-25.')
+        if find < 1 or find > 12:
+            await ctx.send('Enter a number from 1-12.')
             return
         if not member:
             member = ctx.author

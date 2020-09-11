@@ -279,6 +279,7 @@ async def on_ready():
     #cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
     cogs_to_unload = ['debug', 'actions', 'games', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'info', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
     #NOTE add cog info back to unloaded cogs
+    # cogs_to_unload = ['fun', 'timers', 'admin', 'misc', 'leveling'] # for tutorial testing
 
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')

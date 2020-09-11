@@ -134,7 +134,7 @@ work_jobs = [
         (15, 25),
         (25, 32),
         (32, 40)
-    ], 15, []),
+    ], 15, []), # Change tutorial if more non-major requirement jobs are added
 
     Job('Chef', '🔪', [
         (20, 30),
@@ -413,6 +413,7 @@ Time left until next payment: {next_payment}""")
             write_value(ctx.author.id, 'university', name.capitalize())
             write_value(ctx.author.id, 'study_prog', 0)
             write_value(ctx.author.id, 'study_start', int(time.time()))
+            write_value(ctx.author.id, 'final_announced', 'False')
 
             await ctx.send(f"""You payed ${university.price} and successfully enrolled in **{name.capitalize()}**.
 If you do not have enough money to pay the cost every 24 hours, your enrollment will automatically end and no refund will be given.
@@ -672,7 +673,7 @@ Good luck on the finals!""")
 
     @commands.command()
     async def jobs(self, ctx):
-
+                                    # embed title linked with tutorial
         embed = discord.Embed(color=0x3d9c17, title="Jobs", description="""__**Key**__:\n💸 - Salary
 🕑 - Work Cooldown
 🎓 - Major Requirements
@@ -697,9 +698,11 @@ _ _""")
             await ctx.send("Incorrect command usage:\n`.apply jobname`")
             return
 
-        if not (job := find_job(name.capitalize())):
+        if not (job := find_job(name.title())):
             await ctx.send(f"There is no job called **{name}**.")
             return
+
+        if not await jail_heist_check(ctx, ctx.author): return
 
         if (applyc := read_value(ctx.author.id, 'applyc')) > time.time():
             await ctx.send(f"You must wait {splittime(applyc)} before you can apply for another job.")
@@ -720,6 +723,7 @@ _ _""")
                 return
 
         write_value(ctx.author.id, 'job', job.name)
+                            # message below linked to tutorial
         await ctx.send(f"You have successfully recieved the job **{job.name}**.")
 
     
@@ -777,7 +781,7 @@ _ _""")
         
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.channel)
-    async def tempwork(self, ctx):
+    async def work(self, ctx):
 
         if not (job := read_value(ctx.author.id, 'job')):
             await ctx.send(f"You do not have a job.")
@@ -848,7 +852,7 @@ _ _""")
             article = 'an'
         else:
             article = 'a'
-
+                            # message linked with tutorial
         await ctx.send(f"💰 **{ctx.author.name}** worked as {article} **{job.name}** and successfully completed {correct} tasks, earning ${earnings}. 💰")
 
 
@@ -878,7 +882,7 @@ _ _""")
             article = 'an'
         else:
             article = 'a'
-
+                                # message linked with tutorial
         await ctx.send(f"**{ctx.author.name}** practiced as {article} **{job}** and successfully completed {correct} tasks.")
         
         
@@ -888,12 +892,15 @@ _ _""")
 
             
 
-# NOTE when deploying make sure to update premium as well
+# NOTE when deploying make sure to transfer premium as well
 # NOTE update boosts channel to unclude perks like extra study tasks and work tasks
 
 # NOTE when deploying be sure to also transfer new text files from storage
 
 # NOTE restart bot and transfer main.py when deploying
+# NOTE transfer tutorial as well
+
+# NOTE remove work command from actions.py and transfer as well
 
 
 def setup(client):

@@ -108,43 +108,153 @@ class tutorial(commands.Cog):
 
         await channel.send("Let's get you started with the basics.")
 
-        client_member = guild.get_member(self.client.user.id)
-
         async with channel.typing():
             await asyncio.sleep(3)
 
-        if read_value(author.id, 'workc') < time.time() and read_value(author.id, 'jailtime') < time.time():        
+
+        if read_value(author.id, 'job'):
+            await channel.send("You seem to already have applied for a job. Let's move on then.")
+            canApply = False
             canWork = True
 
-        elif read_value(author.id, 'workc') >= time.time():
-            await channel.send("Hm.. you already seem to have used the `.work` command. Since you already know about it, let's move on then.")
-            canWork = False
-        else:
-            await channel.send("Well, it looks like you're in jail. It looks like we will have to skip majority of the tutorial.")
-            canWork = False
+        elif (applyc := read_value(author.id, 'applyc')) > time.time():
+            await channel.send(f"Looks like you can't apply for a job for another {splittime(applyc)}. Let's skip working then.")
+            canApply = canWork = False
 
         
-        if canWork: 
+        elif read_value(author.id, 'university'):
+            await channel.send("You are studying at a university right now. Let's skip working then.")
+            canApply = canWork = False
 
-            await channel.send("Start off by typing `.work`. Be ready though, there will be some minigames coming your way.")
+        else:
+            canApply = canWork = True
 
+
+        if canApply:
+
+            await channel.send(f"To start working, you will have to apply for a job. Type `.jobs` to see a list of jobs.")
+
+
+            # prompting for .jobs command
             while True:
                 try:
                     message = await self.client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=60)
                 except asyncio.TimeoutError:
                     await channel.send("Tutorial cancelled due to inactivity.")
                     return
-                if message.content == '.work' or message.content.startswith('.work '):
+                if message.content == '.jobs' or message.content.startswith('.jobs '):
                     channel = message.channel
                     break
 
             while True:
                 try:
-                    message = await self.client.wait_for('message', check=lambda x: x.author == client_member and x.channel == channel, timeout=60)
+                    message = await self.client.wait_for('message', check=lambda x: x.author == guild.me and x.channel == channel, timeout=60)
                 except asyncio.TimeoutError:
                     await channel.send("Hmm... something went wrong. Please start the tutorial again.")
                     return
-                if 'worked and' in message.content:
+                if message.embeds:
+                    if message.embeds[0].title == "Jobs":
+                        break
+
+            async with channel.typing():
+                await asyncio.sleep(2)
+
+            spoofed = False
+            if read_value(author.id, 'applyc') > time.time():
+                await channel.send(f"Looks like you just applied for a job... Let's skip working then.")
+                spoofed = True
+                canWork = False
+            elif read_value(author.id, 'jailtime') > time.time():
+                await channel.send(f"Well it looks like you just got yourself in jail. Let's skip working then.")
+                spoofed = True
+                canWork = False
+
+            if not spoofed:
+                await channel.send("The only two jobs that do not require a major to apply for are the **Garbage Collector** and the **Streamer**. Go ahead and apply for whichever job you like, based on the stats, using `.apply Job Name`.")
+            
+                while True:
+                    try:
+                        message = await self.client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=120)
+                    except asyncio.TimeoutError:
+                        await channel.send("Tutorial cancelled due to inactivity.")
+                        return
+                    if message.content == '.apply' or message.content.startswith('.apply '):
+                        channel = message.channel
+                        break
+
+                while True:
+                    try:
+                        message = await self.client.wait_for('message', check=lambda x: x.author == guild.me and x.channel == channel, timeout=60)
+                    except asyncio.TimeoutError:
+                        await channel.send("Hmm... something went wrong. Please start the tutorial again.")
+                        return
+                    if message.content.startswith('You have successfully recieved the job'):
+                        break
+
+                async with channel.typing():
+                    await asyncio.sleep(3)
+
+                await channel.send(f"Now that you have a job, you can start working. ***But wait!***")
+
+                async with channel.typing():
+                    await asyncio.sleep(3)
+
+                await channel.send(f"When you work, a bunch of minigames are sent your way. These minigames may be a little complex at first. You may use the `.practice` command as many times as you like to practice these minigames **without penalty**.\nGo ahead and practice as many times as you like with `.practice`, and when you are ready, use `.work` to start making money.")
+            
+        
+        if canWork:
+            if read_value(author.id, 'workc') >= time.time():
+                
+                async with channel.typing():
+                    await asyncio.sleep(4)
+
+                await channel.send("Hm.. you already seem to have used the `.work` command. Since you already know about it, let's move on then.")
+                canWork = False
+            elif read_value(author.id, 'jailtime') >= time.time():
+
+                async with channel.typing():
+                    await asyncio.sleep(4)
+
+                await channel.send("Well, it looks like you're in jail. It looks like we will have to skip the majority of the tutorial.")
+                canWork = False
+
+        breakOut = False
+        if canWork:
+
+            while True:
+
+                while True:
+                    try:
+                        message = await self.client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=60)
+                    except asyncio.TimeoutError:
+                        await channel.send("Tutorial cancelled due to inactivity.")
+                        return
+                    if message.content == '.work' or message.content.startswith('.work '):
+                        channel = message.channel
+                        minigame_type = "work"
+                        break
+                    elif message.content == '.practice' or message.content.startswith('.work '):
+                        channel = message.channel
+                        minigame_type = "practice"
+                        break
+
+                while True:
+                    try:
+                        message = await self.client.wait_for('message', check=lambda x: x.author == guild.me and x.channel == channel, timeout=60)
+                    except asyncio.TimeoutError:
+                        await channel.send("Hmm... something went wrong. Please start the tutorial again.")
+                        return
+                    
+                    if minigame_type == "practice" and message.content.startswith(f"**{author.name}** practiced as "):
+                        await channel.send(f"Use `.practice` to practice again, and type `.work` when you're ready!")
+                        break
+
+                    elif minigame_type == "work" and message.content.startswith(f"💰 **{author.name}** worked as "):
+                        breakOut = True
+                        break
+
+                
+                if breakOut:
                     break
 
         async with channel.typing():
@@ -223,7 +333,7 @@ class tutorial(commands.Cog):
                 spoofed = True
             
             if not spoofed:
-                await channel.send(f"Use `.steal member amount` to steal from someone. Make sure you replace `member` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {client_member.mention} 100\n\nTry out this command now. (Not the example!)")
+                await channel.send(f"Use `.steal member amount` to steal from someone. Make sure you replace `member` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {guild.me.mention} 100\n\nTry out this command now. (Not the example!)")
                 breakOut = False
                 while True:
                     try:
@@ -235,7 +345,7 @@ class tutorial(commands.Cog):
                         channel = message.channel
                         while True:
                             try:
-                                message = await self.client.wait_for('message', check=lambda x: x.author == client_member and x.channel == channel, timeout=60)
+                                message = await self.client.wait_for('message', check=lambda x: x.author == guild.me and x.channel == channel, timeout=60)
                             except asyncio.TimeoutError:
                                 await channel.send("Hmm... something went wrong. Please start the tutorial again.")
                                 return

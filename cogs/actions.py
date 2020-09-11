@@ -54,159 +54,159 @@ class actions(commands.Cog):
             return True
 
 
-    @commands.command()
-    @commands.max_concurrency(1, per=commands.BucketType.channel)
-    async def work(self, ctx):
-        author = ctx.author
+    # @commands.command()
+    # @commands.max_concurrency(1, per=commands.BucketType.channel)
+    # async def work(self, ctx):
+    #     author = ctx.author
 
         
-        if not await jail_heist_check(ctx, ctx.author):
-            return
+    #     if not await jail_heist_check(ctx, ctx.author):
+    #         return
 
-        workc = read_value(author.id, 'workc')
-        if workc > time.time():
-            await ctx.send(f'You must wait {splittime(workc)} before you can work again.')
-            return
+    #     workc = read_value(author.id, 'workc')
+    #     if workc > time.time():
+    #         await ctx.send(f'You must wait {splittime(workc)} before you can work again.')
+    #         return
 
-        flag = 0
+    #     flag = 0
 
-        with open('./storage/jsons/mode.json') as f:
-            mode = json.load(f)
+    #     with open('./storage/jsons/mode.json') as f:
+    #         mode = json.load(f)
 
-        if ctx.author.premium_since and mode != "event":
-            premium = True
-        else:
-            premium = False
+    #     if ctx.author.premium_since and mode != "event":
+    #         premium = True
+    #     else:
+    #         premium = False
 
-        if ctx.author.premium_since and mode == "event":
-            await ctx.send("*Premium perks are disabled during events*")
-            await asyncio.sleep(2)
+    #     if ctx.author.premium_since and mode == "event":
+    #         await ctx.send("*Premium perks are disabled during events*")
+    #         await asyncio.sleep(2)
 
-        for x in range(5):
-            if x >= 3 and not premium:
-                break
-            elif x == 3 and premium:
-                await ctx.send(f"**{author.name}** has __premium__ and gets two extra tasks!")
-                await asyncio.sleep(2)
+    #     for x in range(5):
+    #         if x >= 3 and not premium:
+    #             break
+    #         elif x == 3 and premium:
+    #             await ctx.send(f"**{author.name}** has __premium__ and gets two extra tasks!")
+    #             await asyncio.sleep(2)
                 
-            task = random.randint(1,2)
-            await ctx.send("Get ready...")
-            await asyncio.sleep(3)
-            if task == 1:
-                opening = open('./storage/other/englishwords.txt')
-                words = opening.read()
-                wordlist = words.splitlines()
-                ucolors = ['\U0001f534','\U000026aa',
-                          '\U0001f7e3','\U0001f7e0','\U0001f535',
-                          '\U0001f7e4','\U0001f7e2']
-                colorfinder = [{'code':'\U0001f534','name':'red'},
-                               {'code':'\U000026aa','name':'white'},
-                               {'code':'\U0001f7e3','name':'purple'},
-                               {'code':'\U0001f7e0','name':'orange'},
-                               {'code':'\U0001f535','name':'blue'},
-                               {'code':'\U0001f7e4','name':'brown'},
-                               {'code':'\U0001f7e2','name':'green'}]
-                pairs = []
-                messagecontent = '**Memorize this!**\n'
-                for y in range(3):
-                    rcolor = random.choice(ucolors)
-                    rword = random.choice(wordlist)
-                    pairs.append({'color':rcolor,'word':rword})
-                    wordlist.pop(wordlist.index(rword))
-                    ucolors.pop(ucolors.index(rcolor))
-                    addmessage = f'{pairs[y]["color"]}  {pairs[y]["word"]}'
-                    messagecontent = f'{messagecontent}\n{addmessage}'
-                message = await ctx.send(messagecontent)
-                await asyncio.sleep(3)
-                ask = random.randint(1,2)
-                pair = random.randint(0,2)
-                for color in colorfinder:
-                    if color["code"] == pairs[pair]["color"]:
-                        colorname = color["name"]
-                def check(m):
-                    return m.channel == ctx.channel and m.author == ctx.author
-                if ask == 1:
-                    await message.edit(content=f"What color was next to {pairs[pair]['word']}?")
-                    try:
-                        answer = await self.client.wait_for('message', check=check, timeout=20)
-                        if answer.content.lower() != colorname:
-                            await ctx.send(f"Incorrect. The answer was {colorname}.\n{flag}/{x+1} tasks successful.")
-                        elif answer.content.lower() == colorname:
-                            flag += 1
-                            await ctx.send(f"Correct.\n{flag}/{x+1} tasks successful.")
-                    except asyncio.TimeoutError:
-                        await ctx.send(f"Took too long. The answer was {colorname}.\n{flag}/{x+1} tasks successful.")
-                elif ask == 2:
-                    await message.edit(content=f"What word was next to {colorname}?")
-                    try:
-                        answer = await self.client.wait_for('message', check=check, timeout=20)
-                        if answer.content.lower() != pairs[pair]["word"].lower():
-                            await ctx.send(f"Incorrect. The answer was {pairs[pair]['word']}.\n{flag}/{x+1} tasks successful.")
-                        elif answer.content.lower() == pairs[pair]["word"].lower():
-                            flag += 1
-                            await ctx.send(f"Correct.\n{flag}/{x+1} tasks successful.")
-                    except asyncio.TimeoutError:
-                        await ctx.send(f"Took too long. The answer was {pairs[pair]['word']}.\n{flag}/{x+1} tasks successful.")
-                await asyncio.sleep(2)
+    #         task = random.randint(1,2)
+    #         await ctx.send("Get ready...")
+    #         await asyncio.sleep(3)
+    #         if task == 1:
+    #             opening = open('./storage/other/englishwords.txt')
+    #             words = opening.read()
+    #             wordlist = words.splitlines()
+    #             ucolors = ['\U0001f534','\U000026aa',
+    #                       '\U0001f7e3','\U0001f7e0','\U0001f535',
+    #                       '\U0001f7e4','\U0001f7e2']
+    #             colorfinder = [{'code':'\U0001f534','name':'red'},
+    #                            {'code':'\U000026aa','name':'white'},
+    #                            {'code':'\U0001f7e3','name':'purple'},
+    #                            {'code':'\U0001f7e0','name':'orange'},
+    #                            {'code':'\U0001f535','name':'blue'},
+    #                            {'code':'\U0001f7e4','name':'brown'},
+    #                            {'code':'\U0001f7e2','name':'green'}]
+    #             pairs = []
+    #             messagecontent = '**Memorize this!**\n'
+    #             for y in range(3):
+    #                 rcolor = random.choice(ucolors)
+    #                 rword = random.choice(wordlist)
+    #                 pairs.append({'color':rcolor,'word':rword})
+    #                 wordlist.pop(wordlist.index(rword))
+    #                 ucolors.pop(ucolors.index(rcolor))
+    #                 addmessage = f'{pairs[y]["color"]}  {pairs[y]["word"]}'
+    #                 messagecontent = f'{messagecontent}\n{addmessage}'
+    #             message = await ctx.send(messagecontent)
+    #             await asyncio.sleep(3)
+    #             ask = random.randint(1,2)
+    #             pair = random.randint(0,2)
+    #             for color in colorfinder:
+    #                 if color["code"] == pairs[pair]["color"]:
+    #                     colorname = color["name"]
+    #             def check(m):
+    #                 return m.channel == ctx.channel and m.author == ctx.author
+    #             if ask == 1:
+    #                 await message.edit(content=f"What color was next to {pairs[pair]['word']}?")
+    #                 try:
+    #                     answer = await self.client.wait_for('message', check=check, timeout=20)
+    #                     if answer.content.lower() != colorname:
+    #                         await ctx.send(f"Incorrect. The answer was {colorname}.\n{flag}/{x+1} tasks successful.")
+    #                     elif answer.content.lower() == colorname:
+    #                         flag += 1
+    #                         await ctx.send(f"Correct.\n{flag}/{x+1} tasks successful.")
+    #                 except asyncio.TimeoutError:
+    #                     await ctx.send(f"Took too long. The answer was {colorname}.\n{flag}/{x+1} tasks successful.")
+    #             elif ask == 2:
+    #                 await message.edit(content=f"What word was next to {colorname}?")
+    #                 try:
+    #                     answer = await self.client.wait_for('message', check=check, timeout=20)
+    #                     if answer.content.lower() != pairs[pair]["word"].lower():
+    #                         await ctx.send(f"Incorrect. The answer was {pairs[pair]['word']}.\n{flag}/{x+1} tasks successful.")
+    #                     elif answer.content.lower() == pairs[pair]["word"].lower():
+    #                         flag += 1
+    #                         await ctx.send(f"Correct.\n{flag}/{x+1} tasks successful.")
+    #                 except asyncio.TimeoutError:
+    #                     await ctx.send(f"Took too long. The answer was {pairs[pair]['word']}.\n{flag}/{x+1} tasks successful.")
+    #             await asyncio.sleep(2)
                 
-            if task == 2:
-                await ctx.send("Solve this in 5 seconds:")
-                mod = random.randint(1,2)
-                aos = random.randint(1,2)
-                if mod == 1:
-                    n1 = random.randint(2,9)
-                    n2 = random.randint(2,9)
-                    if aos == 1:
-                        n3 = random.randint(1,10)
-                        answer = (n1 * n2) + n3
-                        order = random.randint(1,2)
-                        if order == 1:
-                            await ctx.send(f"{n1} x {n2} + {n3}")
-                        elif order == 2:
-                            await ctx.send(f"{n3} + {n2} x {n1}")
-                    if aos == 2:
-                        n3 = random.randint(1,10)
-                        answer = (n1 * n2) - n3
-                        order = random.randint(1,2)
-                        if order == 1:
-                            await ctx.send(f"{n1} x {n2} - {n3}")
-                        elif order == 2:
-                            await ctx.send(f"-{n3} + {n2} x {n1}")
+    #         if task == 2:
+    #             await ctx.send("Solve this in 5 seconds:")
+    #             mod = random.randint(1,2)
+    #             aos = random.randint(1,2)
+    #             if mod == 1:
+    #                 n1 = random.randint(2,9)
+    #                 n2 = random.randint(2,9)
+    #                 if aos == 1:
+    #                     n3 = random.randint(1,10)
+    #                     answer = (n1 * n2) + n3
+    #                     order = random.randint(1,2)
+    #                     if order == 1:
+    #                         await ctx.send(f"{n1} x {n2} + {n3}")
+    #                     elif order == 2:
+    #                         await ctx.send(f"{n3} + {n2} x {n1}")
+    #                 if aos == 2:
+    #                     n3 = random.randint(1,10)
+    #                     answer = (n1 * n2) - n3
+    #                     order = random.randint(1,2)
+    #                     if order == 1:
+    #                         await ctx.send(f"{n1} x {n2} - {n3}")
+    #                     elif order == 2:
+    #                         await ctx.send(f"-{n3} + {n2} x {n1}")
 
-                if mod == 2:
-                    t1 = random.randint(2,9)
-                    t2 = random.randint(2,9)
-                    t3 = t1 * t2
-                    n1 = t3
-                    n2 = t1
-                    if aos == 1:
-                        n3 = random.randint(1,10)
-                        answer = t2 + n3
-                        order = random.randint(1,2)
-                        if order == 1:
-                            await ctx.send(f"{n1} / {n2} + {n3}")
-                        elif order == 2:
-                            await ctx.send(f"{n3} + {n1} / {n2}")
-                    if aos == 2:
-                        n3 = random.randint(1,10)
-                        answer = t2 - n3
-                        order = random.randint(1,2)
-                        if order == 1:
-                            await ctx.send(f"{n1} / {n2} - {n3}")
-                        elif order == 2:
-                            await ctx.send(f"-{n3} + {n1} / {n2}")
-                try:
-                    submission = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=5)
-                    answer = str(answer)
-                    submission = str(submission.content)
-                    if submission == answer:
-                        flag += 1
-                        await ctx.send(f'Correct.\n{flag}/{x+1} tasks successful.')
-                    elif submission != answer:
-                        await ctx.send(f'Incorrect. The answer was {answer}.\n{flag}/{x+1} tasks successful.')
-                except asyncio.TimeoutError:
-                    await ctx.send(f'Times up! The answer was {answer}.\n{flag}/{x+1} tasks successful.')
-                await asyncio.sleep(2)
+    #             if mod == 2:
+    #                 t1 = random.randint(2,9)
+    #                 t2 = random.randint(2,9)
+    #                 t3 = t1 * t2
+    #                 n1 = t3
+    #                 n2 = t1
+    #                 if aos == 1:
+    #                     n3 = random.randint(1,10)
+    #                     answer = t2 + n3
+    #                     order = random.randint(1,2)
+    #                     if order == 1:
+    #                         await ctx.send(f"{n1} / {n2} + {n3}")
+    #                     elif order == 2:
+    #                         await ctx.send(f"{n3} + {n1} / {n2}")
+    #                 if aos == 2:
+    #                     n3 = random.randint(1,10)
+    #                     answer = t2 - n3
+    #                     order = random.randint(1,2)
+    #                     if order == 1:
+    #                         await ctx.send(f"{n1} / {n2} - {n3}")
+    #                     elif order == 2:
+    #                         await ctx.send(f"-{n3} + {n1} / {n2}")
+    #             try:
+    #                 submission = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=5)
+    #                 answer = str(answer)
+    #                 submission = str(submission.content)
+    #                 if submission == answer:
+    #                     flag += 1
+    #                     await ctx.send(f'Correct.\n{flag}/{x+1} tasks successful.')
+    #                 elif submission != answer:
+    #                     await ctx.send(f'Incorrect. The answer was {answer}.\n{flag}/{x+1} tasks successful.')
+    #             except asyncio.TimeoutError:
+    #                 await ctx.send(f'Times up! The answer was {answer}.\n{flag}/{x+1} tasks successful.')
+    #             await asyncio.sleep(2)
             
 
         
@@ -214,31 +214,31 @@ class actions(commands.Cog):
 
 
 
-        if flag == 0:
-            earnings = random.randint(10,20)
-        elif flag == 1:
-            earnings = random.randint(20,35)
-        elif flag == 2:
-            earnings = random.randint(40,50)
-        elif flag == 3:
-            earnings = random.randint(60,70)
-        elif flag == 4:
-            earnings = random.randint(70,80)
-        elif flag == 5:
-            earnings = random.randint(80,90)        
-        await ctx.send(f"💰 **{author.name}** worked and successfully completed {flag} tasks, earning ${earnings}. 💰")
-        money = read_value(author.id, 'money')
-        money += earnings
-        write_value(author.id, 'money', money)
-        update_total(author.id)
-        workc = int(time.time()) + 3600
-        write_value(author.id, 'workc', workc)
-        await leaderboard(self.client)
-        await rolecheck(self.client, author.id)
+    #     if flag == 0:
+    #         earnings = random.randint(10,20)
+    #     elif flag == 1:
+    #         earnings = random.randint(20,35)
+    #     elif flag == 2:
+    #         earnings = random.randint(40,50)
+    #     elif flag == 3:
+    #         earnings = random.randint(60,70)
+    #     elif flag == 4:
+    #         earnings = random.randint(70,80)
+    #     elif flag == 5:
+    #         earnings = random.randint(80,90)        
+    #     await ctx.send(f"💰 **{author.name}** worked and successfully completed {flag} tasks, earning ${earnings}. 💰")
+    #     money = read_value(author.id, 'money')
+    #     money += earnings
+    #     write_value(author.id, 'money', money)
+    #     update_total(author.id)
+    #     workc = int(time.time()) + 3600
+    #     write_value(author.id, 'workc', workc)
+    #     await leaderboard(self.client)
+    #     await rolecheck(self.client, author.id)
 
 
     @commands.command()
-    async def bail(self, ctx, member:discord.Member=None):
+    async def bail(self, ctx, *, member:discord.Member=None):
 
         author = ctx.author
 
@@ -467,10 +467,10 @@ class actions(commands.Cog):
                         return
                 jailtime = int(int(time.time()) + amount*100.5)
                 write_value(author.id, 'jailtime', jailtime)
-                await ctx.send(f'**{author.name}** was caught stealing and sent to jail for {splittime(jailtime)}.')
+                await ctx.send(f'**{author.name}** was caught stealing and sent to jail for {splittime(jailtime)}.') # message linked with tutorial
                     
             else:
-                await ctx.send(f"**{author.name}** successfully stole ${amount} from **{member.name}**.")
+                await ctx.send(f"**{author.name}** successfully stole ${amount} from **{member.name}**.") # message linked with tutorial
                 money -= amount
                 write_value(member.id, 'money', money)
                 update_total(member.id)

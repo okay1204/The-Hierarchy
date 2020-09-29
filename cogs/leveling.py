@@ -11,7 +11,7 @@ import sqlite3
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import read_value, write_value, bot_check, update_total
+from utils import read_value, write_value, bot_check
 
 class leveling(commands.Cog):
 
@@ -110,7 +110,6 @@ class leveling(commands.Cog):
                 money = read_value(message.author.id, 'money')
                 money += 15
                 write_value(message.author.id, 'money', money)
-                update_total(message.author.id)
                 
 
                 asyncio.create_task(self.rank_leaderboard())

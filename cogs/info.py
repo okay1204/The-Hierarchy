@@ -13,9 +13,9 @@ from collections import Counter
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, update_total, leaderboard,
-rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use)
+from utils import (read_value, write_value, leaderboard,
+rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
+remove_item, remove_use, add_item, add_use)
 
 
 class info(commands.Cog):
@@ -51,9 +51,19 @@ class info(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        money = read_value(member.id, 'money')
-        bank = read_value(member.id, 'bank')
-        total = read_value(member.id, 'total')
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+
+        c.execute("""
+        SELECT money, bank
+        FROM members
+        WHERE id = ?
+        """, (member.id,))
+
+        money, bank = c.fetchone()
+
+        conn.close()
+        
 
         avatar = member.avatar_url_as(static_format='jpg')
         
@@ -61,7 +71,7 @@ class info(commands.Cog):
         embed.set_author(name=f"{member.name}'s balance",icon_url=avatar)
         embed.add_field(name="Cash",value=f'${money}', inline=True)
         embed.add_field(name="Bank", value=f'${bank}', inline=True)
-        embed.add_field(name="Total", value=f'${total}', inline=True)
+        embed.add_field(name="Total", value=f'${money + bank}', inline=True)
 
         await ctx.send(embed=embed)
           
@@ -132,22 +142,23 @@ class info(commands.Cog):
     async def heisttime(self, ctx):
 
         guild = self.client.mainGuild
-        heist = open_heist()
+        
+        if not self.client.heist:
+            
+            with open("./storage/jsons/heist cooldown.json") as f:
+                heistc = json.load(f)
 
-        conn = sqlite3.connect('./storage/databases/heist.db')
-        c = conn.cursor()
-        c.execute('SELECT cooldown FROM heist')
-        heistc = c.fetchone()[0]
-        conn.close()
-
-        if heistc > time.time():
-            await ctx.send(f'Everyone must wait {splittime(heistc)} before another heist can be made.')
-
-        elif heist["heistt"] > 0:
-            await ctx.send(f'The heist on **{guild.get_member(heist["heistv"]).name}** will start in {heist["heistt"]} seconds.')
+            if heistc > time.time():
+                await ctx.send(f'Everyone must wait {splittime(heistc)} before another heist can be made.')
+            else:
+                await ctx.send(f'A heist can be made.')
 
         else:
-            await ctx.send(f'A heist can be made.')
+
+            if self.client.heist["victim"] == "bank":
+                await ctx.send(f'The heist on the bank will start in {self.client.heist["start"]-int(time.time())} seconds.')
+            else:
+                await ctx.send(f'The heist on **{guild.get_member(self.client.heist["victim"]).name}** will start in {self.client.heist["start"]-int(time.time())} seconds.')
         
     @commands.command()
     async def place(self, ctx, *, member:discord.Member=None):
@@ -163,20 +174,15 @@ class info(commands.Cog):
 
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
-        c.execute('SELECT id, total FROM members')
+        c.execute('SELECT id, money + bank FROM members')
         hierarchy = c.fetchall()
         conn.close()
 
-        hierarchy = sorted(hierarchy, key=lambda k: k[1], reverse=True)
+        hierarchy.sort(key=lambda k: k[1], reverse=True)
 
         hierarchy = tuple(filter(lambda x: guild.get_member(x[0]) is not None, hierarchy))
 
-
-
-        for x in hierarchy:
-            if member.id == x[0]:
-                place = hierarchy.index(x)
-        place += 1
+        place = list(map(lambda hierarchy: hierarchy[0], hierarchy)).index(member.id) + 1
 
         await ctx.send(f"**{member.name}** is **#{place}** in The Hierarchy.")
 
@@ -253,7 +259,7 @@ class info(commands.Cog):
         guild = self.client.mainGuild
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
-        c.execute('SELECT id, total FROM members WHERE total > 0 ORDER BY total DESC')
+        c.execute('SELECT id, money + bank AS total FROM members WHERE total > 0 ORDER BY total DESC')
         hierarchy = c.fetchall()
         conn.close()
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
@@ -286,7 +292,7 @@ class info(commands.Cog):
 
         place = ids.index(result[0][0])+1
         for person in result:
-            current_member = guild.get_member(person[0])
+
             medal = ''
             mk = ''
             if place == 1:
@@ -297,7 +303,7 @@ class info(commands.Cog):
                 medal = '🥉 '
             if member.id == person[0]:
                 mk = '**'
-            embed.add_field(name='__________', value=f'{mk}{place}. {current_member.mention} {medal}- ${person[1]}{mk}', inline=False)
+            embed.add_field(name='__________', value=f'{mk}{place}. <@{person[0]}> {medal}- ${person[1]}{mk}', inline=False)
             place += 1
 
 
@@ -337,7 +343,7 @@ class info(commands.Cog):
         guild = self.client.mainGuild
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
-        c.execute('SELECT id, total FROM members WHERE total > 0 ORDER BY total DESC')
+        c.execute('SELECT id, money + bank AS total FROM members WHERE total > 0 ORDER BY total DESC')
         hierarchy = c.fetchall()
         conn.close()
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
@@ -438,7 +444,7 @@ class info(commands.Cog):
         embed = discord.Embed(color=0xffa047, title=f"{member.name}#{member.discriminator}", description=f"""ID: {member.id}
 Status: {status}
 
-Money: ${read_value(member.id, 'total')}
+Money: ${read_value(member.id, 'money + bank')}
 Gang: {gang}
 """, timestamp=member.joined_at)
         embed.set_footer(text="Joined at")

@@ -125,7 +125,20 @@ class members(commands.Cog):
 
         membercountchannel = self.client.membercountchannel
         membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
-        await membercountchannel.edit(name=f"Members: {membercount}")
+        asyncio.create_task( membercountchannel.edit(name=f"Members: {membercount}") )
+
+        # heists
+        if self.client.heist:
+
+            if member.id in self.client.heist["participants"]:
+                self.client.heist["participants"].remove(member.id)
+
+                asyncio.create_task( self.client.heist["location"].send(f"**{member.name}** has left the server and the heist.") )
+
+            elif member.id == self.client.heist["victim"]:
+                self.client.heist_task.cancel()
+                asyncio.create_task( self.client.heist["location"].send(f"**{member.name}** has left the server. Heist cancelled.") )
+                self.client.heist = {}
 
         # gangs
         conn = sqlite3.connect('./storage/databases/gangs.db')

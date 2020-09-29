@@ -13,9 +13,9 @@ import os
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, update_total, leaderboard,
-rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use)
+from utils import (read_value, write_value, leaderboard,
+rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
+remove_item, remove_use, add_item, add_use)
 class games(commands.Cog):
 
     def __init__(self, client):
@@ -31,7 +31,7 @@ class games(commands.Cog):
     async def rps(self, ctx, entry=None):
         author = ctx.author
 
-        if not await jail_heist_check(ctx, author):
+        if not await jail_heist_check(self.client, ctx, author):
             return
 
         rpsc = read_value(author.id, 'rpsc')
@@ -72,7 +72,6 @@ class games(commands.Cog):
             money = read_value(author.id, 'money')
             money += rmoney
             write_value(author.id, 'money', money)
-            update_total(author.id)
 
         elif key[entry][1] == pc:
             await ctx.send(f"{pc}\nYou lose. L")
@@ -88,7 +87,7 @@ class games(commands.Cog):
         author = ctx.author
 
 
-        if not await jail_heist_check(ctx, author):
+        if not await jail_heist_check(self.client, ctx, author):
             return
 
         rpsc = read_value(author.id, 'rpsc')
@@ -106,7 +105,6 @@ class games(commands.Cog):
             money = read_value(author.id, 'money')
             money += 2
             write_value(author.id, 'money', money)
-            update_total(author.id)
         elif rollp < rollb:
             text += f'You lost.'
         elif rollp == rollb:
@@ -114,7 +112,6 @@ class games(commands.Cog):
             money = read_value(author.id, 'money')
             money += 1
             write_value(author.id, 'money', money)
-            update_total(author.id)
 
         await ctx.send(text)
         rpsc = int(time.time()) + 10
@@ -127,7 +124,7 @@ class games(commands.Cog):
     async def guess(self, ctx, entry=None):
         author = ctx.author
 
-        if not await jail_heist_check(ctx, author):
+        if not await jail_heist_check(self.client, ctx, author):
             return
 
         rpsc = read_value(author.id, 'rpsc')
@@ -157,8 +154,7 @@ class games(commands.Cog):
             money = read_value(author.id, 'money')
             money += rmoney
             write_value(author.id, 'money', money)
-            update_total(author.id)
-            rpsc = int(time.time()) + 10
+            rpsc = int(time.time()) + 10 
             write_value(author.id, 'rpsc', rpsc)
         elif entry != number:
             await ctx.send(f"You lost. The number was {number}.")

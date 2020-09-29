@@ -98,10 +98,11 @@ class admin(commands.Cog):
         await asyncio.sleep(duration)
 
         guild = self.client.mainGuild
-        mute_role = guild.get_role(743255783055163392)
-        member = guild.get_member(int(userid))
 
-        await member.remove_roles(mute_role)
+        member = guild.get_member(int(userid))
+        if member:
+            mute_role = guild.get_role(743255783055163392)
+            await member.remove_roles(mute_role)
 
         with open('./storage/jsons/mutes.json') as f:
             mutes = json.load(f)
@@ -162,7 +163,7 @@ class admin(commands.Cog):
             content = None
         await ctx.send(embed=embed)
         await member.send(f'You were warned by {author.mention} for: {reason}')
-        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
         await audit_log_channel.send(embed=embed)
 
@@ -249,7 +250,7 @@ class admin(commands.Cog):
         else:
             content = None
         await ctx.send(embed=embed)
-        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
         await audit_log_channel.send(embed=embed)
 
@@ -345,7 +346,7 @@ class admin(commands.Cog):
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
 
         await ctx.send(embed=embed)
-        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
         await audit_log_channel.send(embed=embed)
 
@@ -446,7 +447,7 @@ class admin(commands.Cog):
         rule_invite = str(rule_invite)
         await member.send(f'You were kicked by {author.mention} for: {reason}\n\nHere is a new invite link to join back: {rule_invite}')
         await member.kick(reason=reason)
-        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
         await audit_log_channel.send(embed=embed)
 
@@ -536,7 +537,7 @@ class admin(commands.Cog):
         await ctx.send(embed=embed)
         await member.send(f'You were banned by {author.mention} for: {reason}\n\nIf you want to make an appeal, you may do so here: https://forms.gle/W1Vna4EAHmvs4bzB9')
         await member.ban(reason=reason, delete_message_days=daysdelete)
-        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
         await audit_log_channel.send(embed=embed)
 
@@ -627,7 +628,7 @@ class admin(commands.Cog):
 
 
         #Sending to audit log
-        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
         await audit_log_channel.send(embed=embed)
 
@@ -684,13 +685,17 @@ class admin(commands.Cog):
                     embed = discord.Embed(color=0xf56451)
                     memberavatar = member.avatar_url_as(static_format='jpg')
                     embed.set_author(name=f'{member.name} (Page: {page}/{pages})', icon_url=memberavatar)
-                    for cur_audit in pairs:
-                        if cur_audit != "message content":
-                            embed.add_field(name=cur_audit, value=pairs[cur_audit])
-                        elif len(pairs[cur_audit]) <= 1024:
-                            embed.add_field(name=cur_audit, value=pairs[cur_audit])
-                        else:
-                            embed.add_field(name=cur_audit, value=pairs[cur_audit][0:1024])
+                    for cur_audit, value in pairs.items():
+
+                        if cur_audit == "message content" and len(value) <= 1024:
+                            value = value[:1024]
+
+                        elif cur_audit == "jump link":
+                            value = f"[Click Here]({value})"
+
+                        embed.add_field(name=cur_audit, value=value)
+
+
                     await ctx.send(embed=embed)
             except:
                 await ctx.send('This member does not have that many pages.')
@@ -922,7 +927,7 @@ class admin(commands.Cog):
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
         await ctx.send(embed=embed)
         
-        embed.add_field(name='Jump Url', value=ctx.message.jump_url)
+        embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         report_channel = self.client.get_channel(723985222412140584)
 
         guild = self.client.mainGuild

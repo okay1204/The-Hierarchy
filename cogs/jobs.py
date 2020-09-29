@@ -14,7 +14,7 @@ from cogs.extra import minigames
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, update_total, leaderboard,
+from utils import (read_value, write_value, leaderboard,
 rolecheck, level_check, minisplittime, jail_heist_check, splittime)
 
 
@@ -69,7 +69,7 @@ universities = [
             University('Emory', 'Medical', 12, 8, 12, 360, 95, 80),
             University('East Bay', 'Science', 5, 10, 15, 60, 65, 70),
             University('Harvard', 'Science', 11, 3, 7, 15, 95, 85),
-            University('Apicius', 'Culinary', 4, 9, 14, 120, 90, 110),
+            University('Apicius', 'Culinary', 4, 9, 12, 120, 90, 110),
             University('Duke', 'Medical', 7, 4, 8, 120, 100, 100)
         ]
 
@@ -100,7 +100,7 @@ def find_next_day(university: University, study_start: int) -> int:
     days.pop(0)
     
     for day in days:
-        if int(time.time()) <= day:
+        if int(time.time()) < day:
             next_time = day
             break
     
@@ -123,7 +123,7 @@ class Job:
 work_jobs = [
 
     Job('Garbage Collector', '🗑️', [
-        (30, 40),
+        (40, 45),
         (45, 55),
         (60, 70),
         (70, 80)
@@ -137,17 +137,17 @@ work_jobs = [
     ], 15, []), # Change tutorial if more non-major requirement jobs are added
 
     Job('Chef', '🔪', [
-        (20, 30),
         (30, 40),
-        (40, 45),
-        (45, 50)
+        (40, 55),
+        (55, 65),
+        (65, 70)
     ], 30, ['Culinary']),
 
     Job('Scientist', '🧪', [
-        (25, 32),
-        (33, 42),
-        (43, 51),
-        (52, 60)
+        (30, 45),
+        (45, 60),
+        (60, 80),
+        (80, 90)
     ], 45, ['Science']),
 
     Job('Doctor', '💉', [
@@ -175,6 +175,9 @@ class jobs(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+        self.studying = []
+        self.working = []
+
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
         c.execute('SELECT id, university, study_start FROM members WHERE university IS NOT NULL')
@@ -185,7 +188,7 @@ class jobs(commands.Cog):
             university = find_university(student[1])
             next_time = find_next_day(university, student[2])
 
-            asyncio.create_task(self.school_fee(next_time, student[0], university.price), name=f"school {student[0]}")
+            asyncio.create_task(self.school_fee(next_time, student[0], university), name=f"school {student[0]}")
 
     
     def cog_unload(self):
@@ -217,71 +220,88 @@ class jobs(commands.Cog):
             return True
 
 
-    async def school_fee(self, duration, userid, payment):
+    async def school_fee(self, duration, userid, university):
 
-        if duration != 0:
-            can_pay = True
-        else:
-            if read_value(userid, 'final_announced') == "True":
+        try:
+
+            if duration == 0:
                 can_pay = False
             else:
                 can_pay = True
 
-        if not can_pay:
-            return
-
-        await asyncio.sleep(duration)
-
-        broke = False
-
-        money = read_value(userid, 'money')
-        original_money = money
-        money -= payment
-
-        if money < 0:
-            bank = read_value(userid, 'bank')
-            original_bank = bank
-            bank += money # adding negative amount
-            money = 0 
-
-            if bank < 0:
-                broke = True
-                money = original_money
-                bank = original_bank
-                
-                # set university values
-                conn = sqlite3.connect('./storage/databases/hierarchy.db')
-                c = conn.cursor()
-                c.execute('UPDATE members SET university = null, study_prog = 0, study_start = 0 WHERE id = ?', (userid,))
-                conn.commit()
-                conn.close()
-            
-            write_value(userid, 'bank', bank)
-        
-        write_value(userid, 'money', money)
-        update_total(userid)
-
-        asyncio.create_task(rolecheck(self.client, userid))
-        asyncio.create_task(leaderboard(self.client))
-
-        school_announcements = self.client.get_channel(744988365082067034)
-
-        if not broke:
-            await school_announcements.send(f"${payment} taken from <@{userid}>'s account.")
-        else:
-            await school_announcements.send(f"@<{userid}> did not have enough money to pay, enrollment automatically cancelled.")
-            return
-        
-        if duration == 0:
-
             school_announcements = self.client.get_channel(744988365082067034)
-            
-            await school_announcements.send(f"<@{userid}> can take their finals. Use `.final` to take it!")
-            write_value(userid, 'final_announced', 'True')
-        
-        else:
-            asyncio.create_task(self.school_fee(int(time.time()) + 86400, userid, payment), name=f"school {userid}")
 
+            if can_pay:
+
+                await asyncio.sleep(duration)
+
+                broke = False
+
+                money = read_value(userid, 'money')
+                original_money = money
+                money -= university.price
+
+                if money < 0:
+                    bank = read_value(userid, 'bank')
+                    original_bank = bank
+                    bank += money # adding negative amount
+                    money = 0 
+
+                    if bank < 0:
+                        broke = True
+                        money = original_money
+                        bank = original_bank
+                        
+                        # set university values
+                        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+                        c = conn.cursor()
+                        c.execute('UPDATE members SET university = null, study_prog = 0, study_start = 0 WHERE id = ?', (userid,))
+                        conn.commit()
+                        conn.close()
+                    
+                    write_value(userid, 'bank', bank)
+                
+                write_value(userid, 'money', money)
+
+                asyncio.create_task(rolecheck(self.client, userid))
+                asyncio.create_task(leaderboard(self.client))
+
+                if not broke:
+                    await school_announcements.send(f"${university.price} taken from <@{userid}>'s account.")
+
+                    with open('./storage/jsons/mode.json') as f:
+                        mode = json.load(f)
+
+                    if mode == "event":
+                        if read_value(userid, 'in_event') == "True":
+
+                            conn = sqlite3.connect('./storage/databases/hierarchy.db')
+                            c = conn.cursor()
+
+                            c.execute('SELECT total FROM events WHERE id = ?', (userid,))
+                            event_total = c.fetchone()[0]
+                            event_total -= university.price
+                            c.execute('UPDATE events SET total = ? WHERE id = ?', (event_total, userid))
+                            
+                            conn.commit()
+                            conn.close()
+
+                else:
+                    await school_announcements.send(f"<@{userid}> did not have enough money to pay, enrollment automatically cancelled.")
+                    return
+            
+            if duration == 0:
+                
+                if read_value(userid, 'final_announced') == "False":
+                    await school_announcements.send(f"<@{userid}> can take their finals. Use `.final` to take it!")
+                    write_value(userid, 'final_announced', 'True')
+            
+            else:
+                study_start = read_value(userid, 'study_start')
+
+                asyncio.create_task(self.school_fee(find_next_day(university, study_start), userid, university), name=f"school {userid}")
+        except Exception as e:
+            print(e)
 
     @commands.command()
     async def universities(self, ctx):
@@ -310,7 +330,7 @@ _ _""")
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def studyinfo(self, ctx, member: discord.Member=None):
+    async def studyinfo(self, ctx, *, member: discord.Member=None):
 
         if not member:
             member = ctx.author
@@ -344,14 +364,24 @@ _ _""")
             next_payment = "No more payments"
         else:
             next_payment //= 60
-            next_payment = days_hours_minutes(next_payment)
+            
+            hours = next_payment // 60
+            minutes = next_payment % 60
 
+            next_payment = f"{hours}h {minutes}m"
+
+        studyc = read_value(member.id, 'studyc')
+        if studyc > time.time():
+            studyc = splittime(studyc)
+        else:
+            studyc = "Study Available"
 
         embed = discord.Embed(color=0x48157a, description=f"""Enrolled at: **{current.name}**
 Majoring in: {current.major}
 Chance to pass final: {progress}%
 Time left until final: {time_left}
-Time left until next payment: {next_payment}""")
+Time left until next payment: {next_payment}
+Study cooldown: {studyc}""")
         embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
         
         await ctx.send(embed=embed)
@@ -363,28 +393,23 @@ Time left until next payment: {next_payment}""")
 
 
         if not name:
-            await ctx.send("Incorrect command usage:\n`.enroll universityname`")
+            await ctx.send("Incorrect command usage:\n`.enroll university`")
             return
 
-        university = find_university(name.capitalize())
-
-        if not university:
-            await ctx.send(f"There is no university called **{name}**.")
-            return
 
         if not await level_check(ctx, ctx.author.id, 7, "study at a university"):
             return
 
-        if read_value(ctx.author.id, 'job'):
-            await ctx.send("You cannot have a job in order to enroll at a university.")
+        university = find_university(name.title())
+
+        if not university:
+            await ctx.send(f"There is no university called \"{name}\".")
             return
 
         current = read_value(ctx.author.id, 'university')
         if current:
             await ctx.send(f"You are already enrolling at **{current}**.")
             return
-        
-        university = find_university(name.capitalize())
 
         majors = read_value(ctx.author.id, 'majors').split('|')
         
@@ -392,10 +417,10 @@ Time left until next payment: {next_payment}""")
             await ctx.send(f"You already have a **{university.major}** major.")
             return
 
-        if not await jail_heist_check(ctx, ctx.author):
+        if not await jail_heist_check(self.client, ctx, ctx.author):
             return
 
-        if university.price > read_value(ctx.author.id, 'total'):
+        if university.price > read_value(ctx.author.id, 'money + bank'):
             await ctx.send("You do not have enough money to pay for the first day.")
 
         else:
@@ -410,10 +435,25 @@ Time left until next payment: {next_payment}""")
                 write_value(ctx.author.id, 'bank', bank)
 
             write_value(ctx.author.id, 'money', money)
-            write_value(ctx.author.id, 'university', name.capitalize())
+            write_value(ctx.author.id, 'university', name.title())
             write_value(ctx.author.id, 'study_prog', 0)
             write_value(ctx.author.id, 'study_start', int(time.time()))
             write_value(ctx.author.id, 'final_announced', 'False')
+
+            with open('./storage/jsons/mode.json') as f:
+                mode = json.load(f)
+
+
+            if mode == "event" and read_value(ctx.author.id, 'in_event') == "True":
+                
+                conn = sqlite3.connect('./storage/databases/hierarchy.db')
+                c = conn.cursor()
+                c.execute("SELECT total FROM events WHERE id = ?", (ctx.author.id,))
+                event_total = c.fetchone()[0]
+                event_total += university.price
+                c.execute("UPDATE events SET total = ? WHERE id = ?", (event_total, ctx.author.id))
+                conn.commit()
+                conn.close()
 
             await ctx.send(f"""You payed ${university.price} and successfully enrolled in **{name.capitalize()}**.
 If you do not have enough money to pay the cost every 24 hours, your enrollment will automatically end and no refund will be given.
@@ -421,7 +461,6 @@ Good luck on the finals!""")
             
             asyncio.create_task(self.school_fee( find_next_day(university, int(time.time())), ctx.author.id, university.price), name=f"school {ctx.author.id}")
 
-            update_total(ctx.author.id)
             await leaderboard(self.client)
             await rolecheck(self.client, ctx.author.id)
 
@@ -434,7 +473,7 @@ Good luck on the finals!""")
             await ctx.send("You are not enrolling at a university.")
             return
 
-        if not await jail_heist_check(ctx, ctx.author):
+        if not await jail_heist_check(self.client, ctx, ctx.author):
             return
 
         await ctx.send(f"Are you sure you want to unenroll from **{current}**? You will not be refunded any payments you made. Respond with `yes` or `y` to proceed.")
@@ -461,6 +500,9 @@ Good luck on the finals!""")
 
             await ctx.send(f"**{ctx.author.name}** unenrolled from **{current.capitalize()}**.")
 
+        else:
+            await ctx.send("Unenrollment timed out.")
+
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def final(self, ctx):
@@ -476,7 +518,7 @@ Good luck on the finals!""")
             await ctx.send("You cannot take your finals yet.")
             return
 
-        if not await jail_heist_check(ctx, ctx.author):
+        if not await jail_heist_check(self.client, ctx, ctx.author):
             return
 
 
@@ -524,6 +566,9 @@ Good luck on the finals!""")
 
             majors = read_value(ctx.author.id, 'majors').split("|")
             majors.append(university.major)
+
+            majors = list(filter(lambda major: major, majors)) # to get rid of empty strings
+
             majors = "|".join(majors)
             write_value(ctx.author.id, 'majors', majors)
         else:
@@ -531,18 +576,19 @@ Good luck on the finals!""")
 
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
-        c.execute('UPDATE members SET university = null, study_prog = 0, study_start, final_announced = "False" WHERE id = ?', (ctx.author.id,))
+        c.execute('UPDATE members SET university = null, study_prog = 0, study_start = 0, final_announced = "False" WHERE id = ?', (ctx.author.id,))
         conn.commit()
         conn.close()
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def majors(self, ctx, member:discord.Member=None):
+    async def majors(self, ctx, *, member:discord.Member=None):
 
         if not member:
             member = ctx.author
 
         majors = read_value(member.id, 'majors').split('|')
+        majors = list(filter(lambda major: major, majors)) # to get rid of empty strings
         
 
         if not majors:
@@ -551,7 +597,7 @@ Good luck on the finals!""")
             embed = discord.Embed(color=0x48157a, title="Majors")
 
             for major in majors:
-                embed.add_field(name="\_\_\_\_\_\_\_\_\_\_", value=major, inline=True) # noqa pylint: disable=anomalous-backslash-in-string
+                embed.add_field(name="\_\_\_\_\_", value=major, inline=True) # noqa pylint: disable=anomalous-backslash-in-string
         embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
 
         await ctx.send(embed=embed)
@@ -561,13 +607,16 @@ Good luck on the finals!""")
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def study(self, ctx):
 
+        if ctx.author.id in self.studying:
+            return await ctx.send("You are already studying.")
+
         university = read_value(ctx.author.id, 'university')
 
         if not university:
             await ctx.send('You are not enrolling at a university.')
             return
 
-        if not await jail_heist_check(ctx, ctx.author):
+        if not await jail_heist_check(self.client, ctx, ctx.author):
             return
 
         studyc = read_value(ctx.author.id, 'studyc')
@@ -586,10 +635,12 @@ Good luck on the finals!""")
 
         correct = 0
 
+        self.studying.append(ctx.author.id)
+
         with open('./storage/jsons/mode.json') as f:
             mode = json.load(f)
 
-        if ctx.author.premium_since and mode == 'event':
+        if ctx.author.premium_since and mode == 'event' and read_value(ctx.author.id, 'in_event') == "True":
 
             await ctx.send("*Premium perks are disabled during events*")
             premium = False
@@ -623,8 +674,7 @@ Good luck on the finals!""")
         if correct > 3:
             correct = 3
             extra = True
-        
-        university = find_university(university)
+    
         
 
         points = get_range_value(university.low_increment, university.high_increment, correct)
@@ -644,12 +694,13 @@ Good luck on the finals!""")
             study_prog = university.max_study
             text += f"They have hit their maximum study limit of {university.max_study}%."
         else:
-            text += f"They now have a total of {study_prog}% to pass the finals."
+            text += f"They now have a total of {study_prog}% chance to pass the finals."
 
         write_value(ctx.author.id, 'study_prog', study_prog)
 
         write_value(ctx.author.id, 'studyc', int(time.time()) + university.cooldown_minutes * 60)
 
+        self.studying.remove(ctx.author.id)
         await ctx.send(text)
         
     
@@ -695,14 +746,14 @@ _ _""")
     async def apply(self, ctx, *, name=None):
         
         if not name:
-            await ctx.send("Incorrect command usage:\n`.apply jobname`")
+            await ctx.send("Incorrect command usage:\n`.apply job`")
             return
 
         if not (job := find_job(name.title())):
-            await ctx.send(f"There is no job called **{name}**.")
+            await ctx.send(f"There is no job called **{name}**. Use `.jobs` to get a list of jobs.")
             return
 
-        if not await jail_heist_check(ctx, ctx.author): return
+        if not await jail_heist_check(self.client, ctx, ctx.author): return
 
         if (applyc := read_value(ctx.author.id, 'applyc')) > time.time():
             await ctx.send(f"You must wait {splittime(applyc)} before you can apply for another job.")
@@ -712,11 +763,9 @@ _ _""")
             await ctx.send("You already have a job.")
             return
 
-        if read_value(ctx.author.id, 'university'):
-            await ctx.send("You cannot be studying at a university to apply for a job.")
-            return
-
         majors = read_value(ctx.author.id, 'majors').split('|')
+        majors = list(filter(lambda major: major, majors)) # to get rid of empty strings
+
         for major in job.requirements:
             if major not in majors:
                 await ctx.send("You do not have all the required majors to apply for this job.")
@@ -734,12 +783,14 @@ _ _""")
             await ctx.send("You do not have a job.")
             return
 
+        if not await jail_heist_check(self.client, ctx, ctx.author): return
+
         await ctx.send("Are you sure you want to quit your job? You will not be able to apply to another job for 12 hours. Respond with `y` or `yes` to proceed.")
 
         try:
             response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author.id == ctx.author.id, timeout=20)
         except asyncio.TimeoutError:
-            await ctx.send("Quit timed out.")
+            return await ctx.send("Quit timed out.")
 
         response = response.content.lower()
         
@@ -769,6 +820,7 @@ _ _""")
 
         if not (job := read_value(member.id, 'job')):
             await ctx.send(f"**{member.name}** does not have a job.")
+            return
 
         if job.lower().startswith(('a', 'e', 'i', 'o', 'u')):
             article = 'an'
@@ -783,22 +835,27 @@ _ _""")
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def work(self, ctx):
 
+        if ctx.author.id in self.working:
+            return await ctx.send("You are already working.")
+
         if not (job := read_value(ctx.author.id, 'job')):
-            await ctx.send(f"You do not have a job.")
+            await ctx.send(f"You do not have a job.\nUse `.apply job` to apply for a job.")
             return
         
-        if not await jail_heist_check(ctx, ctx.author): return
+        if not await jail_heist_check(self.client, ctx, ctx.author): return
 
         elif (workc := read_value(ctx.author.id, 'workc')) > time.time():
             await ctx.send(f'You must wait {splittime(workc)} before you can work again.')
             return
 
+
+        self.working.append(ctx.author.id)
         correct = 0
 
         with open('./storage/jsons/mode.json') as f:
             mode = json.load(f)
 
-        if ctx.author.premium_since and mode == 'event':
+        if ctx.author.premium_since and mode == 'event' and read_value(ctx.author.id, 'in_event') == "True":
 
             await ctx.send("*Premium perks are disabled during events*")
             premium = False
@@ -853,6 +910,8 @@ _ _""")
         else:
             article = 'a'
                             # message linked with tutorial
+
+        self.working.remove(ctx.author.id)
         await ctx.send(f"💰 **{ctx.author.name}** worked as {article} **{job.name}** and successfully completed {correct} tasks, earning ${earnings}. 💰")
 
 
@@ -861,10 +920,14 @@ _ _""")
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def practice(self, ctx):
 
+        if ctx.author.id in self.working:
+            return await ctx.send("You are already working.")
+
         if not (job := read_value(ctx.author.id, 'job')):
             await ctx.send(f"You do not have a job.")
             return
 
+        self.working.append(ctx.author.id)
         correct = 0
 
         for x in range(3):
@@ -882,26 +945,14 @@ _ _""")
             article = 'an'
         else:
             article = 'a'
-                                # message linked with tutorial
+
+        self.working.remove(ctx.author.id) # message linked with tutorial
         await ctx.send(f"**{ctx.author.name}** practiced as {article} **{job}** and successfully completed {correct} tasks.")
         
         
 
 
-        
-
-            
-
-# NOTE when deploying make sure to transfer premium as well
-# NOTE update boosts channel to unclude perks like extra study tasks and work tasks
-
-# NOTE when deploying be sure to also transfer new text files from storage
-
-# NOTE restart bot and transfer main.py when deploying
-# NOTE transfer tutorial as well
-
-# NOTE remove work command from actions.py and transfer as well
-
+    
 
 def setup(client):
     client.add_cog(jobs(client))

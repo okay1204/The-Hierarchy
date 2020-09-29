@@ -17,9 +17,9 @@ from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyRea
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, update_total, leaderboard,
-rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use)
+from utils import (read_value, write_value, leaderboard,
+rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
+remove_item, remove_use, add_item, add_use)
 
 class tutorial(commands.Cog):
 
@@ -30,6 +30,12 @@ class tutorial(commands.Cog):
     async def on_message(self, message):
         # DM check
         if not message.guild:
+
+            if self.client.get_cog("premium"):
+                for session in self.client.get_cog("premium").control_sessions:
+                    if session["author"] == message.author:
+                        return
+
             if message.content.lower() == "tutorial":
                 for task in asyncio.all_tasks():
                     if str(task.get_name()) == f"tutorial {message.author.id}":
@@ -121,11 +127,6 @@ class tutorial(commands.Cog):
             await channel.send(f"Looks like you can't apply for a job for another {splittime(applyc)}. Let's skip working then.")
             canApply = canWork = False
 
-        
-        elif read_value(author.id, 'university'):
-            await channel.send("You are studying at a university right now. Let's skip working then.")
-            canApply = canWork = False
-
         else:
             canApply = canWork = True
 
@@ -160,7 +161,7 @@ class tutorial(commands.Cog):
                 await asyncio.sleep(2)
 
             spoofed = False
-            if read_value(author.id, 'applyc') > time.time():
+            if read_value(author.id, 'applyc') > time.time() or read_value(author.id, 'job'):
                 await channel.send(f"Looks like you just applied for a job... Let's skip working then.")
                 spoofed = True
                 canWork = False
@@ -172,6 +173,8 @@ class tutorial(commands.Cog):
             if not spoofed:
                 await channel.send("The only two jobs that do not require a major to apply for are the **Garbage Collector** and the **Streamer**. Go ahead and apply for whichever job you like, based on the stats, using `.apply Job Name`.")
             
+            breakOut = False
+            while True:
                 while True:
                     try:
                         message = await self.client.wait_for('message', check=lambda x: x.author == author and x.guild == guild, timeout=120)
@@ -189,17 +192,21 @@ class tutorial(commands.Cog):
                         await channel.send("Hmm... something went wrong. Please start the tutorial again.")
                         return
                     if message.content.startswith('You have successfully recieved the job'):
+                        breakOut = True
                         break
+                    else:
+                        break
+                if breakOut:
+                    break
 
-                async with channel.typing():
-                    await asyncio.sleep(3)
+            async with channel.typing():
+                await asyncio.sleep(3)
 
-                await channel.send(f"Now that you have a job, you can start working. ***But wait!***")
+            await channel.send(f"Now that you have a job, you can start working. ***But wait!***")
 
-                async with channel.typing():
-                    await asyncio.sleep(3)
+            async with channel.typing():
+                await asyncio.sleep(3)
 
-                await channel.send(f"When you work, a bunch of minigames are sent your way. These minigames may be a little complex at first. You may use the `.practice` command as many times as you like to practice these minigames **without penalty**.\nGo ahead and practice as many times as you like with `.practice`, and when you are ready, use `.work` to start making money.")
             
         
         if canWork:
@@ -220,6 +227,8 @@ class tutorial(commands.Cog):
 
         breakOut = False
         if canWork:
+
+            await channel.send(f"When you work, a bunch of minigames are sent your way. These minigames may be a little complex at first. You may use the `.practice` command as many times as you like to practice these minigames **without penalty**.\nGo ahead and practice as many times as you like with `.practice`, and when you are ready, use `.work` to start making money.")
 
             while True:
 

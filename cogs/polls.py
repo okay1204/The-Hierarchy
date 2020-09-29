@@ -69,7 +69,7 @@ class polls(commands.Cog):
         #\N{keycap ten} is 10 emoji
         
         if not option or not timer or not name:
-            await ctx.send('Incorrect command usage:\n`.startpoll options minutes name`')
+            await ctx.send('Incorrect command usage:\n`.startpoll options timer name`')
             return
 
         try:

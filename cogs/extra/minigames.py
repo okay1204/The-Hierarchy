@@ -31,7 +31,7 @@ class Studygames:
 
         added = []
         for x in range(10): # noqa pylint: disable=unused-variable
-            current = emojis.pop(random.randint(0, len(emojis)))
+            current = emojis.pop(random.randint(0, len(emojis)-1))
             added.append(current)
             await message.add_reaction(current)
 
@@ -692,11 +692,8 @@ class Scientist:
 
         while wordcount > 0:
 
-            try:
-                answer = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel)
-            except:
-                pass
-        
+            
+            answer = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel)
             
             word = answer.content.lower()
 
@@ -1046,11 +1043,11 @@ class Garbage_Collector:
 
         if not word_typing_timer_task.done():
             word_typing_timer_task.cancel()
-            return word_typing_input_task
+            return await word_typing_input_task
 
         elif not word_typing_input_task.done():
             word_typing_input_task.cancel()
-            return word_typing_timer_task
+            return await word_typing_timer_task
 
 
 
@@ -1068,7 +1065,7 @@ class Garbage_Collector:
 
         while len(words) > 0:
             
-            response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=30)
+            response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author)
 
             
             if response.content.lower() in map(lambda word: word.lower(), words):
@@ -1172,11 +1169,11 @@ class Streamer:
 
         if not stream_message_timer_task.done():
             stream_message_timer_task.cancel()
-            await delete_chat_input_task
+            return await delete_chat_input_task
         
         elif not delete_chat_input_task.done():
             delete_chat_input_task.cancel()
-            await stream_message_timer_task
+            return await stream_message_timer_task
 
 
 
@@ -1226,7 +1223,7 @@ class Streamer:
         
         with open('./storage/text/meme song names.txt', 'r') as f:
             all_names = f.read().splitlines()
-        
+
         names = []
         for x in range(5): # noqa pylint: disable=unused-variable
             names.append(all_names.pop(random.randint(0, len(all_names)-1)))
@@ -1237,31 +1234,28 @@ class Streamer:
         # to get a letter that isnt a space
         fake = fake.lower()
         fake = list(fake)
-        for letter in fake:
-            index = fake.index(letter)
+        for index, letter in enumerate(fake):
             fake[index] = (letter, index+1)
-        
+
         fake = list(filter(lambda fake: fake[0] != " ", fake))
-        
+
 
         # to remove any duplicate possible answers
         letter, placement = random.choice(fake[:5])
 
-        for name in names:
+        for index, name in enumerate(names):
             if name != copyrighted :
                 while True:
                     
                     if placement <= len(name):
 
                         if name.lower()[placement-1] == letter:
-                            try:
-                                all_names.remove(name)
-                            except:
-                                pass
-                            names[names.index(name)] = random.choice(all_names)
+
+                            random_name = random.choice(all_names)
+                            names[index] = name = random_name
                     
                         else: break
-
+                        
                     else: break
 
 
@@ -1317,7 +1311,7 @@ class Streamer:
 
         prefix = random.choice(prefixes)
 
-        timeout = random.randint(7, 9)
+        timeout = random.randint(8, 10)
 
         await ctx.send(f"(Click on the black boxes to reveal them)\n\n{prompt} is abusing your stream! Quickly type \"{prefix}ban {prompt}\" in {timeout} seconds.\n")
 
@@ -1378,11 +1372,13 @@ class Doctor:
 
         items = []
 
+        goal.sort(key = lambda x: x["name"])
+
         while items != goal:
             try:
                 response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=20)
             except asyncio.TimeoutError:
-                await ctx.send(f"Timed out.\n{correct}/{total} tasks successful.")
+                await ctx.send(f"Timed out. The items were:\n\n{text}\n{correct}/{total} tasks successful.\n{correct}/{total} tasks successful.")
                 return False
 
             close = difflib.get_close_matches(response.content.lower(), all_items, cutoff=0.7)
@@ -1413,7 +1409,9 @@ class Doctor:
             else:
                 items.append({"name": answer, "count": 1})
         
-            await response.add_reaction('✅')
+            asyncio.create_task(response.add_reaction('✅'))
+
+            items.sort(key = lambda x: x["name"])
     
 
         await ctx.send(f"You got all the items!\n{correct+1}/{total} tasks successful.")

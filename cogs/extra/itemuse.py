@@ -65,6 +65,7 @@ class ItemUses:
                 money -= bailprice
                 write_value(ctx.author.id, 'money', money)
                 write_value(ctx.author.id, 'jailtime', int(time.time()))
+
                 remove_item('pass', ctx.author.id)
                 await ctx.send(f"**{ctx.author.name}** used a **pass**.")
                 await ctx.send(f'💸 You bailed yourself for ${bailprice}. 💸')

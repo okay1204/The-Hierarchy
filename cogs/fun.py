@@ -9,8 +9,10 @@ import time
 import os
 import datetime
 import aiohttp
+import string
 import difflib
 import re
+import praw
 from sqlite3 import Error
 
 import discord
@@ -22,6 +24,7 @@ import sys
 sys.path.insert(1 , os.getcwd())
 
 from utils import level_check, read_value
+import authinfo
 
 
 #Defining own read and write for different database
@@ -50,8 +53,14 @@ class fun(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+        self.scramble_cooldowns = {}
+
 
     async def cog_check(self, ctx):
+
+        if ctx.command.name == "meme":
+            return ctx.channel.id == 759162810906312725
+
         if ctx.channel.category.id != self.client.rightCategory:
             return False
         else:
@@ -61,11 +70,11 @@ class fun(commands.Cog):
     async def on_message(self, message):
         counting = self.client.get_channel(721444345353470002)
         sentences = self.client.get_channel(721475839153143899)
-        #Endless counting channel
-        if message.author.bot:
-            return
+        scramble = self.client.get_channel(759219821103153182)
 
+        if message.author.bot: return
 
+        # Endless counting channel
 
         if message.channel == counting:
             content = message.content
@@ -131,20 +140,155 @@ class fun(commands.Cog):
             return
 
 
+        elif message.channel == scramble:
+
+            if message.author.id in self.scramble_cooldowns and self.scramble_cooldowns[message.author.id] > time.time():
+                await message.delete()
+                await scramble.send(f"You must wait {self.scramble_cooldowns[message.author.id] - int(time.time())} seconds before you can type again, {message.author.mention}.", delete_after=3)
+                return
+
+
+            done = False
+            if message.content.lower().endswith(" - done"):
+                done = True
+                # removes the done part
+                message.content = message.content[:list(message.content).index("-")]
+
+                # get rid of the final space
+                message.content = message.content.strip()
+
+
+            if " " in message.content or "\n" in message.content or "-" in message.content and not done: 
+                await message.delete()
+                await scramble.send(f"You cannot use spaces in the word, {message.author.mention}.", delete_after=3)
+                return
+            
+            conn = sqlite3.connect('./storage/databases/fun.db')
+            c = conn.cursor()
+            c.execute("SELECT word FROM scramble")
+            prev_word = c.fetchone()[0]
+            conn.close()
+
+            if prev_word == message.content and not done:
+                await message.delete()
+                await scramble.send(f"You cannot repeat the same thing, {message.author.mention}.", delete_after=3)
+                return
+
+            elif len(prev_word) == len(message.content):
+
+                found_difference = False
+
+                for index, letter in enumerate(prev_word):
+
+                    if letter != message.content[index]:
+
+                        if found_difference:
+                            await message.delete()
+                            await scramble.send(f"Check the pins how how to play, {message.author.mention}.", delete_after=3)
+                            return
+                        
+                        found_difference = True
+                    
+                if not done:
+                    conn = sqlite3.connect('./storage/databases/fun.db')
+                    c = conn.cursor()
+                    c.execute("UPDATE scramble SET word = ?, lastmsgid = ?", (message.content, message.id))
+                    conn.commit()
+                    conn.close()
+
+
+            elif len(prev_word) - len(message.content) == 1: # removed a letter
+                
+                for x in range(len(prev_word)):
+                    temp = list(prev_word)
+                    temp.pop(x)
+                    if "".join(temp) == message.content:
+                        break
+                
+                else:
+                    await message.delete()
+                    await scramble.send(f"Check the pins how how to play, {message.author.mention}.", delete_after=3)
+                    return
+
+                if not done:
+                    conn = sqlite3.connect('./storage/databases/fun.db')
+                    c = conn.cursor()
+                    c.execute("UPDATE scramble SET word = ?, lastmsgid = ?", (message.content, message.id))
+                    conn.commit()
+                    conn.close() 
+
+            elif len(prev_word) - len(message.content) == -1: # added a letter
+                
+                for x in range(len(message.content)):
+
+                    temp = list(message.content)
+                    temp.pop(x)
+
+                    if "".join(temp) == prev_word:
+                        break
+                
+                else:
+                    await message.delete()
+                    await scramble.send(f"Check the pins how how to play, {message.author.mention}.", delete_after=3)
+                    return
+
+                if not done:
+                    conn = sqlite3.connect('./storage/databases/fun.db')
+                    c = conn.cursor()
+                    c.execute("UPDATE scramble SET word = ?, lastmsgid = ?", (message.content, message.id))
+                    conn.commit()
+                    conn.close()
+
+            
+            else:
+                await message.delete()
+                await scramble.send(f"Check the pins how how to play, {message.author.mention}.", delete_after=3)
+                return
+
+            
+            self.scramble_cooldowns[message.author.id] = int(time.time()) + 30
+
+
+            if done:
+                await message.add_reaction("✅")
+
+
+                # generate random word
+                word = ""
+                for x in range(random.randint(4, 10)): word += random.choice(string.ascii_lowercase)
+                
+                sent_message = await scramble.send(word)
+
+                conn = sqlite3.connect('./storage/databases/fun.db')
+                c = conn.cursor()
+                c.execute("UPDATE scramble SET word = ?, lastmsgid = ?", (word, sent_message.id))
+                conn.commit()
+                conn.close()
+                return
+
+
+                    
+
+
+
+            
+
+
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
+
         counting = 721444345353470002
         sentences = 721475839153143899
+        scramble = 759219821103153182
+
         if payload.channel_id == counting:
             counting = self.client.get_channel(721444345353470002)
             message = await counting.fetch_message(payload.message_id)
             #Grabing data from here
             conn = sqlite3.connect('./storage/databases/fun.db')
             c = conn.cursor()
-            c.execute('SELECT number FROM counting')
-            currentnumber = c.fetchone()
-            c.execute('SELECT lastmsgid FROM counting')
-            lastmsgid = c.fetchone()
+            c.execute('SELECT number, lastmsgid FROM counting')
+            currentnumber, lastmsgid = c.fetchone()
             conn.close()
             currentnumber = currentnumber[0]
             lastmsgid = lastmsgid[0] 
@@ -153,7 +297,7 @@ class fun(commands.Cog):
                 await message.delete()
 
 
-        if payload.channel_id == sentences :
+        elif payload.channel_id == sentences:
             sentences = self.client.get_channel(sentences)
             message = await sentences.fetch_message(payload.message_id)
             #Grabing data from here
@@ -167,10 +311,41 @@ class fun(commands.Cog):
             if " " in message.content and payload.message_id == lastmsgid:
                 await message.delete()
 
+        elif payload.channel_id == scramble:
+            scramble = self.client.get_channel(scramble)
+
+            conn = sqlite3.connect('./storage/databases/fun.db')
+            c = conn.cursor()
+            c.execute('SELECT lastmsgid FROM scramble')
+            lastmsgid = c.fetchone()[0]
+            conn.close()
+
+            if payload.message_id == lastmsgid:
+                message = await scramble.fetch_message(payload.message_id)
+                await message.delete()
+
+                async for message in scramble.history():
+                    if not message.author.bot and not message.content.endswith(' - done'):
+                        word, lastmsgid = message.content, message.id
+                        break
+
+                
+                conn = sqlite3.connect('./storage/databases/fun.db')
+                c = conn.cursor()
+                c.execute('UPDATE scramble SET word = ?, lastmsgid = ?', (word, lastmsgid))
+                conn.commit()
+                conn.close()
+
+
+
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
+
+
         counting = 721444345353470002
         sentences = 721475839153143899
+        scramble = 759219821103153182
+
         if payload.channel_id == counting:
             counting = self.client.get_channel(counting)
             #Grabing last message from here
@@ -224,13 +399,77 @@ class fun(commands.Cog):
                 #Writing new data from here
                 conn = sqlite3.connect('./storage/databases/fun.db')
                 c = conn.cursor()
-                c.execute("UPDATE sentences SET lastmsgid = ?", (newmsg.id,))
-                c.execute("UPDATE sentences SET prevauthor = ?", (newmsg.author.id,))
+                c.execute("UPDATE sentences SET lastmsgid = ?, prevauthor = ?", (newmsg.id, newmsg.author.id))
                 conn.commit()
                 conn.close()
                 #to here
 
-    
+        elif payload.channel_id == scramble:
+            scramble = self.client.get_channel(scramble)
+
+
+            conn = sqlite3.connect('./storage/databases/fun.db')
+            c = conn.cursor()
+            c.execute('SELECT lastmsgid FROM scramble')
+            lastmsgid = c.fetchone()[0]
+            conn.close()
+
+            if payload.message_id == lastmsgid:
+
+                async for message in scramble.history():
+                    if not message.author.bot and not message.content.endswith(' - done'):
+                        word, lastmsgid = message.content, message.id
+                        break
+
+                
+                conn = sqlite3.connect('./storage/databases/fun.db')
+                c = conn.cursor()
+                c.execute('UPDATE scramble SET word = ?, lastmsgid = ?', (word, lastmsgid))
+                conn.commit()
+                conn.close()
+                
+
+
+
+
+    @commands.command()
+    @commands.max_concurrency(1, per=commands.BucketType.channel)
+    async def meme(self, ctx):     
+
+        async with ctx.channel.typing():
+            
+            try:
+                sub = self.client.reddit.subreddit('dankmemes')
+            except:
+                self.client.reddit = praw.Reddit(
+                    client_id = os.environ.get("client_id"),
+                    client_secret = os.environ.get("client_secret"),
+                    password = os.environ.get("password"),
+                    username = os.environ.get("username"),
+                    user_agent = os.environ.get("user_agent")
+                )
+                sub = self.client.reddit.subreddit('dankmemes')
+                
+            post = sub.random()
+
+            post_url = f"https://www.reddit.com/r/dankmemes/comments/{post.id}"
+
+            upvotes = post.score
+            
+
+            embed = discord.Embed(
+                title = post.title,
+                url = post_url
+            )
+
+            embed.set_image(url=post.url)
+
+            embed.set_footer(
+                text = f"{post.num_comments} 💬 | {post.score} 👍"
+            )
+
+        await ctx.send(embed=embed)
+
     
 
     @commands.group(invoke_without_command=True)

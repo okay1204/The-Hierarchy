@@ -13,9 +13,9 @@ from sqlite3 import Error
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, update_total, leaderboard,
-rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use)
+from utils import (read_value, write_value, leaderboard,
+rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
+remove_item, remove_use, add_item, add_use)
 
 class misc(commands.Cog):
 

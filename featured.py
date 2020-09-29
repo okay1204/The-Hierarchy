@@ -3,10 +3,10 @@ from discord.ext import commands
 import sqlite3
 import asyncio
 from datetime import datetime
-from utils import read_value, write_value, update_total
+from utils import read_value, write_value
 import os
 import time
-import bottoken
+import authinfo
 
 client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
@@ -200,7 +200,6 @@ async def timer_money(member):
 
             money += 100
             write_value(member.id, 'money', money)
-            update_total(member.id)
 
             try:
                 await member.send(f'You have been in **{member.guild.name}** for five minutes and have recieved your price of $100!')

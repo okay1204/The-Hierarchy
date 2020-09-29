@@ -11,9 +11,9 @@ from sqlite3 import Error
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, update_total, leaderboard,
-rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use)
+from utils import (read_value, write_value, leaderboard,
+rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
+remove_item, remove_use, add_item, add_use, log_command)
 
 class debug(commands.Cog):
 
@@ -25,6 +25,9 @@ class debug(commands.Cog):
             return True
         else:
             return False
+
+    async def cog_after_invoke(self, ctx):
+        await log_command(self.client, ctx)
 
     @commands.command()
     async def online(self, ctx):
@@ -79,6 +82,7 @@ class debug(commands.Cog):
             c = conn.cursor()
             c.execute(command)
             output = c.fetchall()
+
             conn.commit()
             conn.close()
 
@@ -169,7 +173,6 @@ class debug(commands.Cog):
         money = read_value(member.id, 'money')
         money += add
         write_value(member.id, 'money', money)
-        update_total(member.id)
 
 
         if add >= 0:

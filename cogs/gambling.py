@@ -16,9 +16,9 @@ from sqlite3 import Error
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, update_total, leaderboard,
-rolecheck, splittime, open_heist, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, write_heist, add_use, event_disabled)
+from utils import (read_value, write_value, leaderboard,
+rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
+remove_item, remove_use, add_item, add_use, event_disabled, member_event_check)
 def evaluateCards(cards):
     aceCount = 0
     reducedAces = 0
@@ -81,6 +81,8 @@ class gambling(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.fight start/cancel/help`")
             return
 
+        if member and not await member_event_check(ctx, member.id): return
+
         action = action.lower()
 
         if action == 'start':
@@ -114,7 +116,7 @@ class gambling(commands.Cog):
     async def fightreq(self, ctx, member:discord.Member=None, bet=None):
         author = ctx.author
         
-        if not await jail_heist_check(ctx, ctx.author):
+        if not await jail_heist_check(self.client, ctx, ctx.author):
             return
 
         if not member or not bet:
@@ -378,8 +380,8 @@ class gambling(commands.Cog):
         write_value(author.id, 'money', money1)
         write_value(member.id, 'money', money2)
 
-        update_total(author.id)
-        update_total(member.id)
+        
+        
         await rolecheck(self.client, author.id)
         await rolecheck(self.client, member.id)
         await leaderboard(self.client)
@@ -389,12 +391,13 @@ class gambling(commands.Cog):
 
 
     @commands.command()
+    @commands.check(event_disabled)
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def blackjack(self, ctx, bet=None):
         author = ctx.author
 
 
-        if not await jail_heist_check(ctx, ctx.author):
+        if not await jail_heist_check(self.client, ctx, ctx.author):
             return
 
         if not bet:
@@ -452,7 +455,7 @@ class gambling(commands.Cog):
         money = read_value(author.id, 'money')
         money -= bet[0]
         write_value(author.id, 'money', money)
-        update_total(author.id)
+        
         asyncio.create_task(rolecheck(self.client, author.id))
         asyncio.create_task(leaderboard(self.client))
 
@@ -482,7 +485,7 @@ class gambling(commands.Cog):
                 money = read_value(author.id, 'money')
                 money += winnings
                 write_value(author.id, 'money', money)
-                update_total(author.id)
+                
                 asyncio.create_task(rolecheck(self.client, author.id))
                 asyncio.create_task(leaderboard(self.client))
 
@@ -551,7 +554,7 @@ class gambling(commands.Cog):
                         money = read_value(author.id, 'money')
                         money -= bet[currentHand]
                         write_value(author.id, 'money', money)
-                        update_total(author.id)
+                        
                         asyncio.create_task(rolecheck(self.client, author.id))
                         asyncio.create_task(leaderboard(self.client))
 
@@ -595,7 +598,7 @@ class gambling(commands.Cog):
                             money = read_value(author.id, 'money')
                             money -= bet[currentHand]
                             write_value(author.id, 'money', money)
-                            update_total(author.id)
+                            
                             asyncio.create_task(rolecheck(self.client, author.id))
                             asyncio.create_task(leaderboard(self.client))
                             bet.append(bet[currentHand])
@@ -617,7 +620,7 @@ class gambling(commands.Cog):
                     money = read_value(author.id, 'money')
                     money += loss
                     write_value(author.id, 'money', money)
-                    update_total(author.id)
+                    
                     asyncio.create_task(rolecheck(self.client, author.id))
                     asyncio.create_task(leaderboard(self.client))
                     return
@@ -630,7 +633,7 @@ class gambling(commands.Cog):
                     money = read_value(author.id, 'money')
                     money += bet[currentHand]
                     write_value(author.id, 'money', money)
-                    update_total(author.id)
+                    
                     asyncio.create_task(rolecheck(self.client, author.id))
                     asyncio.create_task(leaderboard(self.client))
 
@@ -747,7 +750,7 @@ class gambling(commands.Cog):
             money = read_value(author.id, 'money')
             money += winnings
             write_value(author.id, 'money', money)
-            update_total(author.id)
+            
             await rolecheck(self.client, author.id)
             await leaderboard(self.client)
             return
@@ -785,7 +788,7 @@ class gambling(commands.Cog):
 
         write_value(author.id, 'money', money)
         await ctx.send(text)
-        update_total(author.id)
+        
         await rolecheck(self.client, author.id)
         await leaderboard(self.client)
     

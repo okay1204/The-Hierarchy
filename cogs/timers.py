@@ -14,7 +14,7 @@ import asyncio
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (write_value, read_value, update_total, minisplittime)
+from utils import (write_value, read_value, minisplittime)
 
 
 
@@ -29,65 +29,77 @@ class timers(commands.Cog):
         self.eventtimer.cancel() # noqa pylint: disable=no-member
 
     async def tax(self):
+
         channel = self.client.get_channel(698403873374601237)
         guild = self.client.mainGuild
 
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
-        c.execute('SELECT id, money, bank, total FROM members')
+        c.execute('SELECT id, money, bank FROM members')
         users = c.fetchall()
         conn.close()
-        for person in users:
-            money = person[1]
-            bank = person[2]
-            total = person[3]
+
+        for userid, money, bank in users:
+
+            total = money + bank
+
             tax = int(total * 0.03)
-            if tax > 100:
-                tax = 100
-            if bank >= tax:
-                bank -= tax
-                write_value(person[0], 'bank', bank)
-            elif bank < tax:
-                extra = tax - bank
-                bank = 0
-                if extra > money:
-                    money = 0
-                elif extra <= money:
-                    money -= extra
-            write_value(person[0], 'bank', bank)
-            update_total(person[0])
-        taxping = guild.get_role(698321954742075504)
 
-        await channel.send(f"{taxping.mention} A 3% tax has been collected. *(No more than $100 was taken from your account)*")
-
-    async def bank(self):
-        channel = self.client.get_channel(698403873374601237)
-        guild = self.client.mainGuild
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('SELECT id, money, bank, total FROM members')
-        users = c.fetchall()
-        conn.close()
-        for person in users:
-            money = person[1]
-            bank = person[2]
-            total = person[3]
-            tax = int(total * 0.06)
             if tax > 200:
                 tax = 200
             if bank >= tax:
                 bank -= tax
-                write_value(person[0], 'bank', bank)
+
+                
             elif bank < tax:
+
                 extra = tax - bank
                 bank = 0
                 if extra > money:
                     money = 0
                 elif extra <= money:
                     money -= extra
-            write_value(person[0], 'bank', bank)
-            update_total(person[0])
-            write_value(person[0], 'hbank', bank)
+
+            conn = sqlite3.connect('./storage/databases/hierarchy.db')
+            c = conn.cursor()
+            c.execute("UPDATE members SET bank = ?, hbank = ? WHERE id = ?", (bank, bank, userid))
+
+        taxping = guild.get_role(698321954742075504)
+        await channel.send(f"{taxping.mention} A 3% tax has been collected. *(No more than $200 was taken from your account)*")
+
+    async def bank(self):
+        channel = self.client.get_channel(698403873374601237)
+        guild = self.client.mainGuild
+
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute('SELECT id, money, bank FROM members')
+        users = c.fetchall()
+        conn.close()
+
+        for userid, money, bank in users:
+
+            tax = int(bank * 0.06)
+
+            if tax > 200:
+                tax = 200
+            if bank >= tax:
+                bank -= tax
+
+                
+            elif bank < tax:
+
+                extra = tax - bank
+                bank = 0
+                if extra > money:
+                    money = 0
+                elif extra <= money:
+                    money -= extra
+
+            conn = sqlite3.connect('./storage/databases/hierarchy.db')
+            c = conn.cursor()
+            c.execute("UPDATE members SET bank = ?, hbank = ? WHERE id = ?", (bank, bank, userid))
+
         bankping = guild.get_role(698322063206776972)
         await channel.send(f"{bankping.mention} A 6% bank fee has been collected. *(No more than $200 was taken from your account)*")
 
@@ -155,11 +167,20 @@ class timers(commands.Cog):
         c.execute('SELECT id, boosts FROM members')
         users = c.fetchall()
         conn.close()
-        for user in users:
-            boosts = user[1]
+
+        guild = self.client.mainGuild
+
+        for userid, boosts in users:
+
+            if (member := guild.get_member(userid)):
+                if not member.premium_since:
+                    continue
+            else: continue
+
+
             if boosts < 3:
                 boosts += 1
-                write_value(user[0], 'boosts', boosts)
+                write_value(userid, 'boosts', boosts)
         
         timewarpchannel = self.client.get_channel(727729749375320095)
         guild = self.client.mainGuild
@@ -207,15 +228,15 @@ class timers(commands.Cog):
             if banktime == 1440:
                 banktime = 0
         if taxtime == 1440:
-            asyncio.create_task(self.tax())
+            await self.tax()
         
         embed.add_field(name="Tax collection",value=f'{minisplittime(taxtime)}',inline=False)
         embed3 = discord.Embed(color=0xff61d7, title="Boost timer")
 
         if banktime == 0:
-            asyncio.create_task(self.bank())
+            await self.bank()
             embed.add_field(name="Bank fee collection",value='12h 0m',inline=False)
-            asyncio.create_task(self.boosts())
+            await  self.boosts()
             embed3.add_field(name="__________",value='12h 0m',inline=False)
         else:
             embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
@@ -223,7 +244,7 @@ class timers(commands.Cog):
 
         embed2 = discord.Embed(color=0x30ff56, title='Shop change timer')
         if shoptime == 0:
-            await asyncio.create_task(self.shopchange())
+            await self.shopchange()
             embed2.add_field(name='__________', value='3h 0m', inline=False)
         else:
             embed2.add_field(name='__________', value=f'{minisplittime(shoptime)}', inline=False)

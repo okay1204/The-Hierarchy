@@ -12,12 +12,15 @@ import sqlite3
 import os
 import difflib
 import traceback
+import asyncio
 import string
 from sqlite3 import Error
 from captcha.image import ImageCaptcha
+import praw
+
 
 from utils import *
-import bottoken
+import authinfo
 
 async def do_captcha(ctx):
 
@@ -40,7 +43,6 @@ async def do_captcha(ctx):
         # making embed
         embed = discord.Embed(title="Captcha Required", description="Please answer this captcha to prove this is you.\n(There are only lowercase letters)", color=0x15a7c2)
         embed.set_image(url="attachment://captcha.png")
-        
 
         # prompt user
         captcha = await ctx.send(embed=embed, file=discord.File(f'./storage/images/captchas/{word}.png', filename="captcha.png"))
@@ -132,6 +134,7 @@ client.remove_command('help')
 
 client.add_check(lambda ctx: not ctx.author.bot)
 client.add_check(macro_check)
+client.add_check(lambda ctx: ctx.guild)
 
 @client.event
 async def on_command_error(ctx, error):
@@ -141,7 +144,7 @@ async def on_command_error(ctx, error):
 
     if isinstance(error, CommandNotFound):
 
-        if ctx.message.content.startswith('..'):
+        if ctx.message.content.startswith('..') or not ctx.guild:
             return
         
         try:
@@ -150,7 +153,7 @@ async def on_command_error(ctx, error):
         except:
             pass
 
-        allowed_cogs = ['actions', 'fun', 'gambling', 'games', 'info', 'premium']
+        allowed_cogs = ['actions', 'fun', 'gambling', 'games', 'info', 'premium', 'jobs', 'leveling']
 
         command_string = ctx.message.content.split()[0]
         command_string = command_string.replace('.', '')
@@ -218,7 +221,6 @@ async def on_command_error(ctx, error):
 
         raise error
 
-# ANCHOR on ready
 @client.event
 async def on_ready():
 
@@ -246,6 +248,17 @@ async def on_ready():
             await client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
 
 
+
+    # make reddit connection
+    client.reddit = asyncio.create_task(connect_reddit())
+
+
+
+
+
+
+
+
     client.bailprice = lambda number: int(int(number-time.time())/3600*40)
     client.leaderboardChannel = client.get_channel(692955859109806180)
     client.leaderboardMessage = await client.leaderboardChannel.fetch_message(698775209024552975)
@@ -262,6 +275,7 @@ async def on_ready():
     for cog in cogs:
         client.load_extension(f'cogs.{cog}')
 
+
     commands = set(client.walk_commands())
     aliases = []
     for command in commands:
@@ -274,21 +288,42 @@ async def on_ready():
     client.every_command.append('featured')
 
     # ANCHOR default cogs
-
-    #cogs_to_unload = ['events']
-    #cogs = ['debug', 'info', 'games', 'actions', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
-    cogs_to_unload = ['debug', 'actions', 'games', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'info', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling']
-    #NOTE add cog info back to unloaded cogs
-    # cogs_to_unload = ['fun', 'timers', 'admin', 'misc', 'leveling'] # for tutorial testing
+    
+    cogs_to_unload = ['events']
+    # cogs_to_unload = ['debug', 'actions', 'games', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'info', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling', 'jobs', 'voice_channels']
+    cogs_to_unload = ['debug', 'actions', 'games', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'info', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling', 'jobs', 'voice_channels']
 
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
 
-    await leaderboard(client)
+    asyncio.create_task(leaderboard(client))
+
+    
+    # waiting for reddit connection to finish
+    client.reddit = await client.reddit
+    print("Reddit Connection Successful")
+
+    
 
 client.adminChannel = 706953015415930941
 client.partnershipChannel = 723945572708384768
 client.rightCategory = 692949972764590160
+client.heist = {}
+
+
+async def connect_reddit():
+
+    reddit = praw.Reddit(
+        client_id = os.environ.get("client_id"),
+        client_secret = os.environ.get("client_secret"),
+        password = os.environ.get("password"),
+        username = os.environ.get("username"),
+        user_agent = os.environ.get("user_agent")
+    )
+
+    return reddit
+
+
     
         
 @client.event
@@ -315,6 +350,18 @@ async def on_message(message):
 
 def adminCheck(ctx):
     return ctx.channel.id == client.adminChannel
+
+
+@client.command()
+@commands.check(adminCheck)
+@commands.max_concurrency(1, per=commands.BucketType.channel)
+async def redditreload(ctx):
+
+    async with ctx.channel.typing():
+
+        client.reddit = await connect_reddit()
+
+    await ctx.send("Reddit connection reloaded.")
 
 
 @client.command()

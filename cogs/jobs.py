@@ -174,9 +174,9 @@ class jobs(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-
         self.studying = []
         self.working = []
+        self.finals = []
 
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
@@ -449,9 +449,15 @@ Study cooldown: {studyc}""")
                 conn = sqlite3.connect('./storage/databases/hierarchy.db')
                 c = conn.cursor()
                 c.execute("SELECT total FROM events WHERE id = ?", (ctx.author.id,))
-                event_total = c.fetchone()[0]
-                event_total += university.price
-                c.execute("UPDATE events SET total = ? WHERE id = ?", (event_total, ctx.author.id))
+                event_total = c.fetchone()
+
+                if event_total:
+                    event_total = event_total[0]
+                    event_total += university.price
+                    c.execute("UPDATE events SET total = ? WHERE id = ?", (event_total, ctx.author.id))
+                else:
+                    c.execute("INSERT INTO events (id, total) VALUES (?, ?)", (ctx.author.id, university.price))
+
                 conn.commit()
                 conn.close()
 
@@ -506,6 +512,9 @@ Good luck on the finals!""")
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def final(self, ctx):
+
+        if ctx.author.id in self.finals:
+            return await ctx.send("You are already taking your finals.")
         
         current = read_value(ctx.author.id, 'university')
         if not current:
@@ -535,6 +544,7 @@ Good luck on the finals!""")
             await ctx.send("Finals cancelled.")
             return
 
+        self.finals.append(ctx.author.id)
         await ctx.send("You have began taking your finals...")
 
         test = 0
@@ -573,6 +583,8 @@ Good luck on the finals!""")
             write_value(ctx.author.id, 'majors', majors)
         else:
             await ctx.send(f"❌ You failed the final.. well looks like you have to try again. ❌")
+
+        self.finals.remove(ctx.author.id)
 
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()

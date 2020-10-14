@@ -474,7 +474,7 @@ class actions(commands.Cog):
                 await leaderboard(self.client)
                 return
             
-        await ctx.send(f"There is no such item called \"{item}\".")
+        await ctx.send(f"There is no such item called **{item}**.")
 
 
     @commands.command()

@@ -10,8 +10,6 @@ class voice_channels(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-
-        #TODO member has manage channel permissions for voice chats
     
         # if went from one channel to another
         if before.channel != after.channel:

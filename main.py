@@ -129,7 +129,7 @@ async def macro_check(ctx):
 
 
 
-client = commands.Bot(command_prefix = '.')
+client = commands.Bot(command_prefix = '.', intents=discord.Intents.all())
 client.remove_command('help')
 
 client.add_check(lambda ctx: not ctx.author.bot)
@@ -227,7 +227,6 @@ async def on_ready():
 
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
 
-
     client.history = {}
     client.making_captchas = []
     
@@ -289,9 +288,24 @@ async def on_ready():
 
     # ANCHOR default cogs
     
-    cogs_to_unload = ['events']
-    # cogs_to_unload = ['debug', 'actions', 'games', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'info', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling', 'jobs', 'voice_channels']
-    cogs_to_unload = ['debug', 'actions', 'games', 'gambling', 'misc', 'premium', 'tutorial', 'heist', 'members', 'fun', 'info', 'polls', 'admin', 'reactions', 'timers', 'events', 'leveling', 'jobs', 'voice_channels']
+    cogs_to_unload = ['events', 'halloween']
+
+    # cogs_to_unload = [
+    # 'debug', 'actions', 'games', 'gambling', 
+    # 'misc', 'premium', 'tutorial', 'heist', 
+    # 'members', 'fun', 'info', 'polls', 'admin', 
+    # 'reactions', 'timers', 'events', 'leveling', 
+    # 'jobs', 'voice_channels', 'alerts'] # halloween enabled
+
+    # cogs_to_unload = [
+    # 'debug', 'actions', 'games', 'gambling', 
+    # 'misc', 'premium', 'tutorial', 'heist', 
+    # 'members', 'fun', 'info', 'polls', 'admin', 
+    # 'reactions', 'timers', 'events', 'leveling', 
+    # 'jobs', 'voice_channels', 'alerts', 'halloween']
+
+
+    #NOTE reload main upon deployment because of new default unloaded cog
 
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
@@ -557,8 +571,7 @@ async def reload(ctx, name=None):
 
         for filename in files:
             if filename in current_cogs:
-                client.unload_extension(f'cogs.{filename}')
-                client.load_extension(f'cogs.{filename}')
+                client.reload_extension(f'cogs.{filename}')
 
         await ctx.send("All cogs succesfully reloaded.")
 

@@ -8,7 +8,7 @@ import os
 import time
 import authinfo
 
-client = commands.Bot(command_prefix = '.')
+client = commands.Bot(command_prefix = '.', intent=discord.Intents.all())
 client.remove_command('help')
 
 async def is_owner(ctx):

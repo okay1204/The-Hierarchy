@@ -48,6 +48,9 @@ class reactions(commands.Cog):
             elif str(payload.emoji) == '⏱️':
                 role = guild.get_role(727725637317427332) # boost
 
+            elif str(payload.emoji) == '💸':
+                role = guild.get_role(761786482771099678) # heists
+
             await user.add_roles(role)
 
         elif payload.channel_id == 725065871554510848: # Self roles
@@ -168,6 +171,9 @@ class reactions(commands.Cog):
 
             elif str(payload.emoji) == '⏱️':
                 role = guild.get_role(727725637317427332) # boost
+
+            elif str(payload.emoji) == '💸':
+                role = guild.get_role(761786482771099678) # heists
 
             await user.remove_roles(role)
 

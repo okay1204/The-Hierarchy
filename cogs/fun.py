@@ -246,7 +246,7 @@ class fun(commands.Cog):
                 return
 
             
-            self.scramble_cooldowns[message.author.id] = int(time.time()) + 30
+            self.scramble_cooldowns[message.author.id] = int(time.time()) + 10
 
 
             if done:
@@ -290,8 +290,6 @@ class fun(commands.Cog):
             c.execute('SELECT number, lastmsgid FROM counting')
             currentnumber, lastmsgid = c.fetchone()
             conn.close()
-            currentnumber = currentnumber[0]
-            lastmsgid = lastmsgid[0] 
             #to here
             if str(currentnumber) not in message.content and payload.message_id == lastmsgid:
                 await message.delete()
@@ -455,10 +453,13 @@ class fun(commands.Cog):
             post_url = f"https://www.reddit.com/r/dankmemes/comments/{post.id}"
 
             upvotes = post.score
-            
+
+            title = post.title
+            if len(title) > 256:
+                title = title[0:256]            
 
             embed = discord.Embed(
-                title = post.title,
+                title = title,
                 url = post_url
             )
 

@@ -165,7 +165,7 @@ class events(commands.Cog):
         CASE
             WHEN events.total IS NULL THEN 0
             ELSE events.total
-        END), members.in_event
+        END)
         FROM members
         LEFT JOIN events
         ON members.id = events.id
@@ -174,7 +174,7 @@ class events(commands.Cog):
         hierarchy = c.fetchall()
         conn.close()
 
-        hierarchy = list(filter(lambda x: guild.get_member(x[0]) and x[2] == "True", hierarchy))
+        hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
 
         for x in range(5):
@@ -208,7 +208,7 @@ class events(commands.Cog):
         CASE
             WHEN events.total IS NULL THEN 0
             ELSE events.total
-        END), members.in_event
+        END)
         FROM members
         LEFT JOIN events
         ON members.id = events.id
@@ -217,9 +217,7 @@ class events(commands.Cog):
         hierarchy = c.fetchall()
         conn.close()
 
-        hierarchy = list(filter(lambda x: guild.get_member(x[0]) and x[2] == "True", hierarchy))
-        hierarchy.sort(key=lambda member: member[1], reverse=True)
-        
+        hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
 
         for x in range(5):

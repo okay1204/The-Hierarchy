@@ -24,7 +24,11 @@ class members(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+        self.update_count.start() # noqa pylint: disable=no-member
 
+    def cog_unload(self):
+
+        self.update_count.cancel() # noqa pylint: disable=no-member
     
 
     @commands.command()
@@ -67,11 +71,6 @@ class members(commands.Cog):
             if member.id == person[0]:
                 alreadyin = True
                 break
-
-    
-        membercountchannel = self.client.membercountchannel
-        membercount = len(list(filter(lambda member: not member.bot ,guild.members)))
-        asyncio.create_task(membercountchannel.edit(name=f"Members: {membercount}"))
         
         # mutes
         with open(f'./storage/jsons/mutes.json') as f:
@@ -122,10 +121,6 @@ class members(commands.Cog):
         channel = self.client.get_channel(692956542437425153)
 
         await channel.send(f"{member.mention} has left **The Hierarchy**. Too bad for them.")
-
-        membercountchannel = self.client.membercountchannel
-        membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
-        asyncio.create_task( membercountchannel.edit(name=f"Members: {membercount}") )
 
         # heists
         if self.client.heist:
@@ -208,6 +203,15 @@ class members(commands.Cog):
                 task.cancel()
                 break
                 
+
+    @tasks.loop(minutes=10)
+    async def update_count(self):
+        guild = self.client.mainGuild
+
+        membercountchannel = self.client.membercountchannel
+
+        membercount = len(list(filter(lambda x: not guild.get_member(x.id).bot ,guild.members)))
+        asyncio.create_task( membercountchannel.edit(name=f"Members: {membercount}") )
                 
 def setup(client):
     client.add_cog(members(client))

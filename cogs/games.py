@@ -76,7 +76,7 @@ class games(commands.Cog):
         elif key[entry][1] == pc:
             await ctx.send(f"{pc}\nYou lose. L")
 
-        rpsc = int(time.time()) + 10
+        rpsc = int(time.time()) + 8
         write_value(author.id, 'rpsc', rpsc)
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
@@ -114,7 +114,7 @@ class games(commands.Cog):
             write_value(author.id, 'money', money)
 
         await ctx.send(text)
-        rpsc = int(time.time()) + 10
+        rpsc = int(time.time()) + 8
         write_value(author.id, 'rpsc', rpsc)
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)
@@ -154,12 +154,13 @@ class games(commands.Cog):
             money = read_value(author.id, 'money')
             money += rmoney
             write_value(author.id, 'money', money)
-            rpsc = int(time.time()) + 10 
-            write_value(author.id, 'rpsc', rpsc)
+            
         elif entry != number:
             await ctx.send(f"You lost. The number was {number}.")
-            rpsc = int(time.time()) + 10
-            write_value(author.id, 'rpsc', rpsc)
+
+
+        rpsc = int(time.time()) + 8
+        write_value(author.id, 'rpsc', rpsc)
 
         await leaderboard(self.client)
         await rolecheck(self.client, author.id)

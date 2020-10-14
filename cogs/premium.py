@@ -115,7 +115,7 @@ class premium(commands.Cog):
                 pass
             return
 
-        allowed_categories = (692949972764590160, 692949458551439370, 716729977223119018)
+        allowed_categories = (692949972764590160, 692949458551439370, 716729977223119018, 761669069094387732, 757374291028213852)
 
         if ctx.channel.category.id not in allowed_categories:
             try:

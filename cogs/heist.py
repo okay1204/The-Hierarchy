@@ -181,7 +181,7 @@ class heist(commands.Cog):
             self.client.heist = {"victim": member.id, "participants": [ctx.author.id], "location": ctx.channel, "start": int(time.time())+120}
                 
 
-        await ctx.send(f'Heist started. You have two minutes to gather at least two more people to join the heist.')
+        await ctx.send(f'Heist started. You have two minutes to gather at least two more people to join the heist. <@&761786482771099678>') # end part is mention for heist role
 
         self.client.heist_task = asyncio.create_task( self.heist() )
 

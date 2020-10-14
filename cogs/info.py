@@ -454,8 +454,91 @@ Gang: {gang}
         await ctx.send(embed=embed)
 
 
+    
+    @commands.group(aliases=["collectables"], invoke_without_command=True)
+    async def award(self, ctx):
+        await ctx.send("Incorrect command usage:\n`.award about/list`")
+    
+
+    @award.command(name="list")
+    async def awards_list(self, ctx, page=1, *, member:discord.Member=None):
+
+        if not member:
+            member = ctx.author
+
+        if isinstance(page, str):
+            if page.isdigit():
+                page = int(page)
+            else:
+                return await ctx.send("Enter a valid page number.")
+
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute(f'SELECT awards FROM members WHERE id = ?', (member.id,))
+        awards = c.fetchone()[0]
+        conn.close()
+
+        awards = awards.split()
+
+        if not awards:
+            embed = discord.Embed(color=0x19a83f, description="None")
+            embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar_url_as(static_format='jpg'))
+            await ctx.send(embed=embed)
+            return
+
+        conn = sqlite3.connect('./storage/databases/awards.db')
+        c = conn.cursor()
+        c.execute(f"SELECT name, short_description FROM awards WHERE {' OR '.join(map(lambda award_id: f'id = {award_id}', awards))}") # get all info from award ids
+        awards = c.fetchall()
+        conn.close()
+
+
+        # dividing into lists of 5
+        awards = [awards[x:x+5] for x in range(0, len(awards), 5)]
+
+        embed = discord.Embed(color=0x19a83f)
+        embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar_url_as(static_format='jpg'))
+
+        if page > len(awards):
+            return await ctx.send("There are not that many pages.")
 
         
+        for index, award in enumerate(awards[page-1]):
+
+            name, short_description = award
+
+            embed.add_field(name=f"{(page-1)*5 + index + 1}. {name}", value=short_description, inline=False)
+
+        embed.set_footer(text=f"Page {page}/{len(awards)}")
+
+        
+        await ctx.send(embed=embed)
+
+
+    @award.command()
+    async def about(self, ctx, *, award_name=None):
+
+        if not award_name:
+            return await ctx.send("Incorrect command usage:\n`.award about awardname`")
+
+        conn = sqlite3.connect('./storage/databases/awards.db')
+        c = conn.cursor()
+        c.execute(f"SELECT name, color, long_description, image_link FROM awards WHERE LOWER(name) = ?", (award_name,))
+        award = c.fetchone()
+        conn.close()
+
+        if not award:
+            return await ctx.send(f"There is no award called **{award_name}**.")
+
+
+        name, color, long_description, image_link = award
+
+        embed = discord.Embed(color=color, title=name, description=long_description)
+        embed.set_image(url=image_link)
+
+        await ctx.send(embed=embed)
+
+
 
 def setup(client):
     client.add_cog(info(client))

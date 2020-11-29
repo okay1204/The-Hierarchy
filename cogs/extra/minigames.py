@@ -1378,7 +1378,7 @@ class Doctor:
             try:
                 response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=20)
             except asyncio.TimeoutError:
-                await ctx.send(f"Timed out. The items were:\n\n{text}\n{correct}/{total} tasks successful.\n{correct}/{total} tasks successful.")
+                await ctx.send(f"Timed out. The items were:\n\n{text}\n{correct}/{total} tasks successful.")
                 return False
 
             close = difflib.get_close_matches(response.content.lower(), all_items, cutoff=0.7)

@@ -520,7 +520,7 @@ class actions(commands.Cog):
                 break
 
         if not exists:
-            await ctx.send(f"There is no such item called \"{item}\".")
+            await ctx.send(f"There is no such item called **{item}**.")
             return
 
         for shopitem in items:

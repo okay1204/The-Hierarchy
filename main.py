@@ -215,11 +215,9 @@ async def on_command_error(ctx, error):
 
         error_message = traceback.format_exception(type(error), error, error.__traceback__)
         error_message = "".join(error_message) 
+        print(error_message)
         new_message = await error_channel.send(client.myself.mention)
         await new_message.edit(content=f"In {ctx.channel.mention} by {ctx.author.mention}:\n{message.jump_url}\n```{error_message}```")
-
-
-        raise error
 
 @client.event
 async def on_ready():
@@ -290,12 +288,14 @@ async def on_ready():
     
     cogs_to_unload = ['events', 'halloween']
 
-    # cogs_to_unload = [
-    # 'debug', 'actions', 'games', 'gambling', 
-    # 'misc', 'premium', 'tutorial', 'heist', 
-    # 'members', 'fun', 'info', 'polls', 'admin', 
-    # 'reactions', 'timers', 'events', 'leveling', 
-    # 'jobs', 'voice_channels', 'alerts'] # halloween enabled
+    
+    cogs_to_unload = [
+    'debug', 'actions', 'games', 'gambling', 
+    'misc', 'premium', 'tutorial', 'heist', 
+    'members', 'fun', 'info', 'polls', 'admin', 
+    'reactions', 'timers', 'events', 'leveling', 
+    'jobs', 'voice_channels', 'alerts', 'halloween']
+    
 
     # cogs_to_unload = [
     # 'debug', 'actions', 'games', 'gambling', 
@@ -304,8 +304,6 @@ async def on_ready():
     # 'reactions', 'timers', 'events', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween']
 
-
-    #NOTE reload main upon deployment because of new default unloaded cog
 
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')

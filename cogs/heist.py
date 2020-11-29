@@ -35,6 +35,12 @@ class heist(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+    async def cog_check(self, ctx):
+        if ctx.channel.category.id != self.client.rightCategory:
+            return False
+        else:
+            return True
+
     async def heist(self):
 
         await asyncio.sleep(self.client.heist["start"]-int(time.time()))

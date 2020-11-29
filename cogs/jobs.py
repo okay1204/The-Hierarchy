@@ -924,7 +924,7 @@ _ _""")
                             # message linked with tutorial
 
         self.working.remove(ctx.author.id)
-        await ctx.send(f"💰 **{ctx.author.name}** worked as {article} **{job.name}** and successfully completed {correct} tasks, earning ${earnings}. 💰")
+        await ctx.send(f"💰 **{ctx.author.name}** worked as {article} **{job.name}** and successfully completed {correct+extra} tasks, earning ${earnings}. 💰")
 
 
     

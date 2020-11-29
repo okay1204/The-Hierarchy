@@ -404,18 +404,27 @@ class gambling(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.blackjack bet`")
             return
 
-        try:
-            bet = int(bet)
-        except:
-            await ctx.send("Incorrect command usage:\n`.blackjack bet`")
-            return
-        if bet <= 0:
-            await ctx.send('Enter a bet greater than 0.')
-            return
-        money = read_value(author.id, 'money')
-        if bet > money:
-            await ctx.send("You don't have enough money for that.")
-            return
+        if bet.lower() == "all":
+            bet = read_value(ctx.author.id, 'money')
+
+            if bet <= 0:
+                return await ctx.send("You don't have any money to blackjack")
+
+        else:
+            try:
+                bet = int(bet)
+            except:
+                await ctx.send("Incorrect command usage:\n`.blackjack bet`")
+                return
+
+            if bet <= 0:
+                await ctx.send('Enter a bet greater than 0.')
+                return
+
+            money = read_value(author.id, 'money')
+            if bet > money:
+                await ctx.send("You don't have enough money for that.")
+                return
 
         # making all cards
 

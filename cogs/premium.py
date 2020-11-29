@@ -7,6 +7,7 @@ import sqlite3
 import time
 import os
 from sqlite3 import Error
+import re
 
 import discord
 from discord.ext import commands
@@ -285,6 +286,17 @@ class premium(commands.Cog):
             message = await self.client.wait_for('message', check=lambda m: not m.author.bot)
 
             if not message.guild and message.author == ctx.author:
+
+                if "@everyone" in message.content or "@here" in message.content:
+                    await message.author.send("You cannot ping that!")
+                    continue
+
+                # to make sure no roles are mentioned
+                regex = re.compile("<@&.*>")
+                matches = regex.findall(message.content)
+                if matches:
+                    await message.author.send("You cannot ping that!")
+                    continue
 
                 if message.content == ".stop":
                     return await message.author.send("You are no longer controlling me.")

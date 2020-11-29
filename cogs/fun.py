@@ -448,11 +448,9 @@ class fun(commands.Cog):
                 )
                 sub = self.client.reddit.subreddit('dankmemes')
                 
-            post = sub.random()
+            post = random.choice(list(sub.hot()))
 
             post_url = f"https://www.reddit.com/r/dankmemes/comments/{post.id}"
-
-            upvotes = post.score
 
             title = post.title
             if len(title) > 256:
@@ -475,7 +473,7 @@ class fun(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     async def gang(self, ctx):
-        await ctx.send("Incorrect command usage:\n`.gang list/which/about/members/membersm/create/invite/uninvite/settings/leave/promote/kick/disband`")
+        await ctx.send("Incorrect command usage:\n`.gang list/which/about/balance/members/membersm/create/invite/uninvite/settings/leave/promote/kick/disband`")
 
 
     @gang.command(name="list")
@@ -633,6 +631,90 @@ class fun(commands.Cog):
             await ctx.send(embed=embed, file=f)
         else:
             await ctx.send(embed=embed)
+
+    @gang.command()
+    async def balance(self, ctx, *, name=None):
+        if not name:
+            conn = sqlite3.connect('./storage/databases/gangs.db')
+            c = conn.cursor()
+            c.execute('SELECT name, owner, members FROM gangs')
+            gangs = c.fetchall()
+            conn.close()
+
+            for gang in gangs:
+                if ctx.author.id == gang[1] or str(ctx.author.id) in gang[2].split():
+                    name = gang[0]
+                    break
+            
+            if not name:
+                await ctx.send("You are not in a gang.")
+                return
+
+
+
+        conn = sqlite3.connect('./storage/databases/gangs.db')
+        c = conn.cursor()
+        try:
+            c.execute('SELECT owner, members, color, img_location FROM gangs WHERE name = ?', (name,))
+            owner, members, color, img_location = c.fetchone()
+            conn.close()
+        except:
+            c.execute('SELECT name FROM gangs')
+            gangs = c.fetchall()
+            conn.close()
+            gangs = list(map(lambda gang: gang[0], gangs))
+            close = difflib.get_close_matches(name, gangs, n=3, cutoff=0.5)
+            
+
+            if len(close) > 0:
+                
+                close = list(map(lambda word: f"`{word}`", close))
+
+                text = "\n".join(close)
+
+                text = f"There is no gang called **{name}**. Did you mean:\n{text}"
+
+            else:
+                
+                text = f"There is no gang called **{name}**."
+            
+            await ctx.send(text) 
+            return
+
+
+        guild = self.client.mainGuild
+        
+        # Converts into hexadecimal
+        color = int(color, 16)
+
+        members = members.split()
+        members.append(owner)
+        total = 0
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+
+        for member in members:
+            c.execute("SELECT money + bank FROM members WHERE id = ?", (member,))
+            total += c.fetchone()[0]
+
+        conn.close()
+
+        embed = discord.Embed(color=color, title=f"{name}'s balance", description=f"${total}")
+
+        owner = guild.get_member(owner)
+        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
+
+
+        
+
+        if img_location:
+            filename = img_location.split('/')[-1]
+            f = discord.File(img_location, filename=filename)
+            embed.set_image(url=f'attachment://{filename}')
+            await ctx.send(embed=embed, file=f)
+        else:
+            await ctx.send(embed=embed)
+
 
     @gang.command()
     async def members(self, ctx, *, name=None):

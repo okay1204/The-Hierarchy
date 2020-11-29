@@ -5,6 +5,7 @@ from discord.ext import commands
 import sqlite3
 import random
 import time
+import asyncio
 
 import os
 # To import from different path
@@ -13,10 +14,61 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import (log_command, splittime, bot_check)
 
+
+def get_halloween_value(userid, value):
+
+    conn = sqlite3.connect('./storage/databases/hierarchy.db')
+    c = conn.cursor()
+
+    c.execute(f"SELECT {value} FROM halloween WHERE id = ?", (userid,))
+    result = c.fetchone()
+
+    if not result:
+        c.execute("INSERT INTO halloween (id) VALUES (?)", (userid,))
+        conn.commit()
+
+        if value == "pumpkins":
+            result = 100
+        elif value == "cooldown":
+            result = 0
+
+    else:
+        result = result[0]
+    
+    conn.close()
+    return result
+
+def write_halloween_value(userid, value, overwrite):
+
+    conn = sqlite3.connect('./storage/databases/hierarchy.db')
+    c = conn.cursor()
+
+    c.execute("SELECT id FROM halloween WHERE id = ?", (userid,))
+    exists = c.fetchone()
+
+    if not exists:
+        c.execute("INSERT INTO halloween (id) VALUES (?)", (userid))
+
+    c.execute(f"UPDATE halloween SET {value} = ? WHERE id = ?", (overwrite, userid))
+
+    conn.commit()
+    conn.close()
+
+
+
 class halloween(commands.Cog):
 
     def __init__(self, client):
         self.client = client
+
+        self.pumpkinchannel = client.get_channel(765994365393829948)
+
+        self.pumpkin_search_task = asyncio.create_task(self.pumpkin_search())
+
+    
+    def cog_unload(self):
+
+        self.pumpkin_search_task.cancel()
 
 
     async def cog_check(self, ctx):
@@ -24,6 +76,65 @@ class halloween(commands.Cog):
             return False
         else:
             return True
+
+    
+    async def pumpkin_search(self):
+
+        async with self.pumpkinchannel.typing():
+
+            while True:
+                
+                nothing = random.randint(30, 60)
+
+                while nothing > 0:
+
+                    while True:
+                        try:
+                            await self.pumpkinchannel.send("_ _\n\nNothing...\n\n_ _")
+                            break
+                        except:
+                            pass
+                    
+                    nothing -= 1
+                    await asyncio.sleep(random.randint(2, 5))
+
+                while True:
+                    try:
+                        message = await self.pumpkinchannel.send("🎃")
+                        await message.add_reaction("🎃")
+                        break
+                    except:
+                        pass
+                await asyncio.sleep(random.randint(2, 5))
+
+
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+
+        if payload.channel_id == self.pumpkinchannel.id:
+
+            if payload.user_id == self.client.user.id: return
+
+            message = await self.pumpkinchannel.fetch_message(payload.message_id)
+
+            if message.content == "🎃" and str(payload.emoji) == "🎃":
+
+                member = self.client.mainGuild.get_member(payload.user_id)
+
+                gained = random.randint(1, 5)
+                await message.edit(content=f"_ _\n{gained} 🎃 claimed by {member.mention}.\n_ _")
+                await message.clear_reactions()
+
+
+                pumpkins = get_halloween_value(payload.user_id, "pumpkins")
+                pumpkins += gained
+                write_halloween_value(payload.user_id, "pumpkins", pumpkins)
+
+
+
+
+
 
 
     @commands.command()
@@ -64,25 +175,51 @@ class halloween(commands.Cog):
 
 
     @commands.command()
+    async def converthalloween(self, ctx):
+
+        if ctx.channel.id != self.client.adminChannel: return
+
+        with open('./storage/text/englishwords.txt') as f:
+            word = random.choice(f.read().splitlines())
+        # for confirmation
+        await ctx.send(f"Are you sure you want to convert all pumpkins? Type `{word}` to proceed.")
+
+        try:
+            response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=20)
+        except:
+            return await ctx.send("Conversion timed out.")
+
+        if response.content.lower() != word.lower(): return await ctx.send("Conversion cancelled.")
+        
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute("SELECT id, pumpkins FROM halloween WHERE pumpkins > 0;")
+        pumpkins = c.fetchall()
+        c.execute("SELECT id, money FROM members")
+        moneys = c.fetchall()
+
+        for userid1, pumpkins in pumpkins:
+
+            for userid2, money in moneys:
+                if userid1 == userid2:
+                    c.execute(f"UPDATE members SET money = {money + pumpkins*2} WHERE id = ?", (userid1,))
+                    break
+
+        conn.commit()
+        conn.close()
+
+        await ctx.send("Converted all pumpkins.")
+        await log_command(self.client, ctx)
+
+
+
+    @commands.command()
     async def pumpkins(self, ctx, *, member:discord.Member=None):
 
         if not member:
             member = ctx.author
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-
-        c.execute("SELECT pumpkins FROM halloween WHERE id = ?", (member.id,))
-        pumpkins = c.fetchone()
-
-        if not pumpkins:
-            c.execute("INSERT INTO halloween (id) VALUES (?)", (member.id,))
-            conn.commit()
-            pumpkins = 100
-        else:
-            pumpkins = pumpkins[0]
-
-        conn.close()
+        pumpkins = get_halloween_value(member.id, "pumpkins")
 
         embed = discord.Embed(color=0xff8519, description=f"🎃  {pumpkins} Pumpkins  🎃")
         embed.set_author(name=f"{member.name}'s pumpkins", icon_url=member.avatar_url_as(static_format='jpg'))
@@ -191,7 +328,7 @@ class halloween(commands.Cog):
             find = int(find)
 
         except:
-            await ctx.send('Incorrect command usage:\n`.around (range) (member)`')
+            await ctx.send('Incorrect command usage:\n`.halloweenaround (range) (member)`')
             return
 
         if find < 1 or find > 12:
@@ -287,7 +424,7 @@ class halloween(commands.Cog):
             find = int(find)
 
         except:
-            await ctx.send('Incorrect command usage:\n`.around (range) (member)`')
+            await ctx.send('Incorrect command usage:\n`.halloweenaroundm (range) (member)`')
             return
 
         if find < 1 or find > 12:
@@ -377,25 +514,84 @@ class halloween(commands.Cog):
             member = ctx.author
 
         
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-
-        c.execute("SELECT cooldown FROM halloween WHERE id = ?", (member.id,))
-        cooldown = c.fetchone()
-
-        if not cooldown:
-            c.execute("INSERT INTO halloween (id) VALUES (?)", (member.id,))
-            conn.commit()
-            cooldown = 0
-        else:
-            cooldown = cooldown[0]
-
-        conn.close()
+        cooldown = get_halloween_value(member.id, 'cooldown')
 
         if cooldown > int(time.time()):
             await ctx.send(f"🎃  **{member.name}** has {splittime(cooldown)} left until they can steal pumpkins.  🎃")
         else:
             await ctx.send(f"🎃  **{member.name}** can steal pumpkins.  🎃")
+
+
+    @commands.command(aliases=["psteal", "hsteal", "pumpkinsteal"])
+    async def halloweensteal(self, ctx, member:discord.Member=None, amount=None):
+
+        if not member or not amount:
+            return await ctx.send("Incorrect command usage:\n`.halloweensteal member amount`")
+
+
+        if amount.isdigit():
+            amount = int(amount)
+        else:
+            return await ctx.send("Enter an amount from 1 to 100.")
+
+        if not 0 < amount <= 100:
+            return await ctx.send("Enter an amount from 1 to 100.")
+
+        if (hstealc := get_halloween_value(ctx.author.id, 'cooldown')) > time.time():
+            return await ctx.send(f"You must wait {splittime(hstealc)} before you can steal pumpkins again.")
+        
+        member_pumpkins = get_halloween_value(member.id, 'pumpkins')
+
+        if amount > member_pumpkins:
+            return await ctx.send("This member does not have that many pumpkins.")
+        
+        member_pumpkins -= amount
+        write_halloween_value(member.id, 'pumpkins', member_pumpkins)
+
+        author_pumpkins = get_halloween_value(ctx.author.id, 'pumpkins')
+        author_pumpkins += amount
+        write_halloween_value(ctx.author.id, 'pumpkins', author_pumpkins)
+
+        cooldown = ((amount**2)//20 + amount)*60 + int(time.time())
+
+        write_halloween_value(ctx.author.id, 'cooldown', cooldown)
+
+        await ctx.send(f"**{ctx.author.name}** stole {amount} 🎃 from **{member.name}** and has to wait {splittime(cooldown)} before they can steal again.")
+
+
+    @commands.command(aliases=["htest", "ptest", "pumpkintest"])
+    async def halloweentest(self, ctx, amount=None):
+
+        if not amount:
+            return await ctx.send("Incorrect command usage:\n`.halloweentest amount`")
+
+        if amount.isdigit():
+            amount = int(amount)
+        else:
+            return await ctx.send("Enter an amount from 1 to 100.")
+
+        if not 0 < amount <= 100:
+            return await ctx.send("Enter an amount from 1 to 100.")
+
+        
+        cooldown = ((amount**2)//20 + amount)*60 + int(time.time())
+        await ctx.send(f"You would have to wait {splittime(cooldown)} if you stole {amount} 🎃.")
+
+
+    @commands.Cog.listener() # halloween submission
+    async def on_message(self, message):
+        if not message.author.bot and message.channel.id == 771787118158413865:
+            submissions = self.client.get_channel(771787494764183572)
+            to_file_attachments = []
+            for attachment in message.attachments:
+                to_file = await attachment.to_file()
+                to_file_attachments.append(to_file)
+
+            await submissions.send(f"By {message.author.mention}:")
+            await submissions.send(f"{message.content}", files=to_file_attachments)
+            await message.delete()
+            await message.channel.send(f"{message.author.mention}, your submission was made.")
+
 
 
 

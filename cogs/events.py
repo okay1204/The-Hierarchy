@@ -16,7 +16,7 @@ rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use, log_command)
 
 
-class events(commands.Cog):
+class Events(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -438,4 +438,4 @@ class events(commands.Cog):
             await ctx.send(embed=embed)
 
 def setup(client):
-    client.add_cog(events(client))
+    client.add_cog(Events(client))

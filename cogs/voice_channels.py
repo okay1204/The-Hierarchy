@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 
-class voice_channels(commands.Cog):
+class VoiceChannels(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -47,4 +47,4 @@ class voice_channels(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(voice_channels(client))
+    client.add_cog(VoiceChannels(client))

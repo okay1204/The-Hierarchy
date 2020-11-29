@@ -18,7 +18,7 @@ def adminCheck(ctx):
     return ctx.channel.id == 706953015415930941
 
 
-class members(commands.Cog):
+class Members(commands.Cog):
 
 
     def __init__(self, client):
@@ -214,4 +214,4 @@ class members(commands.Cog):
         asyncio.create_task( membercountchannel.edit(name=f"Members: {membercount}") )
                 
 def setup(client):
-    client.add_cog(members(client))
+    client.add_cog(Members(client))

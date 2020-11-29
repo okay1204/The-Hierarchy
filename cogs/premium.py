@@ -19,7 +19,7 @@ sys.path.insert(1 , os.getcwd())
 from utils import (read_value, write_value, leaderboard,
 rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use)
-class premium(commands.Cog):
+class Premium(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -336,4 +336,4 @@ class premium(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(premium(client))
+    client.add_cog(Premium(client))

@@ -17,7 +17,7 @@ from utils import (read_value, write_value, leaderboard,
 rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use, log_command)
 
-class debug(commands.Cog):
+class Debug(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -641,4 +641,4 @@ class debug(commands.Cog):
     
 
 def setup(client):
-    client.add_cog(debug(client))
+    client.add_cog(Debug(client))

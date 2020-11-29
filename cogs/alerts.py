@@ -12,7 +12,7 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import (splittime, timestring)
 
-class alerts(commands.Cog):
+class Alerts(commands.Cog):
     
     def __init__(self, client):
         self.client = client
@@ -210,13 +210,5 @@ class alerts(commands.Cog):
 
         await ctx.send("🔔 Alert successfully deleted. 🔔")
 
-
-
-
-# NOTE add in cogs to remove in main when done
-
-
-
-
 def setup(client):
-    client.add_cog(alerts(client))
+    client.add_cog(Alerts(client))

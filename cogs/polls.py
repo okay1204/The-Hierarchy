@@ -14,7 +14,7 @@ sys.path.insert(1 , os.getcwd())
 from utils import minisplittime, timestring
 
 
-class polls(commands.Cog):
+class Polls(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -248,4 +248,4 @@ class polls(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(polls(client))
+    client.add_cog(Polls(client))

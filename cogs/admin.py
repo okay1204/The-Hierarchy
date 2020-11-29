@@ -69,7 +69,7 @@ def decrement(userid, offense):
     conn.commit()
     conn.close()
 
-class admin(commands.Cog):
+class Admin(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -1003,4 +1003,4 @@ class admin(commands.Cog):
     
 
 def setup(client):
-    client.add_cog(admin(client))
+    client.add_cog(Admin(client))

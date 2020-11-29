@@ -170,7 +170,7 @@ def find_job(name: str):
 
 
  
-class jobs(commands.Cog):
+class Jobs(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -967,4 +967,4 @@ _ _""")
     
 
 def setup(client):
-    client.add_cog(jobs(client))
+    client.add_cog(Jobs(client))

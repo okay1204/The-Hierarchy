@@ -48,7 +48,7 @@ def write_gang(userid, value, overwrite):
     conn.commit()
     conn.close()
 
-class fun(commands.Cog):
+class Fun(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -1770,4 +1770,4 @@ class fun(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(fun(client))
+    client.add_cog(Fun(client))

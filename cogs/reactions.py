@@ -5,7 +5,7 @@ client = commands.Bot(command_prefix = '.')
 client.remove_command('help')
 
 
-class reactions(commands.Cog):
+class Reactions(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -260,4 +260,4 @@ class reactions(commands.Cog):
                 await message.remove_reaction(reaction.emoji, member)
 
 def setup(client):
-    client.add_cog(reactions(client))
+    client.add_cog(Reactions(client))

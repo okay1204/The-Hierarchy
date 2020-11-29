@@ -18,7 +18,7 @@ rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use)
 
 
-class info(commands.Cog):
+class Info(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -541,7 +541,7 @@ Gang: {gang}
 
 
 def setup(client):
-    client.add_cog(info(client))
+    client.add_cog(Info(client))
 
 
 

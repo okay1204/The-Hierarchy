@@ -302,7 +302,8 @@ async def on_ready():
     # 'misc', 'premium', 'tutorial', 'heist', 
     # 'members', 'fun', 'info', 'polls', 'admin', 
     # 'reactions', 'timers', 'events', 'leveling', 
-    # 'jobs', 'voice_channels', 'alerts', 'halloween']
+    # 'jobs', 'voice_channels', 'alerts', 'halloween',
+    # 'christmas']
 
 
     for cog in cogs_to_unload:

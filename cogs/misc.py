@@ -17,7 +17,7 @@ from utils import (read_value, write_value, leaderboard,
 rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use)
 
-class misc(commands.Cog):
+class Misc(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -56,4 +56,4 @@ class misc(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(misc(client))
+    client.add_cog(Misc(client))

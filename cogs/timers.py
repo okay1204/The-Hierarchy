@@ -16,10 +16,7 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import (write_value, read_value, minisplittime)
 
-
-
-
-class timers(commands.Cog):
+class Timers(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -283,4 +280,4 @@ class timers(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(timers(client))
+    client.add_cog(Timers(client))

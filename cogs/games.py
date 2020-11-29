@@ -16,7 +16,7 @@ sys.path.insert(1 , os.getcwd())
 from utils import (read_value, write_value, leaderboard,
 rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use)
-class games(commands.Cog):
+class Games(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -168,7 +168,7 @@ class games(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(games(client))
+    client.add_cog(Games(client))
 
 
 

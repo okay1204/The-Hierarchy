@@ -30,7 +30,7 @@ async def heist_group_jailcheck(ctx):
         return False
     return True
 
-class heist(commands.Cog):
+class Heist(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -274,4 +274,4 @@ class heist(commands.Cog):
             await ctx.send(f'The heist on **{guild.get_member(self.client.heist["victim"]).name}** will start in {self.client.heist["start"]-int(time.time())} seconds.') 
 
 def setup(client):
-    client.add_cog(heist(client))
+    client.add_cog(Heist(client))

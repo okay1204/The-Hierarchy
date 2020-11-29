@@ -49,7 +49,7 @@ def evaluateCards(cards):
     
     return total
 
-class gambling(commands.Cog):
+class Gambling(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -807,4 +807,4 @@ class gambling(commands.Cog):
     
 
 def setup(client):
-    client.add_cog(gambling(client))
+    client.add_cog(Gambling(client))

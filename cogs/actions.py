@@ -23,7 +23,7 @@ rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use, level_check, event_disabled, member_event_check)
 
 
-class actions(commands.Cog):
+class Actions(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -753,4 +753,4 @@ class actions(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(actions(client))
+    client.add_cog(Actions(client))

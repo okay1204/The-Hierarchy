@@ -13,7 +13,7 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import read_value, write_value, bot_check
 
-class leveling(commands.Cog):
+class Leveling(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -144,4 +144,4 @@ class leveling(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(leveling(client))
+    client.add_cog(Leveling(client))

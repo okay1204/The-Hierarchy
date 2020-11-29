@@ -56,7 +56,7 @@ def write_halloween_value(userid, value, overwrite):
 
 
 
-class halloween(commands.Cog):
+class Halloween(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -597,4 +597,4 @@ class halloween(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(halloween(client))
+    client.add_cog(Halloween(client))

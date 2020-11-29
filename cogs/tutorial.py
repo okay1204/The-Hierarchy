@@ -21,7 +21,7 @@ from utils import (read_value, write_value, leaderboard,
 rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
 remove_item, remove_use, add_item, add_use)
 
-class tutorial(commands.Cog):
+class Tutorial(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -381,4 +381,4 @@ class tutorial(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(tutorial(client))
+    client.add_cog(Tutorial(client))

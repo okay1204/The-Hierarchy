@@ -132,11 +132,6 @@ class Halloween(commands.Cog):
                 write_halloween_value(payload.user_id, "pumpkins", pumpkins)
 
 
-
-
-
-
-
     @commands.command()
     async def writehalloween(self, ctx):
 
@@ -145,7 +140,7 @@ class Halloween(commands.Cog):
         with open('./storage/text/englishwords.txt') as f:
             word = random.choice(f.read().splitlines())
         # for confirmation
-        await ctx.send(f"Are you sure you want to save all balances? Type `{word}` to proceed.")
+        await ctx.send(f"Are you sure you want to save all pumpkins? Type `{word}` to proceed.")
 
         try:
             response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=20)

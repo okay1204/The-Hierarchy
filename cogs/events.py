@@ -34,8 +34,6 @@ class Events(commands.Cog):
 
         with open('./storage/text/englishwords.txt') as f:
             word = random.choice(f.read().splitlines())
-
-
         # for confirmation
         await ctx.send(f"Are you sure you want to save all balances? Type `{word}` to proceed.")
 
@@ -49,7 +47,7 @@ class Events(commands.Cog):
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
         c.execute("DROP TABLE IF EXISTS events;")
-        c.execute("CREATE TABLE events (id INTEGER PRIMARY KEY, total INTEGER);")
+        c.execute("CREATE TABLE events (id INTEGER PRIMARY KEY, total INTEGER DEFAULT 0);")
         c.execute("INSERT INTO events (id, total) SELECT id, money + bank FROM members;")
         conn.commit()
         conn.close()

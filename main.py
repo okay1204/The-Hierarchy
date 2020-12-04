@@ -272,7 +272,6 @@ async def on_ready():
     for cog in cogs:
         client.load_extension(f'cogs.{cog}')
 
-
     commands = set(client.walk_commands())
     aliases = []
     for command in commands:
@@ -284,10 +283,11 @@ async def on_ready():
     client.every_command = commands
     client.every_command.append('featured')
 
-    # ANCHOR default cogs
+    # for production
     
-    cogs_to_unload = ['events', 'halloween']
+    cogs_to_unload = ['events', 'halloween', 'christmas']
 
+    # cogs to ungload for development
     
     cogs_to_unload = [
     'debug', 'actions', 'games', 'gambling', 
@@ -296,6 +296,8 @@ async def on_ready():
     'reactions', 'timers', 'events', 'leveling', 
     'jobs', 'voice_channels', 'alerts', 'halloween']
     
+
+    # all cogs
 
     # cogs_to_unload = [
     # 'debug', 'actions', 'games', 'gambling', 

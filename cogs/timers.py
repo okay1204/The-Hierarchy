@@ -189,93 +189,97 @@ class Timers(commands.Cog):
     @tasks.loop(minutes=1)
     async def eventtimer(self):
 
-        embed = discord.Embed(color=0x442391)
+        try:
 
-        feechannel = self.client.get_channel(698322322834063430)
-        feemessage = await feechannel.fetch_message(740013720301731880)
+            embed = discord.Embed(color=0x442391)
 
-
-        shopchannel = self.client.get_channel(710211730797756477)
-        shopmessage = await shopchannel.fetch_message(740013721371410474)
+            feechannel = self.client.get_channel(698322322834063430)
+            feemessage = await feechannel.fetch_message(740013720301731880)
 
 
-        premiumchannel = self.client.get_channel(727727716539039824)
-        premiummessage = await premiumchannel.fetch_message(740013722642153543)
+            shopchannel = self.client.get_channel(710211730797756477)
+            shopmessage = await shopchannel.fetch_message(740013721371410474)
 
-        
-        embed.set_author(name="Fee collection times")
-        taxtime = time.localtime()
-        minutes = taxtime[4] + taxtime[3]*60
-        taxtime = 1440-minutes
-        banktime = time.localtime()
-        minutes = banktime[4] + banktime[3]*60
-        banktime = 720-minutes
-        shoptime = time.localtime()
-        minutes = shoptime[4] + shoptime[3]*60
-        shoptime = 0
-        times = [0,180,360,540,720,900,1080,1260]
-        for x in times:
-            if minutes > x and minutes < x+180:
-                shoptime = x+180
-        shoptime -= minutes
-        if minutes in times:
+
+            premiumchannel = self.client.get_channel(727727716539039824)
+            premiummessage = await premiumchannel.fetch_message(740013722642153543)
+
+            
+            embed.set_author(name="Fee collection times")
+            taxtime = time.localtime()
+            minutes = taxtime[4] + taxtime[3]*60
+            taxtime = 1440-minutes
+            banktime = time.localtime()
+            minutes = banktime[4] + banktime[3]*60
+            banktime = 720-minutes
+            shoptime = time.localtime()
+            minutes = shoptime[4] + shoptime[3]*60
             shoptime = 0
-        if banktime < 0 or banktime == 720:
-            banktime = 1440-minutes
-            if banktime == 1440:
-                banktime = 0
-        if taxtime == 1440:
-            await self.tax()
-        
-        embed.add_field(name="Tax collection",value=f'{minisplittime(taxtime)}',inline=False)
-        embed3 = discord.Embed(color=0xff61d7, title="Boost timer")
+            times = [0,180,360,540,720,900,1080,1260]
+            for x in times:
+                if minutes > x and minutes < x+180:
+                    shoptime = x+180
+            shoptime -= minutes
+            if minutes in times:
+                shoptime = 0
+            if banktime < 0 or banktime == 720:
+                banktime = 1440-minutes
+                if banktime == 1440:
+                    banktime = 0
+            if taxtime == 1440:
+                await self.tax()
+            
+            embed.add_field(name="Tax collection",value=f'{minisplittime(taxtime)}',inline=False)
+            embed3 = discord.Embed(color=0xff61d7, title="Boost timer")
 
-        if banktime == 0:
-            await self.bank()
-            embed.add_field(name="Bank fee collection",value='12h 0m',inline=False)
-            await  self.boosts()
-            embed3.add_field(name="__________",value='12h 0m',inline=False)
-        else:
-            embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
-            embed3.add_field(name="__________",value=f'{minisplittime(banktime)}',inline=False)
+            if banktime == 0:
+                await self.bank()
+                embed.add_field(name="Bank fee collection",value='12h 0m',inline=False)
+                await  self.boosts()
+                embed3.add_field(name="__________",value='12h 0m',inline=False)
+            else:
+                embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
+                embed3.add_field(name="__________",value=f'{minisplittime(banktime)}',inline=False)
 
-        embed2 = discord.Embed(color=0x30ff56, title='Shop change timer')
-        if shoptime == 0:
-            await self.shopchange()
-            embed2.add_field(name='__________', value='3h 0m', inline=False)
-        else:
-            embed2.add_field(name='__________', value=f'{minisplittime(shoptime)}', inline=False)
-                
-        await feemessage.edit(embed=embed)
-        await shopmessage.edit(embed=embed2)
-        await premiummessage.edit(embed=embed3)
+            embed2 = discord.Embed(color=0x30ff56, title='Shop change timer')
+            if shoptime == 0:
+                await self.shopchange()
+                embed2.add_field(name='__________', value='3h 0m', inline=False)
+            else:
+                embed2.add_field(name='__________', value=f'{minisplittime(shoptime)}', inline=False)
+                    
+            await feemessage.edit(embed=embed)
+            await shopmessage.edit(embed=embed2)
+            await premiummessage.edit(embed=embed3)
 
-        with open('./storage/jsons/wallet.json') as json_file:
-            walletinfo = json.load(json_file)
-        
-        if time.time() >= walletinfo["timer"] and walletinfo["continue"] == "True":
-            category = self.client.get_channel(692949972764590160)
-            channels = category.text_channels
-            special_channels = [706953015415930941, 714585657808257095, 723945572708384768]
-            channels = list(filter(lambda x: x.id not in special_channels, channels))
-            channel = random.choice(channels)
-            await channel.send("A wallet has been dropped in this channel! Type `.claim` to pick it up.")
-            newinfo = {}
-            newinfo["timer"] = walletinfo["timer"]
-            newinfo["channel"] = channel.id
-            newinfo["continue"] = "False"
-            with open('./storage/jsons/wallet.json','w') as json_file:
-                json.dump(newinfo, json_file, indent=2)
+            with open('./storage/jsons/wallet.json') as json_file:
+                walletinfo = json.load(json_file)
+            
+            if time.time() >= walletinfo["timer"] and walletinfo["continue"] == "True":
+                category = self.client.get_channel(692949972764590160)
+                channels = category.text_channels
+                special_channels = [706953015415930941, 714585657808257095, 723945572708384768]
+                channels = list(filter(lambda x: x.id not in special_channels, channels))
+                channel = random.choice(channels)
+                await channel.send("A wallet has been dropped in this channel! Type `.claim` to pick it up.")
+                newinfo = {}
+                newinfo["timer"] = walletinfo["timer"]
+                newinfo["channel"] = channel.id
+                newinfo["continue"] = "False"
+                with open('./storage/jsons/wallet.json','w') as json_file:
+                    json.dump(newinfo, json_file, indent=2)
 
-        elif time.time() >= walletinfo["timer"] + 21600 and walletinfo["continue"] == "False":
-            channel = self.client.get_channel(walletinfo["channel"])
-            await channel.send("The wallet in this channel was lost...")
-            newinfo = {}
-            newinfo["timer"] = int(time.time()) + random.randint(600, 1200)
-            newinfo["channel"] = 0
-            newinfo["continue"] = "True"
-            with open('./storage/jsons/wallet.json','w') as json_file:
-                json.dump(newinfo, json_file, indent=2)
+            elif time.time() >= walletinfo["timer"] + 21600 and walletinfo["continue"] == "False":
+                channel = self.client.get_channel(walletinfo["channel"])
+                await channel.send("The wallet in this channel was lost...")
+                newinfo = {}
+                newinfo["timer"] = int(time.time()) + random.randint(600, 1200)
+                newinfo["channel"] = 0
+                newinfo["continue"] = "True"
+                with open('./storage/jsons/wallet.json','w') as json_file:
+                    json.dump(newinfo, json_file, indent=2)
+        except:
+            pass
 
 
 

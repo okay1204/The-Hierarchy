@@ -12,7 +12,7 @@ import random
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import log_command, read_value
+from utils import log_command, read_value, write_value, add_item
 
 money_requirement = 2000
 
@@ -128,7 +128,7 @@ class Christmas(commands.Cog):
 
         message_count = {}
 
-        end_time = time.time() + 30
+        end_time = time.time() + 5
 
         while end_time > time.time():
 
@@ -164,9 +164,15 @@ class Christmas(commands.Cog):
         
 
         for member_id, count in message_count.items():
+            storage_filled = False
+            
             reward_count = max(1, count // random.randint(13, 18))
 
             rewards = []
+
+            items = read_value(member_id, 'items').split()
+            storage = read_value(member_id, 'storage')
+
             for _ in range(reward_count):
                 reward = random.choice(possible_rewards)
 
@@ -174,6 +180,16 @@ class Christmas(commands.Cog):
                     reward = random.randint(50, 100)
                 
                 rewards.append(reward)
+
+                # adding item to user's inventory
+                if isinstance(reward, str):
+
+                    if len(items) < storage:
+                        items.append(reward)
+                        add_item(member_id, reward)
+                    else:
+                        storage_filled = True
+
             
             
             item_count = {}
@@ -197,8 +213,16 @@ class Christmas(commands.Cog):
             if money:
                 formatted.append(f"${money}")
 
+                bal = read_value(member_id, 'money')
+                bal += money
+                write_value(member_id, 'money', bal)
+                
+
             for name, count in item_count.items():
                 formatted.append(f'x{count} {name.capitalize()}')
+
+            if storage_filled:
+                formatted.append("Not all items were given because of storage limit")
 
             embed.add_field(
                 name=guild.get_member(member_id).name,

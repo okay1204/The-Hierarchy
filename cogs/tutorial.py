@@ -171,7 +171,7 @@ class Tutorial(commands.Cog):
                 canWork = False
 
             if not spoofed:
-                await channel.send("The only two jobs that do not require a major to apply for are the **Garbage Collector** and the **Streamer**. Go ahead and apply for whichever job you like, based on the stats, using `.apply Job Name`.")
+                await channel.send("The only two jobs that do not require a major to apply for are the **Garbage Collector** and the **Streamer**. Go ahead and apply for whichever job you like, based on the stats, using `.apply`.")
             
             breakOut = False
             while True:

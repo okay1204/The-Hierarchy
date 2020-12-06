@@ -128,7 +128,7 @@ class Christmas(commands.Cog):
 
         message_count = {}
 
-        end_time = time.time() + 5
+        end_time = time.time() + 60
 
         while end_time > time.time():
 
@@ -186,7 +186,7 @@ class Christmas(commands.Cog):
 
                     if len(items) < storage:
                         items.append(reward)
-                        add_item(member_id, reward)
+                        add_item(reward, member_id)
                     else:
                         storage_filled = True
 
@@ -211,7 +211,7 @@ class Christmas(commands.Cog):
             formatted = []
             
             if money:
-                formatted.append(f"${money}")
+                formatted.append(f"+${money}")
 
                 bal = read_value(member_id, 'money')
                 bal += money
@@ -222,7 +222,7 @@ class Christmas(commands.Cog):
                 formatted.append(f'x{count} {name.capitalize()}')
 
             if storage_filled:
-                formatted.append("Not all items were given because of storage limit")
+                formatted.append("**Not all items were given because of storage limit**")
 
             embed.add_field(
                 name=guild.get_member(member_id).name,

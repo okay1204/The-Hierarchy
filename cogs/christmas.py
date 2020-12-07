@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands, tasks
 import json
 import time
+import datetime
 import os
 import asyncio
 import sqlite3
@@ -12,9 +13,9 @@ import random
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import log_command, read_value, write_value, add_item
+from utils import log_command, read_value, write_value, add_item, splittime
 
-money_requirement = 2000
+money_requirement = 3000
 
 def get_christmas_value(userid, value):
 
@@ -53,10 +54,75 @@ def write_christmas_value(userid, value, overwrite):
     conn.close()
     
 
+def find_next_drop():
+
+    conn = sqlite3.connect('./storage/databases/hierarchy.db')
+    c = conn.cursor()
+    c.execute("SELECT SUM(increase) FROM christmas;")
+    total_bal = c.fetchone()[0]
+    conn.close()
+
+    drops = total_bal // money_requirement
+
+    if drops == 0:
+        return drops
+
+
+    interval = 1440/drops
+
+    drop_times = [drop_number * interval for drop_number in range(1, drops+1)]
+
+    now = datetime.datetime.utcnow()
+    minutes = (now.hour * 60) + now.minute
+
+    for drop_time in drop_times:
+        if minutes < drop_time:
+            return (drop_time - minutes) * 60
+
 class Christmas(commands.Cog):
     
     def __init__(self, client):
         self.client = client
+        self.timer_task = None
+        self.drop_task = None
+
+        with open('./storage/jsons/christmas meter.json') as f:
+            meter_state = json.load(f)
+        
+        if meter_state == "off":
+            self.timer_task = asyncio.create_task(self.gift_drop_timer(find_next_drop()))
+
+        asyncio.create_task( self.update_stats() )
+    
+    def cog_unload(self):
+        
+        if self.timer_task and not self.timer_task.done():
+            self.timer_task.cancel()
+        
+        if self.drop_task and not self.drop_task.done():
+            self.drop_task.cancel()
+
+    async def gift_drop_timer(self, duration):
+
+        if duration == 0:
+            return
+
+        await asyncio.sleep(65)
+
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute("SELECT SUM(increase) FROM christmas;")
+        total_bal = c.fetchone()[0]
+        conn.close()
+
+        drops = total_bal // money_requirement
+
+        next_time = time.time() + ((1440/drops) * 60)
+
+        self.drop_task = asyncio.create_task(self.giftdrop( splittime(int(next_time))) )
+
+        self.timer_task = asyncio.create_task(self.gift_drop_timer( next_time-time.time() ))
+        
 
     async def update_stats(self):
 
@@ -66,7 +132,11 @@ class Christmas(commands.Cog):
 
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()
-        c.execute("SELECT SUM(increase) FROM christmas;")
+        try:
+            c.execute("SELECT SUM(increase) FROM christmas;")
+        except:
+            conn.close()
+            return
         total_bal = c.fetchone()[0]
 
         c.execute("SELECT id, increase FROM christmas ORDER BY increase DESC")
@@ -134,7 +204,7 @@ class Christmas(commands.Cog):
 
         message_count = {}
 
-        end_time = time.time() + 5
+        end_time = time.time() + 60
 
         while end_time > time.time():
 
@@ -261,8 +331,12 @@ class Christmas(commands.Cog):
             return True
 
     @commands.command()
-    async def test(self, ctx):
-        await self.giftdrop('next time')
+    async def christmasupdate(self, ctx):
+
+        if ctx.channel.id != self.client.adminChannel: return
+
+        await self.update_stats()
+        await ctx.send("Updated Christmas stats.")
 
     @commands.command()
     async def writechristmas(self, ctx):
@@ -304,6 +378,12 @@ class Christmas(commands.Cog):
             json.dump(state, f)
         
         await ctx.send(f"Christmas meter switched {state}.")
+
+        if state == "off":
+            self.timer_task = asyncio.create_task(self.gift_drop_timer(find_next_drop()))
+        else:
+            if self.timer_task and not self.timer_task.done():
+                self.timer_task.cancel()
 
     
     @commands.command()

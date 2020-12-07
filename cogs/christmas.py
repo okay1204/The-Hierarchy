@@ -126,9 +126,15 @@ class Christmas(commands.Cog):
 
         await channel.send("🎁 ***A GIFT DROP HAS BEGUN*** 🎁\n\n**SPAM IN THIS CHANNEL AS MUCH AS YOU CAN TO COLLECT GIFTS AND EARN REWARDS**\n**YOU HAVE 60 SECONDS**")
 
+
+        overwrites = channel.overwrites_for(self.client.mainGuild.default_role)
+        overwrites.send_messages = True
+
+        await channel.set_permissions(self.client.mainGuild.default_role, overwrite=overwrites)
+
         message_count = {}
 
-        end_time = time.time() + 60
+        end_time = time.time() + 5
 
         while end_time > time.time():
 
@@ -142,6 +148,11 @@ class Christmas(commands.Cog):
             else:
                 message_count[message.author.id] += 1
         
+
+        overwrites = channel.overwrites_for(self.client.mainGuild.default_role)
+        overwrites.send_messages = None
+
+        await channel.set_permissions(self.client.mainGuild.default_role, overwrite=overwrites)
         
 
         embed = discord.Embed(

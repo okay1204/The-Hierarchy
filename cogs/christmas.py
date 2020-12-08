@@ -415,6 +415,11 @@ class Christmas(commands.Cog):
             
             await self.update_stats()
 
+        
+    @commands.command()
+    async def stats(self, ctx):
+        await ctx.send("<#784097174136160326>")
+
 
 def setup(client):
     client.add_cog(Christmas(client))

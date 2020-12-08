@@ -285,16 +285,16 @@ async def on_ready():
 
     # for production
     
-    cogs_to_unload = ['events', 'halloween', 'christmas']
+    # cogs_to_unload = ['events', 'halloween', 'christmas']
 
     # cogs to ungload for development
     
-    # cogs_to_unload = [
-    # 'debug', 'actions', 'games', 'gambling', 
-    # 'misc', 'premium', 'tutorial', 'heist', 
-    # 'members', 'fun', 'info', 'polls', 'admin', 
-    # 'reactions', 'timers', 'events', 'leveling', 
-    # 'jobs', 'voice_channels', 'alerts', 'halloween']
+    cogs_to_unload = [
+    'debug', 'actions', 'games', 'gambling', 
+    'misc', 'premium', 'tutorial', 'heist', 
+    'members', 'fun', 'info', 'polls', 'admin', 
+    'reactions', 'timers', 'events', 'leveling', 
+    'jobs', 'voice_channels', 'alerts', 'halloween']
     
 
     # all cogs

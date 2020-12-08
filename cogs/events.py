@@ -249,7 +249,7 @@ class Events(commands.Cog):
             find = int(find)
 
         except:
-            await ctx.send('Incorrect command usage:\n`.around (range) (member)`')
+            await ctx.send('Incorrect command usage:\n`.eventaround (range) (member)`')
             return
 
         if find < 1 or find > 12:
@@ -350,7 +350,7 @@ class Events(commands.Cog):
             find = int(find)
 
         except:
-            await ctx.send('Incorrect command usage:\n`.around (range) (member)`')
+            await ctx.send('Incorrect command usage:\n`.eventaroundm (range) (member)`')
             return
 
         if find < 1 or find > 12:

@@ -13,7 +13,7 @@ import random
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import log_command, read_value, write_value, add_item, splittime
+from utils import log_command, read_value, write_value, add_item, splittime, bot_check
 
 money_requirement = 3000
 
@@ -427,6 +427,212 @@ class Christmas(commands.Cog):
     @commands.command()
     async def stats(self, ctx):
         await ctx.send("<#784097174136160326>")
+
+
+    @commands.command()
+    async def cprog(self, ctx, *, member:discord.Member=None):
+
+        if not member:
+            member = ctx.author
+        
+        if not await bot_check(self.client, ctx, member):
+            return
+
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute("""
+        SELECT increase
+        FROM christmas
+        WHERE id = ?;
+        """, (member.id,))
+
+        money = c.fetchone()[0]
+        conn.close()
+        
+        await ctx.send(f"**{member.name}** has contributed ${money} to the Christmas event.")
+
+    @commands.command()
+    async def caround(self, ctx, find=None, *, member:discord.Member=None):
+
+
+        if not member: 
+            member = ctx.author
+        
+        if not await bot_check(self.client, ctx, member):
+            return
+
+        if not find:
+            find = 3
+        try:
+            find = int(find)
+
+        except:
+            await ctx.send('Incorrect command usage:\n`.caround (range) (member)`')
+            return
+
+        if find < 1 or find > 12:
+            await ctx.send('Enter a number from 1-12 for `range`.')
+            return
+
+
+
+
+        userid = member.id
+        guild = self.client.mainGuild
+
+
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute("""
+        SELECT id, increase
+        FROM christmas;
+        """)
+        hierarchy = c.fetchall()
+        conn.close()
+
+        hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
+        hierarchy.sort(key=lambda member: member[1], reverse=True)
+
+        ids= list(map(lambda x: x[0], hierarchy))
+
+        try:
+            index = ids.index(userid)
+        except ValueError:
+            hierarchy.append((userid, 0))
+            ids.append(userid)
+            index = ids.index(userid)
+
+
+        lower_index = index-find
+
+        if lower_index < 0:
+            lower_index = 0
+
+        higher_index = index+find+1
+        length = len(hierarchy)
+
+        if higher_index > length:
+            higher_index = length
+
+        result = hierarchy[lower_index:higher_index]
+
+        avatar = member.avatar_url_as(static_format='jpg')
+        embed = discord.Embed(color=0x03ff39, title=f"🎄 Around {member.name} 🎄", icon_url=avatar)
+
+        place = ids.index(result[0][0])+1
+        for person in result:
+
+            medal = ''
+            mk = ''
+            if place == 1:
+                medal = '🥇 '
+            elif place == 2:
+                medal = '🥈 '
+            elif place == 3:
+                medal = '🥉 '
+            if member.id == person[0]:
+                mk = '**'
+            embed.add_field(name='__________', value=f'{mk}{place}. <@{person[0]}> {medal}- ${person[1]}{mk}', inline=False)
+            place += 1
+
+
+        if find > 5:
+            await ctx.send('Embed too large, check your DMs.')
+            await ctx.author.send(embed=embed)
+
+        else:
+            await ctx.send(embed=embed)
+
+    @commands.command()
+    async def caroundm(self, ctx, find=None, *, member:discord.Member=None):
+
+
+        if not member: 
+            member = ctx.author
+        
+        if not await bot_check(self.client, ctx, member):
+            return
+
+        if not find:
+            find = 3
+        try:
+            find = int(find)
+
+        except:
+            await ctx.send('Incorrect command usage:\n`.caroundm (range) (member)`')
+            return
+
+        if find < 1 or find > 12:
+            await ctx.send('Enter a number from 1-12 for `range`.')
+            return
+
+
+
+        userid = member.id
+        guild = self.client.mainGuild
+
+
+        conn = sqlite3.connect('./storage/databases/hierarchy.db')
+        c = conn.cursor()
+        c.execute("""
+        SELECT id, increase
+        FROM christmas;
+        """)
+        hierarchy = c.fetchall()
+        conn.close()
+
+        hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
+        hierarchy.sort(key=lambda member: member[1], reverse=True)
+
+        ids= list(map(lambda x: x[0], hierarchy))
+
+        try:
+            index = ids.index(userid)
+        except ValueError:
+            hierarchy.append((userid, 0))
+            ids.append(userid)
+            index = ids.index(userid)
+
+
+        lower_index = index-find
+
+        if lower_index < 0:
+            lower_index = 0
+
+        higher_index = index+find+1
+        length = len(hierarchy)
+
+        if higher_index > length:
+            higher_index = length
+
+        result = hierarchy[lower_index:higher_index]
+
+        avatar = member.avatar_url_as(static_format='jpg')
+        embed = discord.Embed(color=0x03ff39, title=f"🎄 Around {member.name} 🎄", icon_url=avatar)
+
+        place = ids.index(result[0][0])+1
+        for person in result:
+            current_member = guild.get_member(person[0])
+            medal = ''
+            mk = ''
+            if place == 1:
+                medal = '🥇 '
+            elif place == 2:
+                medal = '🥈 '
+            elif place == 3:
+                medal = '🥉 '
+            if member.id == person[0]:
+                mk = '**'
+            embed.add_field(name='__________', value=f'{mk}{place}. {current_member.name} {medal}- ${person[1]}{mk}', inline=False)
+            place += 1
+
+
+        if find > 5:
+            await ctx.send('Embed too large, check your DMs.')
+            await ctx.author.send(embed=embed)
+
+        else:
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def snowball(self, ctx, *, member: discord.Member=None):

@@ -31,8 +31,8 @@ class Tutorial(commands.Cog):
         # DM check
         if not message.guild:
 
-            if self.client.get_cog("premium"):
-                for session in self.client.get_cog("premium").control_sessions:
+            if self.client.get_cog("Premium"):
+                for session in self.client.get_cog("Premium").control_sessions:
                     if session["author"] == message.author:
                         return
 

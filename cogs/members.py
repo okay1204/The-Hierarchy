@@ -82,8 +82,8 @@ class Members(commands.Cog):
                 mute_role = guild.get_role(743255783055163392)
                 await member.add_roles(mute_role)
 
-                if self.client.get_cog('admin'):
-                    asyncio.create_task(self.client.get_cog('admin').wait_until_unmute(str(member.id), mutes[str(member.id)]), name=f"unmute {member.id}")
+                if self.client.get_cog('Admin'):
+                    asyncio.create_task(self.client.get_cog('Admin').wait_until_unmute(str(member.id), mutes[str(member.id)]), name=f"unmute {member.id}")
             
             else:
                 del mutes[str(member.id)]
@@ -92,8 +92,8 @@ class Members(commands.Cog):
 
         
         # rank leaderboard
-        if self.client.get_cog('leveling'):
-            asyncio.create_task(self.client.get_cog('leveling').rank_leaderboard())
+        if self.client.get_cog('Leveling'):
+            asyncio.create_task(self.client.get_cog('Leveling').rank_leaderboard())
 
 
 
@@ -143,8 +143,8 @@ class Members(commands.Cog):
         conn.close()
 
 
-        if self.client.get_cog('leveling'):
-            asyncio.create_task(self.client.get_cog('leveling').rank_leaderboard())
+        if self.client.get_cog('Leveling'):
+            asyncio.create_task(self.client.get_cog('Leveling').rank_leaderboard())
 
         for gang in gangs:
 

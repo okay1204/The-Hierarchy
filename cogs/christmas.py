@@ -423,6 +423,14 @@ class Christmas(commands.Cog):
     async def stats(self, ctx):
         await ctx.send("<#784097174136160326>")
 
+    @commands.command()
+    async def snowball(self, ctx, member: discord.Member=None):
+
+        if not member:
+            return await ctx.send("Incorrect command usage:\n`.snowball member`")
+        
+        await ctx.send(f"**{ctx.author.name}** snowballed **{member.name}**\n\nhaha dumb")
+
 
 def setup(client):
     client.add_cog(Christmas(client))

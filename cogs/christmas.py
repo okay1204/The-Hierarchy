@@ -170,7 +170,7 @@ class Christmas(commands.Cog):
 
         # leaderboard
 
-        embed = discord.Embed(color=0x03ff39, title="Contribution leaderboard")
+        embed = discord.Embed(color=0x03ff39, title="🎄 Contribution leaderboard 🎄")
         leaderboard_message = await channel.fetch_message(leaderboard_id)
 
         for x in range(5):

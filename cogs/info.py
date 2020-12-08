@@ -523,7 +523,7 @@ Gang: {gang}
 
         conn = sqlite3.connect('./storage/databases/awards.db')
         c = conn.cursor()
-        c.execute(f"SELECT name, color, long_description, image_link FROM awards WHERE LOWER(name) = ?", (award_name,))
+        c.execute(f"SELECT name, color, long_description, image_link FROM awards WHERE LOWER(name) = ?", (award_name.lower(),))
         award = c.fetchone()
         conn.close()
 

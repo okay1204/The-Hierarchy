@@ -325,7 +325,7 @@ class Christmas(commands.Cog):
 
 
     async def cog_check(self, ctx):
-        if ctx.channel.category.id != self.client.rightCategory:
+        if ctx.channel.category.id != self.client.rightCategory and ctx.command.name != "snowball":
             return False
         else:
             return True

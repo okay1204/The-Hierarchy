@@ -363,6 +363,7 @@ class Christmas(commands.Cog):
         conn.commit()
         conn.close()
         await ctx.send("Reset all balances.")
+        
         await log_command(self.client, ctx)
 
     
@@ -384,6 +385,8 @@ class Christmas(commands.Cog):
         else:
             if self.timer_task and not self.timer_task.done():
                 self.timer_task.cancel()
+
+        await log_command(self.client, ctx)
 
     
     @commands.command()

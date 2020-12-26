@@ -107,7 +107,7 @@ class Christmas(commands.Cog):
         if duration == 0:
             return
 
-        await asyncio.sleep(65)
+        await asyncio.sleep(duration)
 
         conn = sqlite3.connect('./storage/databases/hierarchy.db')
         c = conn.cursor()

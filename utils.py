@@ -69,8 +69,13 @@ async def jail_heist_check(client, ctx, member):
 async def event_disabled(ctx):
 
     if ctx.bot.get_cog('Christmas'):
-        await ctx.send("This command is disabled during the Christmas event.")
-        return False
+
+        with open('./storage/jsons/christmas meter.json') as f:
+            meter_state = json.load(f)
+
+        if meter_state == "on":
+            await ctx.send("This command is disabled during the Christmas event.")
+            return False
 
     with open('./storage/jsons/mode.json') as f:
         mode = json.load(f)

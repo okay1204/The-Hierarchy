@@ -202,7 +202,7 @@ async def timer_money(member):
             write_value(member.id, 'money', money)
 
             try:
-                await member.send(f'You have been in **{member.guild.name}** for five minutes and have recieved your price of $100!')
+                await member.send(f'You have been in **{member.guild.name}** for five minutes and have recieved your prize of $100!')
             except:
                 pass
             

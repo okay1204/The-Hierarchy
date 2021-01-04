@@ -322,7 +322,12 @@ class Premium(commands.Cog):
                 if len(content) > 2000:
                     content = content[:1999]
 
-                author_message_task = asyncio.create_task( ctx.author.send(content) )
+                to_file_attachments = []
+                for attachment in message.attachments:
+                    to_file = await attachment.to_file()
+                    to_file_attachments.append(to_file)
+
+                author_message_task = asyncio.create_task( ctx.author.send(content, files=to_file_attachments) )
 
                 for session in self.control_sessions:
                     if session["author"] == ctx.author:

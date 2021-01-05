@@ -377,7 +377,16 @@ class Tutorial(commands.Cog):
             await asyncio.sleep(15)
 
         await channel.send("Have fun, and good luck!")
-    
+
+
+
+        if self.client.get_cog('Invites'):
+
+            conn = sqlite3.connect('./storage/databases/invites.db')
+            c = conn.cursor()
+            c.execute('UPDATE inviters SET tutorial = 1 WHERE member_id = ?', (author.id,))
+            conn.commit()
+            conn.close()
 
 
 def setup(client):

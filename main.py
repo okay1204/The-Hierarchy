@@ -250,12 +250,6 @@ async def on_ready():
     client.reddit = asyncio.create_task(connect_reddit())
 
 
-
-
-
-
-
-
     client.bailprice = lambda number: int(int(number-time.time())/3600*40)
     client.leaderboardChannel = client.get_channel(692955859109806180)
     client.leaderboardMessage = await client.leaderboardChannel.fetch_message(698775209024552975)
@@ -285,7 +279,7 @@ async def on_ready():
 
     # for production
     
-    cogs_to_unload = ['events', 'halloween', 'christmas']
+    cogs_to_unload = ['events', 'invites', 'halloween', 'christmas']
 
     # cogs to ungload for development
     
@@ -293,8 +287,9 @@ async def on_ready():
     # 'debug', 'actions', 'games', 'gambling', 
     # 'misc', 'premium', 'tutorial', 'heist', 
     # 'members', 'fun', 'info', 'polls', 'admin', 
-    # 'reactions', 'timers', 'events', 'leveling', 
-    # 'jobs', 'voice_channels', 'alerts', 'halloween']
+    # 'reactions', 'timers', 'events', 'invites', 'leveling', 
+    # 'jobs', 'voice_channels', 'alerts', 'halloween',
+    # 'christmas']
     
 
     # all cogs
@@ -303,7 +298,7 @@ async def on_ready():
     # 'debug', 'actions', 'games', 'gambling', 
     # 'misc', 'premium', 'tutorial', 'heist', 
     # 'members', 'fun', 'info', 'polls', 'admin', 
-    # 'reactions', 'timers', 'events', 'leveling', 
+    # 'reactions', 'timers', 'events', 'invites', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween',
     # 'christmas']
 
@@ -421,6 +416,21 @@ async def cache(ctx, name=None):
 
     client.every_command.append(name)
     await ctx.send("Successfully added command to cache.")
+
+@client.command()
+@commands.check(adminCheck)
+async def uncache(ctx, name=None):
+
+    if not name:
+        await ctx.send("Incorrect command usage:\n`.uncache commandname`")
+        return
+
+    try:
+        client.every_command.append(name)
+    except:
+        return await ctx.send("This command is not cached.")
+
+    await ctx.send("Successfully removed command from cache.")
 
 
 @client.command()

@@ -233,6 +233,7 @@ class Events(commands.Cog):
 
         await ctx.send(embed=embed)
 
+
     @commands.command()
     async def eventaround(self, ctx, find=None, *, member:discord.Member=None):
 

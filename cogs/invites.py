@@ -412,7 +412,6 @@ class Invites(commands.Cog):
         try:
             index = ids.index(member.id)
         except ValueError:
-            print("error for some reason")
             invites.append((member.id, 0))
             ids.append(member.id)
             index = ids.index(member.id)

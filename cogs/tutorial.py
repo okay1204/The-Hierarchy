@@ -366,7 +366,7 @@ class Tutorial(commands.Cog):
                             break
 
                     if breakOut:
-                        break #TODO clarify that user has money in bank
+                        break
             
         async with channel.typing():
             await asyncio.sleep(5)
@@ -377,8 +377,6 @@ class Tutorial(commands.Cog):
             await asyncio.sleep(15)
 
         await channel.send("Have fun, and good luck!")
-
-
 
         if self.client.get_cog('Invites'):
 

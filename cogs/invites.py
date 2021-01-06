@@ -23,23 +23,11 @@ remove_item, remove_use, add_item, add_use, log_command)
 class Invites(commands.Cog):
 
     def __init__(self, client):
+
         self.client = client
 
         asyncio.create_task(self.initialize_invites())
 
-
-    async def initialize_invites(self):
-
-        self.last_removed = None
-        
-        invites = await self.client.mainGuild.invites()
-
-        self.invites = []
-
-        for invite in invites:
-            self.invites.append({'code': invite.code, 'max_age': invite.max_age, 'uses': invite.uses, 'max_uses': invite.max_uses, 'created_at': invite.created_at, 'inviter': invite.inviter})
-
-        
         # making sure all existing members can't be invited again
         
         # getting list of all ids
@@ -59,6 +47,19 @@ class Invites(commands.Cog):
                 pass
         conn.commit()
         conn.close()
+
+
+    async def initialize_invites(self):
+
+        self.last_removed = None
+        
+        invites = await self.client.mainGuild.invites()
+
+        self.invites = []
+
+        for invite in invites:
+            self.invites.append({'code': invite.code, 'max_age': invite.max_age, 'uses': invite.uses, 'max_uses': invite.max_uses, 'created_at': invite.created_at, 'inviter': invite.inviter})
+
 
     async def cog_check(self, ctx):
         if ctx.channel.category.id != self.client.rightCategory:
@@ -115,7 +116,7 @@ class Invites(commands.Cog):
 
             if new.uses == old['uses'] + 1:
 
-                if not new.inviter.bot:
+                if new.inviter.bot:
                     bot = True
 
                 inviter_id = new.inviter.id
@@ -123,7 +124,7 @@ class Invites(commands.Cog):
 
         if not inviter_id and invite_removed:
 
-            if not self.last_removed['inviter'].bot:
+            if self.last_removed['inviter'].bot:
                 bot = True
 
             inviter_id = self.last_removed['inviter'].id

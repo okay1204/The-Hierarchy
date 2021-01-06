@@ -279,17 +279,17 @@ async def on_ready():
 
     # for production
     
-    cogs_to_unload = ['events', 'invites', 'halloween', 'christmas']
+    # cogs_to_unload = ['events', 'invites', 'halloween', 'christmas']
 
     # cogs to ungload for development
     
-    # cogs_to_unload = [
-    # 'debug', 'actions', 'games', 'gambling', 
-    # 'misc', 'premium', 'tutorial', 'heist', 
-    # 'members', 'fun', 'info', 'polls', 'admin', 
-    # 'reactions', 'timers', 'events', 'invites', 'leveling', 
-    # 'jobs', 'voice_channels', 'alerts', 'halloween',
-    # 'christmas']
+    cogs_to_unload = [
+    'debug', 'actions', 'games', 'gambling', 
+    'misc', 'premium', 'heist', 
+    'members', 'fun', 'info', 'polls', 'admin', 
+    'reactions', 'timers', 'events', 'leveling', 
+    'jobs', 'voice_channels', 'alerts', 'halloween',
+    'christmas']
     
 
     # all cogs
@@ -312,7 +312,6 @@ async def on_ready():
     # waiting for reddit connection to finish
     client.reddit = await client.reddit
     print("Reddit Connection Successful")
-
     
 
 client.adminChannel = 706953015415930941

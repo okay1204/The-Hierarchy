@@ -188,7 +188,7 @@ class Invites(commands.Cog):
 
 
     @commands.command()
-    async def invitecount(self, ctx, member: discord.Member = None):
+    async def invitecount(self, ctx, *, member: discord.Member = None):
 
         if not member:
             member = ctx.author
@@ -217,7 +217,7 @@ class Invites(commands.Cog):
         
 
     @commands.command(name="invites", aliases=['invitesm'])
-    async def invites_list(self, ctx, group = "", member: discord.Member = None):
+    async def invites_list(self, ctx, group = "", *, member: discord.Member = None):
 
         if not member:
             member = ctx.author

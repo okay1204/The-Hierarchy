@@ -335,6 +335,51 @@ class Premium(commands.Cog):
                         session["messages"].append( [message, author_message_task] )
                         break
 
+    
+    @commands.command()
+    async def sell(self, ctx, *, item=None):
+
+        author = ctx.author
+
+        if not author.premium_since:
+            await ctx.send("You don't have __premium__. Get __premium__ by boosting the server!")
+            return
+        
+        if not await jail_heist_check(self.client, ctx, ctx.author):
+            return
+
+        if not item: 
+            await ctx.send("Incorrect command usage:\n`.sell item`")
+            return
+
+        conn = sqlite3.connect('./storage/databases/shop.db')
+        c = conn.cursor()
+        c.execute('SELECT name, article, price FROM shop')
+        items = c.fetchall()
+        conn.close()
+
+        item = item.lower()
+
+        for shopitem in items:
+            if item == shopitem[0]:
+                picked_item = shopitem
+                break
+
+        else:
+            await ctx.send(f"There is no such item called **{item}**.")
+            return
+
+
+        if item not in read_value(author.id, 'items').split():
+            await ctx.send(f"You do not own {picked_item[1]}**{picked_item[0]}**.")
+            return
+
+        remove_item(item, author.id)
+        await ctx.send(f'**{author.name}** sold {picked_item[1]}**{picked_item[0]}** for ${picked_item[2]//2}.')
+
+        money = read_value(ctx.author.id, 'money')
+        money += picked_item[2]//2
+        write_value(ctx.author.id, 'money', money)
 
             
 

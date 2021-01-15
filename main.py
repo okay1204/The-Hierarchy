@@ -285,9 +285,9 @@ async def on_ready():
     
     cogs_to_unload = [
     'debug', 'actions', 'games', 'gambling', 
-    'misc', 'premium', 'heist', 
+    'misc', 'premium', 'tutorial', 'heist', 
     'members', 'fun', 'info', 'polls', 'admin', 
-    'reactions', 'timers', 'events', 'leveling', 
+    'reactions', 'timers', 'events', 'invites', 'leveling', 
     'jobs', 'voice_channels', 'alerts', 'halloween',
     'christmas']
     

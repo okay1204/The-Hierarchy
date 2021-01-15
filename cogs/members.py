@@ -5,7 +5,6 @@ import json
 import random
 import sqlite3
 import time
-import os
 import datetime
 from sqlite3 import Error
 
@@ -185,10 +184,6 @@ class Members(commands.Cog):
 
                     await role.delete(reason="Gang role deleted")
 
-                
-                
-                if gang[4]:
-                    os.remove(gang[4])
 
                 conn = sqlite3.connect('./storage/databases/gangs.db')
                 c = conn.cursor()

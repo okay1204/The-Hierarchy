@@ -575,8 +575,8 @@ class Fun(commands.Cog):
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
         try:
-            c.execute('SELECT owner, description, created_at, role_id, color, img_location FROM gangs WHERE name = ?', (name,))
-            owner, description, created_at, role_id, color, img_location = c.fetchone()
+            c.execute('SELECT owner, description, created_at, role_id, color, img_link FROM gangs WHERE name = ?', (name,))
+            owner, description, created_at, role_id, color, img_link = c.fetchone()
             conn.close()
         except:
             c.execute('SELECT name FROM gangs')
@@ -624,13 +624,10 @@ class Fun(commands.Cog):
 
         embed.set_footer(text="Created at")
 
-        if img_location:
-            filename = img_location.split('/')[-1]
-            f = discord.File(img_location, filename=filename)
-            embed.set_image(url=f'attachment://{filename}')
-            await ctx.send(embed=embed, file=f)
-        else:
-            await ctx.send(embed=embed)
+        if img_link:
+            embed.set_image(url=img_link)
+        
+        await ctx.send(embed=embed)
 
     @gang.command()
     async def balance(self, ctx, *, name=None):
@@ -655,8 +652,8 @@ class Fun(commands.Cog):
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
         try:
-            c.execute('SELECT owner, members, color, img_location FROM gangs WHERE name = ?', (name,))
-            owner, members, color, img_location = c.fetchone()
+            c.execute('SELECT owner, members, color, img_link FROM gangs WHERE name = ?', (name,))
+            owner, members, color, img_link = c.fetchone()
             conn.close()
         except:
             c.execute('SELECT name FROM gangs')
@@ -707,13 +704,10 @@ class Fun(commands.Cog):
 
         
 
-        if img_location:
-            filename = img_location.split('/')[-1]
-            f = discord.File(img_location, filename=filename)
-            embed.set_image(url=f'attachment://{filename}')
-            await ctx.send(embed=embed, file=f)
-        else:
-            await ctx.send(embed=embed)
+        if img_link:
+            embed.set_image(url=img_link)
+        
+        await ctx.send(embed=embed)
 
 
     @gang.command()
@@ -740,8 +734,8 @@ class Fun(commands.Cog):
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
         try:
-            c.execute('SELECT owner, members, color, img_location FROM gangs WHERE name = ?', (name,))
-            owner, members, color, img_location = c.fetchone()
+            c.execute('SELECT owner, members, color, img_link FROM gangs WHERE name = ?', (name,))
+            owner, members, color, img_link = c.fetchone()
             conn.close()
         except:
             c.execute('SELECT name FROM gangs')
@@ -784,13 +778,10 @@ class Fun(commands.Cog):
         owner = guild.get_member(owner)
         embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
 
-        if img_location:
-            filename = img_location.split('/')[-1]
-            f = discord.File(img_location, filename=filename)
-            embed.set_image(url=f'attachment://{filename}')
-            await ctx.send(embed=embed, file=f)
-        else:
-            await ctx.send(embed=embed)
+        if img_link:
+            embed.set_image(url=img_link)
+        
+        await ctx.send(embed=embed)
         
 
 
@@ -818,8 +809,8 @@ class Fun(commands.Cog):
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
         try:
-            c.execute('SELECT owner, members, color, img_location FROM gangs WHERE name = ?', (name,))
-            owner, members, color, img_location = c.fetchone()
+            c.execute('SELECT owner, members, color, img_link FROM gangs WHERE name = ?', (name,))
+            owner, members, color, img_link = c.fetchone()
             conn.close()
         except:
             c.execute('SELECT name FROM gangs')
@@ -862,13 +853,10 @@ class Fun(commands.Cog):
         owner = guild.get_member(owner)
         embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
 
-        if img_location:
-            filename = img_location.split('/')[-1]
-            f = discord.File(img_location, filename=filename)
-            embed.set_image(url=f'attachment://{filename}')
-            await ctx.send(embed=embed, file=f)
-        else:
-            await ctx.send(embed=embed)
+        if img_link:
+            embed.set_image(url=img_link)
+        
+        await ctx.send(embed=embed)
         
 
 
@@ -927,7 +915,7 @@ class Fun(commands.Cog):
 
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
-        c.execute('SELECT name, members, all_invite, owner, img_location, color FROM gangs')
+        c.execute('SELECT name, members, all_invite, owner, img_link, color FROM gangs')
         gangs = c.fetchall()
         conn.close()
 
@@ -951,7 +939,7 @@ class Fun(commands.Cog):
 
                 if gang[2] == "True" or gang[3] == ctx.author.id:
                     gangname = gang[0]
-                    img_location = gang[4]
+                    img_link = gang[4]
                     color = int(gang[5], 16)
                 else:
                     await ctx.send("All invite is disabled for your gang.")
@@ -979,24 +967,21 @@ class Fun(commands.Cog):
                 await ctx.send("You already sent an invite to this user.")
                 return
         
-        asyncio.create_task(self.invite_req_task(ctx, member, gangname, img_location, color), name=f"gang invite {ctx.author.id} {member.id}")
+        asyncio.create_task(self.invite_req_task(ctx, member, gangname, img_link, color), name=f"gang invite {ctx.author.id} {member.id}")
 
 
 
 
-    async def invite_req_task(self, ctx, member, gangname, img_location, color):
+    async def invite_req_task(self, ctx, member, gangname, img_link, color):
 
         embed = discord.Embed(color=color, title="Gang invite", description=f"To: {member.mention}\nFrom {ctx.author.mention}\nGang: {gangname}")
 
 
-        if img_location:
-            filename = img_location.split('/')[-1]
-            f = discord.File(img_location, filename=filename)
-            embed.set_image(url=f'attachment://{filename}')
-            message = await ctx.send(embed=embed, file=f)
+        if img_link:
+            embed.set_image(url=img_link)
+        
+        message = await ctx.send(embed=embed)
 
-        else:
-            message = await ctx.send(embed=embed)
         await message.add_reaction('✅')
         await message.add_reaction('❌')
         try:
@@ -1162,7 +1147,7 @@ class Fun(commands.Cog):
         
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
-        c.execute('SELECT name, owner, members, img_location FROM gangs')
+        c.execute('SELECT name, owner, members, img_link FROM gangs')
         gangs = c.fetchall()
         conn.close()
 
@@ -1180,58 +1165,32 @@ class Fun(commands.Cog):
                     if image_link.lower() == 'delete':
                         conn = sqlite3.connect('./storage/databases/gangs.db')
                         c = conn.cursor()
-                        c.execute('SELECT img_location FROM gangs WHERE name = ?', (gang[0],))
+                        c.execute('SELECT img_link FROM gangs WHERE name = ?', (gang[0],))
 
-                        img_location = c.fetchone()[0]
+                        img_link = c.fetchone()[0]
 
-                        if not img_location:
+                        if not img_link:
                             conn.close()
-                            await ctx.send("Your gang does not have an icon saved.")
-                            return
+                            return await ctx.send("Your gang does not have an icon saved.")
                         
 
-                        c.execute('UPDATE gangs SET img_location = null WHERE name = ?', (gang[0],))
+                        c.execute('UPDATE gangs SET img_link = null WHERE name = ?', (gang[0],))
                         conn.commit()
                         conn.close()
 
-                       
-
-                        os.remove(img_location)
-
-                        await ctx.send("Successfully deleted gang icon.")
-                        return
+                        return await ctx.send("Successfully deleted gang icon.")
                             
-                # to get a free file name
+                # to get a image link
 
-                if not gang[3]:
+                if ctx.message.attachments:
+                    image = ctx.message.attachments[0]
 
-                    files = [f for f in os.listdir('./storage/images/gang-icons') if os.path.isfile(os.path.join('./storage/images/gang-icons', f))]
-                    files = list(map(lambda filename: os.path.splitext(filename)[0], files))
+                    if not image.filename.lower().endswith(('png', 'jpg', 'jpeg', 'gif')):
+                        return await ctx.send("Only files with `.png`, `.jpg`, `jpeg`, and `gif` file extensions are supported.")
                     
-                    save_path = gang[0].lower().replace(' ', '_')
-                    regex = re.compile('[^a-zA-Z1-9_]')
-
-                    save_path = regex.sub('', save_path)
-
-                    if save_path in files:
-                        number = 1
-                        save_path += f'({number})'
-                        while save_path in files:
-                            save_path = save_path.replace(f'({number})', f'({number+1})')
-                            number += 1
-
-                    save_path = f"./storage/images/gang-icons/{save_path}"
+                    image_link = image.url
                 
                 else:
-                    
-                    save_path = os.path.splitext(gang[3])[0]
-                
-                
-
-
-                # to download the image
-
-                if image_link:
 
                     try:
                         async with aiohttp.ClientSession() as session:
@@ -1242,36 +1201,15 @@ class Fun(commands.Cog):
                                 allowed_formats = list(map(lambda extension: f"image/{extension}", allowed_formats))
 
                                 if resp.content_type not in allowed_formats:
-                                    await ctx.send("Only files with `.png`, `.jpg`, `.jpeg`, and `.gif` file extensions are supported.")
-                                    return
-
-                                data = await resp.read()
-
-                                img_location = f"{save_path}.{resp.content_type.split('/')[1]}"
-
-                                with open(img_location, "wb") as f:
-                                    f.write(data)
+                                    return await ctx.send("Only files with `.png`, `.jpg`, `.jpeg`, and `.gif` file extensions are supported.")
                                     
                     except aiohttp.client_exceptions.InvalidURL:
-                        await ctx.send("Invalid image link.")
-                        return
-
-                
-                else:
-                    image = ctx.message.attachments[0]
-                    if not image.filename.lower().endswith(('png', 'jpg', 'jpeg', 'gif')):
-                        await ctx.send("Only files with `.png`, `.jpg`, `jpeg`, and `gif` file extensions are supported.")
-                        return
-
-                    img_location = save_path + os.path.splitext(image.filename)[1]
-
-                    await image.save(fp=img_location)
-                    
-
+                        return await ctx.send("Invalid image link.")
+                        
 
                 conn = sqlite3.connect('./storage/databases/gangs.db')
                 c = conn.cursor()
-                c.execute('UPDATE gangs SET img_location = ? WHERE name = ?', (img_location, gang[0]))
+                c.execute('UPDATE gangs SET img_link = ? WHERE name = ?', (image_link, gang[0]))
                 gangs = c.fetchall()
                 conn.commit()
                 conn.close()
@@ -1711,7 +1649,7 @@ class Fun(commands.Cog):
 
         conn = sqlite3.connect('./storage/databases/gangs.db')
         c = conn.cursor()
-        c.execute('SELECT name, owner, members, role_id, img_location FROM gangs')
+        c.execute('SELECT name, owner, members, role_id, img_link FROM gangs')
         gangs = c.fetchall()
         conn.close()
 
@@ -1741,9 +1679,6 @@ class Fun(commands.Cog):
                         role = guild.get_role(gang[3])
 
                         await role.delete(reason="Gang role deleted")
-                    
-                    if gang[4]:
-                        os.remove(gang[4])
 
                     conn = sqlite3.connect('./storage/databases/gangs.db')
                     c = conn.cursor()

@@ -1,0 +1,32 @@
+[
+  {
+    "audit id": 43,
+    "action": "mute",
+    "duration": "10m",
+    "reason": "Spamming",
+    "date": "2020-09-11 20:52:31.160258",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/754081966915191016"
+  },
+  {
+    "audit id": 48,
+    "action": "warn",
+    "reason": "Spam.",
+    "date": "2020-09-16 18:38:45.251056",
+    "jump link": "https://discord.com/channels/692906379203313695/692950156928090162/755860242834915511"
+  },
+  {
+    "audit id": 84,
+    "action": "mute",
+    "duration": "1d 0h 0m 0s",
+    "reason": "(posting borderine uncomfortable pics in every single bot channel)",
+    "date": "2020-10-19 22:05:52.579546",
+    "jump link": "https://discord.com/channels/692906379203313695/692950019619160205/767871166529536051"
+  },
+  {
+    "audit id": 102,
+    "action": "warn",
+    "reason": "Innapropiate content",
+    "date": "2020-11-10 03:18:11.629311",
+    "jump link": "https://discord.com/channels/692906379203313695/721483818610982982/775559909252923412"
+  }
+]

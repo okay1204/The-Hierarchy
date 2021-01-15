@@ -1,0 +1,24 @@
+[
+  {
+    "audit id": 79,
+    "action": "mute",
+    "duration": "10m",
+    "reason": "pinging evry1 pls dont",
+    "date": "2020-10-17 00:55:12.073626",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/766826615241048104"
+  },
+  {
+    "audit id": 81,
+    "action": "warn",
+    "reason": "promoting spam and pinging every1",
+    "date": "2020-10-17 00:57:58.289744",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/766827312221782066"
+  },
+  {
+    "audit id": 82,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-10-17 01:02:38.328127",
+    "jump link": "https://discord.com/channels/692906379203313695/714585657808257095/766828486815252481"
+  }
+]

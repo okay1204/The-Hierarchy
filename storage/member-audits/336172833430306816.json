@@ -1,0 +1,46 @@
+[
+  {
+    "audit id": 40,
+    "action": "warn",
+    "reason": "Spam",
+    "date": "2020-09-08 02:46:46.210961",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/752721565682237460"
+  },
+  {
+    "audit id": 41,
+    "action": "mute",
+    "duration": "10m",
+    "reason": "Spamming",
+    "date": "2020-09-10 23:47:53.124533",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/753763711331860591"
+  },
+  {
+    "audit id": 42,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-09-10 23:48:33.156364",
+    "jump link": "https://discord.com/channels/692906379203313695/714585657808257095/753763879414267944"
+  },
+  {
+    "audit id": 44,
+    "action": "mute",
+    "duration": "10m",
+    "reason": "Spamming",
+    "date": "2020-09-11 20:52:43.872037",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/754082020342235207"
+  },
+  {
+    "audit id": 46,
+    "action": "warn",
+    "reason": "Spam",
+    "date": "2020-09-14 05:18:39.904233",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/754934118537494578"
+  },
+  {
+    "audit id": 83,
+    "action": "warn",
+    "reason": "Gross Content",
+    "date": "2020-10-19 15:17:40.608426",
+    "jump link": "https://discord.com/channels/692906379203313695/761669221746475018/767768440038621224"
+  }
+]

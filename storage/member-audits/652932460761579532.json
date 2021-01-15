@@ -12,5 +12,28 @@
     "reason": "Using macros to automatically type commands without being there",
     "date": "2020-08-12 00:01:28.421903",
     "jump link": "https://discord.com/channels/692906379203313695/692950055602094130/742895495021723719"
+  },
+  {
+    "audit id": 15,
+    "action": "mute",
+    "duration": "10m",
+    "reason": "Quick Break",
+    "date": "2020-08-18 18:39:42.715958",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/745351235896606772"
+  },
+  {
+    "audit id": 17,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-08-18 18:45:26.127330",
+    "jump link": "https://discord.com/channels/692906379203313695/714585657808257095/745352676564271145"
+  },
+  {
+    "audit id": 30,
+    "action": "warn",
+    "reason": "excessive",
+    "date": "2020-08-26 17:56:29.951935",
+    "jump link": "https://discord.com/channels/692906379203313695/692950156928090162/748239464265941073",
+    "message content": "Error: Message not found"
   }
 ]

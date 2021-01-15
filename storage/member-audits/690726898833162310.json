@@ -1,0 +1,20 @@
+[
+  {
+    "audit id": 78,
+    "action": "mute",
+    "duration": "1m",
+    "reason": "shush please",
+    "date": "2020-10-17 00:49:25.537640",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/766825161591619605",
+    "message content": "<@620290893307576321> HOW DARE YOU PING US, YOU ARE NOW ON TRIAL"
+  },
+  {
+    "audit id": 80,
+    "action": "mute",
+    "duration": "1h",
+    "reason": "shush please",
+    "date": "2020-10-17 00:55:20.140237",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/766826648816451616",
+    "message content": "<@620290893307576321> HOW DARE YOU PING US, YOU ARE NOW ON TRIAL"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "audit id": 105,
+    "action": "mute",
+    "duration": "15m",
+    "reason": "being toxic",
+    "date": "2020-11-20 20:23:33.073684",
+    "jump link": "https://discord.com/channels/692906379203313695/692950156928090162/779441827467362324"
+  },
+  {
+    "audit id": 106,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-11-20 20:27:55.431071",
+    "jump link": "https://discord.com/channels/692906379203313695/714585657808257095/779442927918514176"
+  }
+]

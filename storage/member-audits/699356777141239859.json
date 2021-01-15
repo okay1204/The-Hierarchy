@@ -1,0 +1,78 @@
+[
+  {
+    "audit id": 95,
+    "action": "mute",
+    "duration": "1h",
+    "reason": "Spamming in multiple channels",
+    "date": "2020-11-04 00:05:00.024504",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/773336963372548116"
+  },
+  {
+    "audit id": 96,
+    "action": "warn",
+    "reason": "Spamming in channels",
+    "date": "2020-11-04 02:19:22.773059",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/773370780976414730"
+  },
+  {
+    "audit id": 98,
+    "action": "mute",
+    "duration": "24h",
+    "reason": "Being straight up anoyying for multiple days straight",
+    "date": "2020-11-06 16:38:10.715053",
+    "jump link": "https://discord.com/channels/692906379203313695/692950156928090162/774311680573964308"
+  },
+  {
+    "audit id": 99,
+    "action": "warn",
+    "reason": "Spamming again i dont care if ur being muted ur being warned if u spam again 1 more time worse will come",
+    "date": "2020-11-06 18:06:57.466937",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/774334022574800906"
+  },
+  {
+    "audit id": 100,
+    "action": "mute",
+    "duration": "48h",
+    "reason": "Spamming in multiple channels",
+    "date": "2020-11-08 19:39:02.167260",
+    "jump link": "https://discord.com/channels/692906379203313695/692950118978027540/775081970374934549"
+  },
+  {
+    "audit id": 101,
+    "action": "kick",
+    "reason": "spamming in every channel, 3rd offense join back if u want but spam again ur getting banned",
+    "date": "2020-11-08 20:00:55.764426",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/775087480042422293"
+  },
+  {
+    "audit id": 109,
+    "action": "mute",
+    "duration": "5m",
+    "reason": "excessive",
+    "date": "2020-12-06 03:13:26.505962",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/784980797899276319",
+    "message content": "Error: Message not found"
+  },
+  {
+    "audit id": 110,
+    "action": "warn",
+    "reason": "spaming again",
+    "date": "2020-12-06 03:19:36.320777",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/784982348919210015"
+  },
+  {
+    "audit id": 111,
+    "action": "mute",
+    "duration": "10m",
+    "reason": "spamming again",
+    "date": "2020-12-06 03:20:26.771815",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/784982560601014302"
+  },
+  {
+    "audit id": 112,
+    "action": "unmute",
+    "reason": "None",
+    "date": "2020-12-06 03:20:36.970948",
+    "jump link": "https://discord.com/channels/692906379203313695/714585657808257095/784982603387109386"
+  }
+]

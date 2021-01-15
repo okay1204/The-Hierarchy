@@ -1,0 +1,17 @@
+[
+  {
+    "audit id": 62,
+    "action": "warn",
+    "reason": "spamming",
+    "date": "2020-09-23 03:16:03.929708",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/758164755835519047"
+  },
+  {
+    "audit id": 63,
+    "action": "mute",
+    "duration": "10m",
+    "reason": "Spamming",
+    "date": "2020-09-23 03:16:56.357532",
+    "jump link": "https://discord.com/channels/692906379203313695/692906379203313698/758164975839215627"
+  }
+]

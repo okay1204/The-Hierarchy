@@ -23,7 +23,7 @@ from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyRea
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import level_check, read_value
+from utils import bot_check, splittime, timestring, log_command
 import authinfo
 
 
@@ -440,11 +440,11 @@ class Fun(commands.Cog):
                 sub = self.client.reddit.subreddit('dankmemes')
             except:
                 self.client.reddit = praw.Reddit(
-                    client_id = os.environ.get("client_id"),
-                    client_secret = os.environ.get("client_secret"),
-                    password = os.environ.get("password"),
-                    username = os.environ.get("username"),
-                    user_agent = os.environ.get("user_agent")
+                    client_id = os.environ.get("reddit_client_id"),
+                    client_secret = os.environ.get("reddit_client_secret"),
+                    password = os.environ.get("reddit_password"),
+                    username = os.environ.get("reddit_username"),
+                    user_agent = os.environ.get("reddit_user_agent")
                 )
                 sub = self.client.reddit.subreddit('dankmemes')
                 

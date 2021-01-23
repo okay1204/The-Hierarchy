@@ -6,61 +6,32 @@ import time
 import datetime
 import os
 import asyncio
-import sqlite3
 import random
 
 # To import from different path
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import log_command, read_value, write_value, add_item, splittime, bot_check
+from utils import bot_check, splittime, timestring, log_command
 
 money_requirement = 3000
 
-def get_christmas_value(userid, value):
+async def get_christmas_value(db, id, value):
 
-    conn = sqlite3.connect('./storage/databases/hierarchy.db')
-    c = conn.cursor()
+    # inserting row if not exists
+    await db.execute('INSERT INTO hierarchy.christmas (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;', id)
+    return await db.fetchval(f'SELECT {value} FROM hierarchy.christmas WHERE id = $1;', id)
 
-    c.execute(f"SELECT {value} FROM christmas WHERE id = ?", (userid,))
-    result = c.fetchone()
+async def set_christmas_value(db, id, value, overwrite):
 
-    if not result:
-        c.execute("INSERT INTO christmas (id) VALUES (?)", (userid,))
-        conn.commit()
+    await db.execute('INSERT INTO hierarchy.christmas (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;', id)
+    await db.execute(f'UPDATE hierarchy.christmas SET {value} = $1 WHERE id = $2;', overwrite, id)
 
-        result = 0
-
-    else:
-        result = result[0]
-    
-    conn.close()
-    return result
-
-def write_christmas_value(userid, value, overwrite):
-
-    conn = sqlite3.connect('./storage/databases/hierarchy.db')
-    c = conn.cursor()
-
-    c.execute("SELECT id FROM christmas WHERE id = ?", (userid,))
-    exists = c.fetchone()
-
-    if not exists:
-        c.execute("INSERT INTO christmas (id) VALUES (?)", (userid))
-
-    c.execute(f"UPDATE christmas SET {value} = ? WHERE id = ?", (overwrite, userid))
-
-    conn.commit()
-    conn.close()
     
 
-def find_next_drop():
+async def find_next_drop(db):
 
-    conn = sqlite3.connect('./storage/databases/hierarchy.db')
-    c = conn.cursor()
-    c.execute("SELECT SUM(increase) FROM christmas;")
-    total_bal = c.fetchone()[0]
-    conn.close()
+    total_bal = await db.fetchval('SELECT SUM(increase) FROM hierarchy.christmas;')
 
     drops = total_bal // money_requirement
 
@@ -90,9 +61,13 @@ class Christmas(commands.Cog):
             meter_state = json.load(f)
         
         if meter_state == "off":
-            self.timer_task = asyncio.create_task(self.gift_drop_timer(find_next_drop()))
+            asyncio.create_task(self.start_timer_task())
 
         asyncio.create_task( self.update_stats() )
+
+    async def start_timer_task(self):
+        async with self.client.pool.acquire() as db:
+            self.timer_task = asyncio.create_task(self.gift_drop_timer(await find_next_drop(db)))
     
     def cog_unload(self):
         
@@ -109,11 +84,8 @@ class Christmas(commands.Cog):
 
         await asyncio.sleep(duration)
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("SELECT SUM(increase) FROM christmas;")
-        total_bal = c.fetchone()[0]
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            total_bal = await db.fetchval('SELECT SUM(increase) FROM hierarchy.christmas;')
 
         drops = total_bal // money_requirement
 
@@ -130,18 +102,10 @@ class Christmas(commands.Cog):
         meter_id = 784097932030509096
         leaderboard_id = 784103963380678677
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        try:
-            c.execute("SELECT SUM(increase) FROM christmas;")
-        except:
-            conn.close()
-            return
-        total_bal = c.fetchone()[0]
+        async with self.client.pool.acquire() as db:
+            total_bal = await db.fetchval('SELECT SUM(increase) FROM hierarchy.christmas;')
 
-        c.execute("SELECT id, increase FROM christmas ORDER BY increase DESC")
-        members = c.fetchall()
-        conn.close()
+            members = await db.fetch('SELECT id, increase FROM hierarchy.christmas ORDER BY increase DESC;')
 
         drops = total_bal // money_requirement
         progress = total_bal - (money_requirement*drops)
@@ -231,95 +195,92 @@ class Christmas(commands.Cog):
         )
 
         # getting shop items
-        conn = sqlite3.connect('./storage/databases/shop.db')
-        c = conn.cursor()
-        c.execute('SELECT name FROM shop')
-        shop_items = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            shop_items = await db.fetch('SELECT name FROM shop;')
 
-        possible_rewards = []
+            possible_rewards = []
 
-        for item in shop_items: possible_rewards.append(item[0])
+            for item in shop_items: possible_rewards.append(item[0])
 
-        possible_rewards.extend(['money' for _ in range(len(possible_rewards))])
-        
-
-        for member_id, count in message_count.items():
-            storage_filled = False
+            possible_rewards.extend(['money' for _ in range(len(possible_rewards))])
             
-            reward_count = max(1, count // random.randint(13, 18))
 
-            rewards = []
-
-            items = read_value(member_id, 'items').split()
-            storage = read_value(member_id, 'storage')
-
-            for _ in range(reward_count):
-                reward = random.choice(possible_rewards)
-
-                if reward == 'money':
-                    reward = random.randint(50, 100)
+            for member_id, count in message_count.items():
+                storage_filled = False
                 
-                rewards.append(reward)
+                reward_count = max(1, count // random.randint(13, 18))
 
-                # adding item to user's inventory
-                if isinstance(reward, str):
+                rewards = []
 
-                    if len(items) < storage:
-                        items.append(reward)
-                        add_item(reward, member_id)
-                    else:
-                        storage_filled = True
+                items = await db.get_member_val(member_id, 'items')
+                storage = await db.get_member_val(member_id, 'storage')
 
-            
-            
-            item_count = {}
-            money = 0
+                for _ in range(reward_count):
+                    reward = random.choice(possible_rewards)
 
-            for reward in rewards:
-                
-                # if it is an item
-                if isinstance(reward, str):
-                    if reward not in item_count.keys():
-                        item_count[reward] = 1
-                    else:
-                        item_count[reward] += 1
-
-                # if an amount of money
-                else:
-                    money += reward
+                    if reward == 'money':
+                        reward = random.randint(50, 100)
                     
-            formatted = []
-            
-            if money:
-                formatted.append(f"+${money}")
+                    rewards.append(reward)
 
-                bal = read_value(member_id, 'money')
-                bal += money
-                write_value(member_id, 'money', bal)
+                    # adding item to user's inventory
+                    if isinstance(reward, str):
+
+                        if len(items) < storage:
+                            items.append(reward)
+                            await db.add_item(member_id, reward)
+                        else:
+                            storage_filled = True
+
                 
+                
+                item_count = {}
+                money = 0
 
-            for name, count in item_count.items():
-                formatted.append(f'x{count} {name.capitalize()}')
+                for reward in rewards:
+                    
+                    # if it is an item
+                    if isinstance(reward, str):
+                        if reward not in item_count.keys():
+                            item_count[reward] = 1
+                        else:
+                            item_count[reward] += 1
 
-            if storage_filled:
-                formatted.append("**Not all items were given because of storage limit**")
+                    # if an amount of money
+                    else:
+                        money += reward
+                        
+                formatted = []
+                
+                if money:
+                    formatted.append(f"+${money}")
 
-            embed.add_field(
-                name=guild.get_member(member_id).name,
-                value="\n".join(formatted)
+                    bal = await db.get_member_val(member_id, 'money')
+                    bal += money
+                    await db.set_member_val(member_id, 'money', bal)
+                    
+
+                for name, count in item_count.items():
+                    formatted.append(f'x{count} {name.capitalize()}')
+
+                if storage_filled:
+                    formatted.append("**Not all items were given because of storage limit**")
+
+                embed.add_field(
+                    name=guild.get_member(member_id).name,
+                    value="\n".join(formatted)
+                )
+
+            if not embed.fields:
+                embed = discord.Embed(
+                color=0x03ff39,
+                title="Gift Drop Results",
+                description="None"
             )
 
-        if not embed.fields:
-            embed = discord.Embed(
-            color=0x03ff39,
-            title="Gift Drop Results",
-            description="None"
-        )
+            await channel.send(embed=embed)
 
-        await channel.send(embed=embed)
-
-        await channel.send(f"_ _\n\n**Next gift drop in {next_drop}**")
+            await channel.send(f"_ _\n\n**Next gift drop in {next_drop}**")
 
 
 
@@ -360,13 +321,11 @@ class Christmas(commands.Cog):
 
         if response.content.lower() != word.lower(): return await ctx.send("Save cancelled.")
         
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("DROP TABLE IF EXISTS christmas;")
-        c.execute("CREATE TABLE christmas (id INTEGER PRIMARY KEY, total INTEGER DEFAULT 0, increase INTEGER DEFAULT 0);")
-        c.execute("INSERT INTO christmas (id, total) SELECT id, money + bank FROM members;")
-        conn.commit()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            await db.execute("DROP TABLE IF EXISTS hierarchy.christmas;")
+            await db.execute("CREATE TABLE hierarchy.christmas (id BIGINT PRIMARY KEY, total INTEGER DEFAULT 0, increase INTEGER DEFAULT 0);")
+            await db.execute("INSERT INTO hierarchy.christmas (id, total) SELECT id, money + bank FROM members;")
+
         await ctx.send("Reset all balances.")
         
         await log_command(self.client, ctx)
@@ -386,7 +345,8 @@ class Christmas(commands.Cog):
         await ctx.send(f"Christmas meter switched {state}.")
 
         if state == "off":
-            self.timer_task = asyncio.create_task(self.gift_drop_timer(find_next_drop()))
+            async with self.client.pool.acquire() as db:
+                self.timer_task = asyncio.create_task(self.gift_drop_timer(await find_next_drop(db)))
         else:
             if self.timer_task and not self.timer_task.done():
                 self.timer_task.cancel()
@@ -403,25 +363,26 @@ class Christmas(commands.Cog):
         if meter_state == "off":
             return await ctx.send("The meter can no longer be increased.")
 
-        past_bal = get_christmas_value(ctx.author.id, 'total')
-        present_bal = read_value(ctx.author.id, 'money + bank')
+        async with self.client.pool.acquire() as db:
+            past_bal = await get_christmas_value(db, ctx.author.id, 'total')
+            present_bal = await db.get_member_val(ctx.author.id, 'money + bank')
 
-        difference = present_bal - past_bal
+            difference = present_bal - past_bal
 
-        if difference < 0:
-            await ctx.send(f"You have lost ${difference * -1} since last contribution, no money was added to the meter.")
-        elif difference == 0:
-            await ctx.send(f"You have not gained any money since last contribution, no money was added to the meter.")
-        elif difference > 0:
-            await ctx.send(f"${difference} added to the meter.")
+            if difference < 0:
+                await ctx.send(f"You have lost ${difference * -1} since last contribution, no money was added to the meter.")
+            elif difference == 0:
+                await ctx.send(f"You have not gained any money since last contribution, no money was added to the meter.")
+            elif difference > 0:
+                await ctx.send(f"${difference} added to the meter.")
 
-            increase = get_christmas_value(ctx.author.id, 'increase')
-            increase += difference
-            write_christmas_value(ctx.author.id, 'increase', increase)
+                increase = await get_christmas_value(db, ctx.author.id, 'increase')
+                increase += difference
+                await set_christmas_value(db, ctx.author.id, 'increase', increase)
 
-            write_christmas_value(ctx.author.id, 'total', present_bal)
-            
-            await self.update_stats()
+                await set_christmas_value(db, ctx.author.id, 'total', present_bal)
+                
+                await self.update_stats()
 
         
     @commands.command()
@@ -438,16 +399,10 @@ class Christmas(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT increase
-        FROM christmas
-        WHERE id = ?;
-        """, (member.id,))
 
-        money = c.fetchone()[0]
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            money = await get_christmas_value(db, member.id, 'increase')
+
         
         await ctx.send(f"**{member.name}** has contributed ${money} to the Christmas event.")
 
@@ -480,15 +435,8 @@ class Christmas(commands.Cog):
         userid = member.id
         guild = self.client.mainGuild
 
-
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT id, increase
-        FROM christmas;
-        """)
-        hierarchy = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch('SELECT id, increase FROM christmas;')
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -572,14 +520,8 @@ class Christmas(commands.Cog):
         guild = self.client.mainGuild
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT id, increase
-        FROM christmas;
-        """)
-        hierarchy = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch('SELECT id, increase FROM christmas;')
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)

@@ -8,19 +8,22 @@ import json
 import time
 import datetime
 import asyncio
-import sqlite3
+import asyncpg
 import os
 import difflib
 import traceback
 import asyncio
 import string
-from sqlite3 import Error
 from captcha.image import ImageCaptcha
 import praw
 
 
 from utils import *
 import authinfo
+
+import dbutils
+
+
 
 async def do_captcha(ctx):
 
@@ -284,9 +287,9 @@ async def on_ready():
     # cogs to ungload for development
     
     cogs_to_unload = [
-    'debug', 'actions', 'games', 'gambling', 
+    'actions', 'games', 'gambling', 
     'misc', 'premium', 'tutorial', 'heist', 
-    'members', 'fun', 'info', 'polls', 'admin', 
+    'members', 'fun', 'info', 'polls', 
     'reactions', 'timers', 'events', 'invites', 'leveling', 
     'jobs', 'voice_channels', 'alerts', 'halloween',
     'christmas']
@@ -306,7 +309,7 @@ async def on_ready():
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
 
-    asyncio.create_task(leaderboard(client))
+    # asyncio.create_task(leaderboard(client))
 
     
     # waiting for reddit connection to finish
@@ -323,11 +326,11 @@ client.heist = {}
 async def connect_reddit():
 
     reddit = praw.Reddit(
-        client_id = os.environ.get("client_id"),
-        client_secret = os.environ.get("client_secret"),
-        password = os.environ.get("password"),
-        username = os.environ.get("username"),
-        user_agent = os.environ.get("user_agent")
+        client_id = os.environ.get("reddit_client_id"),
+        client_secret = os.environ.get("reddit_client_secret"),
+        password = os.environ.get("reddit_password"),
+        username = os.environ.get("reddit_username"),
+        user_agent = os.environ.get("reddit_user_agent")
     )
 
     return reddit
@@ -335,15 +338,15 @@ async def connect_reddit():
 
     
         
-@client.event
-async def on_member_join(member):
-    await asyncio.sleep(0.1)
-    await leaderboard(client)
+# @client.event
+# async def on_member_join(member):
+#     await asyncio.sleep(0.1)
+#     await leaderboard(client)
 
-@client.event
-async def on_member_remove(member):
-    await asyncio.sleep(0.1)
-    await leaderboard(client)
+# @client.event
+# async def on_member_remove(member):
+#     await asyncio.sleep(0.1)
+#     await leaderboard(client)
 
 @client.event
 async def on_message(message):    
@@ -584,6 +587,31 @@ async def reload(ctx, name=None):
                 client.reload_extension(f'cogs.{filename}')
 
         await ctx.send("All cogs succesfully reloaded.")
+
+
+loop = asyncio.get_event_loop()
+
+async def connection_init(conn):
+    await conn.execute("SET CLIENT_ENCODING to 'utf-8';")
+    conn.client = client
+
+try:
+    client.pool = loop.run_until_complete(asyncpg.create_pool(
+        host=os.environ.get("postgres_host"),
+        database=os.environ.get("postgres_database"),
+        user=os.environ.get("postgres_user"),
+        password=os.environ.get("postgres_password"),
+        connection_class=dbutils.DBUtils,
+        init=connection_init
+    ))
+
+    print('PostgreSQL connection successful')
+except Exception as e:
+    print(e)
+
+    # the bot basically cannot function without database
+    print('PostgreSQL connection failed- aborting')
+    exit()
 
 
 client.run(os.environ.get("main"))

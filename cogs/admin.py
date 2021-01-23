@@ -5,7 +5,6 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument, CommandNotFound
 import json
 import time
-import sqlite3
 import asyncio
 from sqlite3 import Error
 from datetime import timezone 
@@ -16,8 +15,7 @@ import os
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import timestring
-
+from utils import bot_check, splittime, timestring, log_command
 
 
 modroles = [692952463501819984, 706952785362681906, 714584510523768903, 714676918175137814]
@@ -28,46 +26,18 @@ def modChannel(ctx):
 def reportChannel(ctx):
     return ctx.channel.id == 723985222412140584
 
-def increment(userid, offense):
-    conn = sqlite3.connect('./storage/databases/offenses.db')
-    c = conn.cursor()
-    try:
-        c.execute(f'SELECT {offense} FROM offenses WHERE id = ?', (userid,))
-        number = c.fetchone()[0]
-    except:
-        warns = mutes = kicks = bans = 0
-        if offense == 'warns':
-            warns = 1
+async def increment(db, id, offense):
 
-        elif offense == 'mutes':
-            mutes = 1
+    # inserts into offenses if not exists
+    await db.execute('INSERT INTO offenses (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;', id)
 
-        elif offense == 'kicks':
-            kicks = 1
+    # add 1
+    await db.execute(f'UPDATE offenses SET {offense} = {offense} + 1 WHERE id = $1;', id)
 
-        elif offense == 'bans':
-            bans = 1
-        
+async def decrement(db, id, offense):
 
-        c.execute('INSERT INTO offenses (id, warns, mutes, kicks, bans) VALUES (?, ?, ?, ?, ?)', (userid, warns, mutes, kicks, bans))
+    await db.execute(f'UPDATE offenses SET {offense} = GREATEST({offense}-1, 0) WHERE id = $1;', id)
 
-    else:
-        number += 1
-        c.execute(f'UPDATE offenses SET {offense} = ? WHERE id = ?', (number, userid))
-
-    conn.commit()
-    conn.close()
-
-def decrement(userid, offense):
-    conn = sqlite3.connect('./storage/databases/offenses.db')
-    c = conn.cursor()
-    c.execute(f'SELECT {offense} FROM offenses WHERE id = ?', (userid,))
-    number = c.fetchone()[0]
-    if number > 0:
-        number -= 1
-    c.execute(f'UPDATE offenses SET {offense} = ? WHERE id = ?', (number, userid))
-    conn.commit()
-    conn.close()
 
 class Admin(commands.Cog):
 
@@ -190,7 +160,9 @@ class Admin(commands.Cog):
                     json.dump([{'audit id':auditid, 'action':'warn', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url, 'message content':content}], f, indent=2)
         
         #Adding to count
-        increment(member.id, 'warns')
+
+        async with self.client.pool.acquire() as db:
+            await increment(db, member.id, 'warns')
 
     @commands.command()
     @commands.has_any_role(*modroles)
@@ -296,7 +268,8 @@ class Admin(commands.Cog):
                     json.dump([{'audit id':auditid, 'action':'mute', 'duration': duration, 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url, 'message content':content}], f, indent=2)
         
         #Adding to count
-        increment(member.id, 'mutes')
+        async with self.client.pool.acquire() as db:
+            await increment(db, member.id, 'mutes')
 
     @commands.command()
     @commands.check(modChannel)
@@ -474,7 +447,8 @@ class Admin(commands.Cog):
                     json.dump([{'audit id':auditid, 'action':'kick', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url, 'message content':content}], f, indent=2)
 
         #Adding to count
-        increment(member.id, 'kicks')
+        async with self.client.pool.acquire() as db:
+            await increment(db, member.id, 'kicks')
 
 
     @commands.command()
@@ -564,7 +538,8 @@ class Admin(commands.Cog):
                     json.dump([{'audit id':auditid, 'action':'ban', 'reason':reason, 'date':datetime, 'jump link':ctx.message.jump_url, 'message content':content}], f, indent=2)
 
         #Adding to count
-        increment(member.id, 'bans')
+        async with self.client.pool.acquire() as db:
+            await increment(db, member.id, 'bans')
 
 
     @commands.command()
@@ -764,8 +739,10 @@ class Admin(commands.Cog):
 
         #Removing from count
         action += 's'
+
         if action not in ("unmutes", "unbans"):
-            decrement(member.id, action)
+            async with self.client.pool.acquire() as db:
+                await decrement(db, member.id, action)
 
         await ctx.send(f'Audit {audit_id} successfully revoked from {member.name}#{member.discriminator}.')
 
@@ -791,14 +768,11 @@ class Admin(commands.Cog):
                 await ctx.send('Member not found.')
                 return
 
-        conn = sqlite3.connect('./storage/databases/offenses.db')
-        c = conn.cursor()
-        try:
-            c.execute('SELECT warns, kicks, bans, mutes FROM offenses WHERE id = ?', (member.id,))
-            warns, kicks, bans, mutes = c.fetchone()
-        except:
-            warns = kicks = bans = mutes = 0
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            offense_count = await db.fetchrow('SELECT warns, kicks, bans, mutes FROM offenses WHERE id = $1', member.id)
+        
+        if offense_count:
+            warns, kicks, bans, mutes = offense_count
 
         await ctx.send(f'{member.name}#{member.discriminator} offense count:\nWarns: {warns}\nKicks: {kicks}\nBans: {bans}\nMutes: {mutes}')
 
@@ -884,28 +858,24 @@ class Admin(commands.Cog):
             return
         
         # Getting report cooldown
-        conn = sqlite3.connect('./storage/databases/offenses.db')
-        c = conn.cursor()
-        try:
-            c.execute('SELECT reportc FROM offenses WHERE id = ?', (member.id,))
-            member_reportc = c.fetchone()[0]
-        except:
-            c.execute('INSERT INTO offenses (id) VALUES (?)', (member.id,))
-            conn.commit()
-            member_reportc = 0
-        conn.close()
 
-        if time.time() < member_reportc:
-            await ctx.send('That member has already been reported.')
-            return
-        
-        reportc = int(time.time()) + 7200
+        async with self.client.pool.acquire() as db:
 
-        conn = sqlite3.connect('./storage/databases/offenses.db')
-        c = conn.cursor()
-        c.execute('UPDATE offenses SET reportc = ? WHERE id = ?', (reportc, member.id))
-        conn.commit()
-        conn.close()
+
+            # insert row if not exists
+            await db.execute('INSERT INTO offenses (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;', id)
+
+            member_reportc = await db.fetchval('SELECT reportc FROM offenses WHERE id = $1;', member.id)
+
+
+            if time.time() < member_reportc:
+                return await ctx.send('That member has already been reported.')
+            
+            reportc = int(time.time()) + 7200
+
+
+            await db.execute('UPDATE offenses SET reportc = $1 WHERE id = $2', reportc, member.id)
+
 
         with open(f'./storage/jsons/auditcount.json') as json_file:
             auditcount = json.load(json_file)
@@ -940,6 +910,7 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.check(reportChannel)
     async def close(self, ctx, member=None):
+
         if not member:
             await ctx.send("Incorrect command usage:\n`.close member`")
             return
@@ -956,32 +927,24 @@ class Admin(commands.Cog):
                 return
 
         # Getting report cooldown
-        conn = sqlite3.connect('./storage/databases/offenses.db')
-        c = conn.cursor()
-        try:
-            c.execute('SELECT reportc FROM offenses WHERE id = ?', (member.id,))
-            read_reportc = c.fetchone()[0]
-        except:
-            read_reportc = 0
-        conn.close()
+        async with self.client.pool.acquire() as db:
 
 
-        if read_reportc == 0:
-            await ctx.send(f"Report for {member.name}#{member.discriminator} is already closed.")
-            return
+            await db.execute('INSERT INTO offenses (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;', id)
 
-        elif time.time() < read_reportc:
-            await ctx.send(f"Closed report for {member.name}#{member.discriminator}.")
+            read_reportc = await db.fetchval('SELECT reportc FROM offenses WHERE id = $1', member.id)
 
-        elif time.time() > read_reportc:
-            await ctx.send(f"Closed report for {member.name}#{member.discriminator}. (Report was already auto-closed.)")
+            if read_reportc == 0:
+                return await ctx.send(f"Report for {member.name}#{member.discriminator} is already closed.")
 
-        # Setting report cooldown to zero
-        conn = sqlite3.connect('./storage/databases/offenses.db')
-        c = conn.cursor()
-        c.execute('UPDATE offenses SET reportc = 0 WHERE id = ?', (member.id,))
-        conn.commit()
-        conn.close()
+            elif time.time() < read_reportc:
+                await ctx.send(f"Closed report for {member.name}#{member.discriminator}.")
+
+            elif time.time() > read_reportc:
+                await ctx.send(f"Closed report for {member.name}#{member.discriminator}. (Report was already auto-closed.)")
+
+            # Setting report cooldown to zero
+            await db.execute('UPDATE offenses SET reportc = 0 WHERE id = $1', member.id)
 
 
     # Events

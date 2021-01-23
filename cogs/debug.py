@@ -3,7 +3,7 @@
 import discord
 from discord.ext import commands
 import json
-import sqlite3
+import asyncpg
 import os
 import asyncio
 import random
@@ -13,9 +13,7 @@ import aiohttp
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, leaderboard,
-rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, add_use, log_command)
+from utils import bot_check, splittime, timestring, log_command
 
 class Debug(commands.Cog):
 
@@ -73,39 +71,31 @@ class Debug(commands.Cog):
         await ctx.send(f"Mode successfully set to `{mode}`.")
     
     @commands.command()
-    async def db(self, ctx, filename=None, *, command=None):
+    async def db(self, ctx, *, command=None):
 
-        if not filename or not command:
-            await ctx.send("Incorrect command usage:\n`.db file dbcommand`.")
-            return
+        if not command:
+            return await ctx.send("Incorrect command usage:\n`.db dbcommand`.")
+            
 
         try:
-            conn = sqlite3.connect(f'./storage/databases/{filename}.db')
-            c = conn.cursor()
-            c.execute(command)
-            output = c.fetchall()
 
-            conn.commit()
-            conn.close()
+            async with self.client.pool.acquire() as db:
+                output = await db.fetch(command)
 
         except Exception as error:
-            
-            try:
-                conn.close()
-            except:
-                pass
 
             await ctx.send(f"Error:\n```{error}```")
         
         else:
+
             if output:
-                output = str(output)
-                if len(output) + 2 > 2000:
-                    await ctx.send("Output too long to display.")
-                else:
-                    await ctx.send(f"`{output}`")
+                # 2000 including backticks
+                output = str(output)[:1998]
+
+                await ctx.send(f"`{output}`")
+
             else:
-                await ctx.send(f"Command successfully executed.")
+                await ctx.send("Command successfully executed.")
 
     @commands.command()
     async def json(self, ctx, *, filename=None):
@@ -133,11 +123,9 @@ class Debug(commands.Cog):
     @commands.command()
     async def shopupdate(self, ctx):
 
-        conn = sqlite3.connect('./storage/databases/shop.db')
-        c = conn.cursor()
-        c.execute('SELECT name, price, desc, emoji FROM shop')
-        shopitems = c.fetchall()
-        conn.close()
+
+        async with self.client.pool.acquire() as db:
+            shopitems = await db.fetch('SELECT name, price, description, emoji FROM shop;')
 
         embed = discord.Embed(color=0x30ff56, title='Shop')
 
@@ -171,19 +159,19 @@ class Debug(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.money member +amount` or `.money member -amount`")
             return
 
-        
-        money = read_value(member.id, 'money')
-        money += add
-        write_value(member.id, 'money', money)
+        async with self.client.pool.acquire() as db:
+            money = await db.get_member_val(member.id, 'money')
+            money += add
+            await db.set_member_val(member.id, 'money', money)
 
 
-        if add >= 0:
-            await ctx.send(f"Added ${add} to **{member.name}**'s balance.")
-        else:
-            await ctx.send(f"Subtracted ${add * -1} from **{member.name}**'s balance.")
+            if add >= 0:
+                await ctx.send(f"Added ${add} to **{member.name}**'s balance.")
+            else:
+                await ctx.send(f"Subtracted ${add * -1} from **{member.name}**'s balance.")
 
-        await rolecheck(self.client, member.id)
-        await leaderboard(self.client)
+            await db.rolecheck(member.id)
+            await db.leaderboard()
     
 
     @commands.group(invoke_without_command=True)
@@ -199,12 +187,9 @@ class Debug(commands.Cog):
                 page = int(page)
             else:
                 return await ctx.send("Enter a valid page number.")
-
-        conn = sqlite3.connect('./storage/databases/awards.db')
-        c = conn.cursor()
-        c.execute("SELECT id, name, short_description FROM awards")
-        awards = c.fetchall()
-        conn.close()
+        
+        async with self.client.pool.acquire() as db:
+            awards = await db.fetch("SELECT id, name, short_description FROM awards;")
 
         # splitting into pages of 5
         awards = [awards[x:x+5] for x in range(0, len(awards), 5)]
@@ -233,12 +218,9 @@ class Debug(commands.Cog):
         else:
             return await ctx.send("Enter a valid award id.")
 
-        conn = sqlite3.connect('./storage/databases/awards.db')
-        c = conn.cursor()
-        c.execute("SELECT name, color, long_description, image_link FROM awards WHERE id = ?", (award_id,))
-        award = c.fetchone()
-        conn.close()
-
+        async with self.client.pool.acquire() as db:
+            award = await db.fetchrow("SELECT name, color, long_description, image_link FROM awards WHERE id = $1;", award_id)
+            
         if not award:
             return await ctx.send("Award not found.")
 
@@ -368,16 +350,12 @@ class Debug(commands.Cog):
         else:
             message = None
 
-        conn = sqlite3.connect('./storage/databases/awards.db')
-        c = conn.cursor()
-        c.execute(
-        """INSERT INTO awards
+
+        async with self.client.pool.acquire() as db:
+            await db.execute("""INSERT INTO awards
         (message_id, name, color, short_description, long_description, image_link)
-        VALUES (?, ?, ?, ?, ?, ?)""",
-        (message, name, color, short_description, long_description, image)
-        )
-        conn.commit()
-        conn.close()
+        VALUES ($1, $2, $3, $4, $5, $6);""", message, name, color, short_description, long_description, image)
+
 
         await ctx.send("Award successfully created.")
 
@@ -446,26 +424,19 @@ class Debug(commands.Cog):
 
         param = replacements[param]
         
-        conn = sqlite3.connect("./storage/databases/awards.db")
-        c = conn.cursor()
-        
-        c.execute("SELECT id FROM awards WHERE id = ?", (award_id,))
-        exists = c.fetchone()
+        async with self.client.pool.acquire() as db:
 
-        if not exists:
-            conn.close()
-            await ctx.send("Award not found.")
-            return
+            
+            exists = await db.fetchval("SELECT id FROM awards WHERE id = $1;", award_id)
 
-        c.execute(f"UPDATE awards SET {param} = ? WHERE id = ?", (new, award_id))
+            if not exists:
+                return await ctx.send("Award not found.")
 
-
-        c.execute("SELECT message_id, name, color, long_description, image_link FROM awards WHERE id = ?", (award_id,))
-        message_id, name, color, long_description, image_link = c.fetchone()
-    
-        conn.commit()
-        conn.close()
-
+            message_id, name, color, long_description, image_link = await db.fetchrow(
+            f'''
+            UPDATE awards SET {param} = $1 WHERE id = $2
+            RETURNING message_id, name, color, long_description, image_link''',
+            new, award_id)
         
 
 
@@ -515,55 +486,31 @@ class Debug(commands.Cog):
         else:
             return await ctx.send("Enter a valid award id.")
 
-        conn = sqlite3.connect('./storage/databases/awards.db')
-        c = conn.cursor()
-        c.execute("SELECT message_id FROM awards WHERE id = ?", (award_id,))
-        message_id = c.fetchone()
-        
-        # detect if row even exists
-        if not message_id:
-            conn.close()
-            return await ctx.send("Award not found.")
-
-
-        c.execute("DELETE FROM awards WHERE id = ?", (award_id,))
-        conn.commit()
-        conn.close()
-
-        if message_id[0]:
-            channel = self.client.get_channel(765694242617032774)
-            message = await channel.fetch_message(message_id[0])
-            await message.delete()
+        async with self.client.pool.acquire() as db:
+            message_id = await db.fetchrow('SELECT message_id FROM awards WHERE id = $1', award_id)
 
         
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute(f"SELECT id, awards FROM members WHERE awards LIKE '%{award_id}%';")
-        members = c.fetchall()
-        conn.close()
+            # detect if row even exists
+            if not message_id:
+                return await ctx.send("Award not found.")
 
-        changed_members = []
+            message_id = message_id[0]
 
-        for userid, awards in members:
+            await db.execute('DELETE FROM awards WHERE id = $1', award_id)
 
-            awards = awards.split()
-            awards = list(map(lambda number: int(number), awards))
+            if message_id:
+                channel = self.client.get_channel(765694242617032774)
+                message = await channel.fetch_message(message_id)
+                await message.delete()
 
-            if award_id in awards:
-                awards.remove(award_id)
-                awards = " ".join(map(lambda number: str(number), awards))
 
-                changed_members.append((userid, awards))
+            members = await db.execute('SELECT id, awards FROM members WHERE $1 = ANY(awards);', award_id)
 
-        
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        
-        for userid, awards in changed_members:
-            c.execute(f"UPDATE members SET awards = ? WHERE id = ?", (awards, userid))
+            for userid, awards in members:
+                awards.remove(award_id)   
+            
+                await db.execute('UPDATE members SET awards = $1 WHERE id = $2', awards, userid)
 
-        conn.commit()
-        conn.close()
 
         await ctx.send("Award successfully deleted.")
         
@@ -584,30 +531,25 @@ class Debug(commands.Cog):
         else:
             return await ctx.send("Enter a valid award id.")
 
-        conn = sqlite3.connect('./storage/databases/awards.db')
-        c = conn.cursor()
-        c.execute("SELECT name FROM awards WHERE id = ?", (award_id,))
-        name = c.fetchone()
-        conn.close()
-        
-        # detect if row even exists
-        if not name:
-            return await ctx.send("Award not found.")
+        async with self.client.pool.acquire() as db:
 
-        name = name[0]
+            name = await db.fetchval('SELECT name FROM WHERE id = $1', award_id)
+            
+            # detect if row even exists
+            if not name:
+                return await ctx.send("Award not found.")
 
-        awards = read_value(member.id, 'awards').split()
-        awards = list(map(lambda number: int(number), awards))
 
-        
-        if award_id in awards:
-            return await ctx.send(f"**{member.name}** already has **{name}**.")
+            awards = await db.get_member_val(member.id, 'awards')
 
-        awards.append(award_id)
+            
+            if award_id in awards:
+                return await ctx.send(f"**{member.name}** already has **{name}**.")
 
-        awards = " ".join(map(lambda number: str(number), awards))
+            awards.append(award_id)
 
-        write_value(member.id, 'awards', awards)
+
+            await db.set_member_val(member.id, 'awards', awards)
 
         await ctx.send(f"The award **{name}** was granted to **{member.name}**.")
 
@@ -622,21 +564,20 @@ class Debug(commands.Cog):
         else:
             return await ctx.send("Enter a valid award id.")
 
-        awards = read_value(member.id, 'awards').split()
-        awards = list(map(lambda number: int(number), awards))
+        async with self.client.pool.acquire() as db:
 
-        try:
-            award = awards[award_number-1]
-        except IndexError:
-            return await ctx.send("Award not found.")
+            awards = await db.get_member_val(member.id, 'awards')
 
-        awards.remove(award)
-        awards = " ".join(map(lambda number: str(number), awards))
+            try:
+                award = awards[award_number-1]
+            except IndexError:
+                return await ctx.send("Award not found.")
 
-        write_value(member.id, "awards", awards)
+            awards.remove(award)
+
+            await db.set_member_val(member.id, "awards", awards)
 
         await ctx.send(f"The award was removed from **{member.name}**.")
-
 
     
 

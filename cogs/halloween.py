@@ -12,7 +12,7 @@ import os
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (log_command, splittime, bot_check)
+from utils import bot_check, splittime, timestring, log_command
 
 
 def get_halloween_value(userid, value):

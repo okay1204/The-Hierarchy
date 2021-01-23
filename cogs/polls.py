@@ -11,7 +11,7 @@ import os
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import minisplittime, timestring
+from utils import bot_check, splittime, timestring, log_command
 
 
 class Polls(commands.Cog):

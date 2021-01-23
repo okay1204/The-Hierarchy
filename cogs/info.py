@@ -4,18 +4,14 @@ import discord
 from discord.ext import commands
 import json
 import time
-import sqlite3
 import os
-from sqlite3 import Error
 from collections import Counter
 
 # To import from different path
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, leaderboard,
-rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, add_use)
+from utils import bot_check, splittime, timestring, log_command
 
 
 class Info(commands.Cog):
@@ -43,6 +39,7 @@ class Info(commands.Cog):
     async def shop(self, ctx):
         await ctx.send(self.client.get_channel(702654620291563600).mention)
 
+
     @commands.command(aliases=['balance'])
     async def bal(self, ctx, *, member:discord.Member=None):
 
@@ -50,20 +47,10 @@ class Info(commands.Cog):
         
         if not await bot_check(self.client, ctx, member):
             return
-
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-
-        c.execute("""
-        SELECT money, bank
-        FROM members
-        WHERE id = ?
-        """, (member.id,))
-
-        money, bank = c.fetchone()
-
-        conn.close()
         
+        async with self.client.pool.acquire() as db:
+
+            money, bank = await db.fetchrow('SELECT money, bank FROM members WHERE id = $1', member.id)
 
         avatar = member.avatar_url_as(static_format='jpg')
         
@@ -83,7 +70,8 @@ class Info(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        jailtime = read_value(member.id, 'jailtime')
+        async with self.client.pool.acquire() as db:
+            jailtime = await db.get_member_val(member.id, 'jailtime')
 
         if jailtime > time.time():
 
@@ -101,8 +89,9 @@ class Info(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        workc = read_value(member.id, 'workc')
-        
+        async with self.client.pool.acquire() as db:
+            workc = await db.get_member_val(member.id, 'workc')
+            
         if workc > time.time():
             await ctx.send(f'**{member.name}** has {splittime(workc)} left until they can work.')
         else:
@@ -116,8 +105,9 @@ class Info(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        stealc = read_value(member.id, 'stealc')
-        
+        async with self.client.pool.acquire() as db:
+            stealc = await db.get_member_val(member.id, 'stealc')
+            
         if stealc > time.time():
             await ctx.send(f'**{member.name}** has {splittime(stealc)} left until they can steal.')
         else:
@@ -130,9 +120,10 @@ class Info(commands.Cog):
 
         if not await bot_check(self.client, ctx, member):
             return
-
-        bankc = read_value(member.id, 'bankc')
         
+        async with self.client.pool.acquire() as db:
+            bankc = await db.get_member_val(member.id, 'bankc')
+            
         if bankc > time.time():
             await ctx.send(f'**{member.name}** has {splittime(bankc)} left until they can access their bank.')
         else:
@@ -171,12 +162,8 @@ class Info(commands.Cog):
 
         guild = self.client.mainGuild
 
-
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('SELECT id, money + bank FROM members')
-        hierarchy = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch('SELECT id, money + bank FROM members;')
 
         hierarchy.sort(key=lambda k: k[1], reverse=True)
 
@@ -202,25 +189,28 @@ class Info(commands.Cog):
         avatar = avatar.avatar_url_as(static_format='jpg')
         embed = discord.Embed(color=0x4785ff)
 
+        async with self.client.pool.acquire() as db:
 
-        items = read_value(member.id, 'items').split()
-        
-        count = dict(Counter(items))
-        
-        for x in count:
-            embed.add_field(name="__________", value=f"{x.capitalize()} x{count[x]}", inline=True)
+            items = await db.get_member_val(member.id, 'items')
+            
+            count = dict(Counter(items))
+            
+            for x in count:
+                embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{x.capitalize()} x{count[x]}", inline=True)
 
-        if len(embed.fields) == 0:
-            embed.add_field(name='__________', value="None", inline=True)
+            if not len(embed.fields):
+                embed.add_field(name=discord.utils.escape_markdown("____"), value="None", inline=True)
 
 
-        embed.set_author(name=f"{member.name}'s items ({len(items)}/{read_value(member.id, 'storage')})",icon_url=avatar)
+            embed.set_author(name=f"{member.name}'s items ({len(items)}/{await db.get_member_val(member.id, 'storage')})",icon_url=avatar)
 
-        # In use
+            # In use
 
-        embed2 = discord.Embed(color=0xff8000)
-        embed2.set_author(name=f"{member.name}'s items in use",icon_url=avatar)
-        inuse = in_use(member.id)
+            embed2 = discord.Embed(color=0xff8000)
+            embed2.set_author(name=f"{member.name}'s items in use",icon_url=avatar)
+
+            inuse = await db.in_use(member.id)
+
         for x in inuse:
             embed2.add_field(name='__________', value=f'{x.capitalize()}: {splittime(inuse[x])}', inline=False)
 
@@ -254,14 +244,12 @@ class Info(commands.Cog):
             return
 
 
-
         userid = member.id
         guild = self.client.mainGuild
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('SELECT id, money + bank AS total FROM members WHERE total > 0 ORDER BY total DESC')
-        hierarchy = c.fetchall()
-        conn.close()
+
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch('SELECT id, money + bank FROM members WHERE money + bank > 0 ORDER BY money + bank DESC;')
+
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         ids= list(map(lambda x: x[0], hierarchy))
 
@@ -341,11 +329,10 @@ class Info(commands.Cog):
 
         userid = member.id
         guild = self.client.mainGuild
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('SELECT id, money + bank AS total FROM members WHERE total > 0 ORDER BY total DESC')
-        hierarchy = c.fetchall()
-        conn.close()
+
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch('SELECT id, money + bank FROM members WHERE money + bank > 0 ORDER BY money + bank DESC;')
+
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         ids= list(map(lambda x: x[0], hierarchy))
 
@@ -405,7 +392,8 @@ class Info(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        streak = read_value(member.id, 'dailystreak')
+        async with self.client.pool.acquire() as db:
+            streak = await db.get_member_val(member.id, 'dailystreak')
 
         await ctx.send(f"**{member.name}**'s streak: {streak}")
 
@@ -430,24 +418,21 @@ class Info(commands.Cog):
             status = "<:idle:747627839565856789> Idle"
 
         # get gang
-        conn = sqlite3.connect('./storage/databases/gangs.db')
-        c = conn.cursor()
-        c.execute(f'SELECT name FROM gangs WHERE members LIKE "%{member.id}%" OR owner = ?', (member.id,))
-        gang = c.fetchone()
-        conn.close()
 
-        if not gang:
-            gang = "None"
-        else:
-            gang = gang[0]
+        async with self.client.pool.acquire() as db:
+            gang = await db.fetchval(f'SELECT name FROM gangs WHERE $1 = ANY(members) OR owner = $1;', member.id)
 
-        embed = discord.Embed(color=0xffa047, title=f"{member.name}#{member.discriminator}", description=f"""ID: {member.id}
+
+            if not gang:
+                gang = "None"
+
+            embed = discord.Embed(color=0xffa047, title=f"{member.name}#{member.discriminator}", description=f"""ID: {member.id}
 Status: {status}
 
-Money: ${read_value(member.id, 'money + bank')}
+Money: ${await db.get_member_val(member.id, 'money + bank')}
 Gang: {gang}
-""", timestamp=member.joined_at)
-        embed.set_footer(text="Joined at")
+    """, timestamp=member.joined_at)
+            embed.set_footer(text="Joined at")
 
         embed.set_thumbnail(url=member.avatar_url_as(static_format='jpg'))
         
@@ -472,25 +457,16 @@ Gang: {gang}
             else:
                 return await ctx.send("Enter a valid page number.")
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute(f'SELECT awards FROM members WHERE id = ?', (member.id,))
-        awards = c.fetchone()[0]
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            award_ids = await db.fetchval('SELECT awards FROM members WHERE id = $1', member.id)
 
-        awards = awards.split()
+            if not award_ids:
+                embed = discord.Embed(color=0x19a83f, description="None")
+                embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar_url_as(static_format='jpg'))
+                await ctx.send(embed=embed)
+                return
 
-        if not awards:
-            embed = discord.Embed(color=0x19a83f, description="None")
-            embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar_url_as(static_format='jpg'))
-            await ctx.send(embed=embed)
-            return
-
-        conn = sqlite3.connect('./storage/databases/awards.db')
-        c = conn.cursor()
-        c.execute(f"SELECT name, short_description FROM awards WHERE {' OR '.join(map(lambda award_id: f'id = {award_id}', awards))}") # get all info from award ids
-        awards = c.fetchall()
-        conn.close()
+            awards = [await db.fetchrow('SELECT name, short_description FROM awards WHERE id = $1;', award_id) for award_id in award_ids]
 
 
         # dividing into lists of 5
@@ -521,11 +497,10 @@ Gang: {gang}
         if not award_name:
             return await ctx.send("Incorrect command usage:\n`.award about awardname`")
 
-        conn = sqlite3.connect('./storage/databases/awards.db')
-        c = conn.cursor()
-        c.execute(f"SELECT name, color, long_description, image_link FROM awards WHERE LOWER(name) = ?", (award_name.lower(),))
-        award = c.fetchone()
-        conn.close()
+
+        async with self.client.pool.acquire() as db:
+            award = await db.fetchrow('SELECT name, color, long_description, image_link FROM awards WHERE LOWER(name) = $1;', award_name.lower())
+
 
         if not award:
             return await ctx.send(f"There is no award called **{award_name}**.")

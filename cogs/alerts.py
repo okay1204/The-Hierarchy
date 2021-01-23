@@ -10,7 +10,7 @@ import asyncio
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (splittime, timestring)
+from utils import splittime, timestring
 
 class Alerts(commands.Cog):
     
@@ -20,6 +20,7 @@ class Alerts(commands.Cog):
 
         with open('./storage/jsons/alerts.json') as f:
             all_alerts = json.load(f)
+
 
         self.alert_tasks = {}
 

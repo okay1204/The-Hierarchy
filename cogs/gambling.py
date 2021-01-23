@@ -16,9 +16,8 @@ from sqlite3 import Error
 import sys
 sys.path.insert(1 , os.getcwd())
 
-from utils import (read_value, write_value, leaderboard,
-rolecheck, splittime, bot_check, in_use, jail_heist_check, around,
-remove_item, remove_use, add_item, add_use, event_disabled, member_event_check)
+from utils import bot_check, splittime, timestring, log_command
+
 def evaluateCards(cards):
     aceCount = 0
     reducedAces = 0
@@ -74,7 +73,7 @@ class Gambling(commands.Cog):
 
 
     @commands.command()
-    @commands.check(event_disabled)
+    # @commands.check(event_disabled)
     async def fight(self, ctx, action=None, member:discord.Member=None, bet=None):
         
         if not action:
@@ -391,7 +390,7 @@ class Gambling(commands.Cog):
 
 
     @commands.command()
-    @commands.check(event_disabled)
+    # @commands.check(event_disabled)
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def blackjack(self, ctx, bet=None):
         author = ctx.author

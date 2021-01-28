@@ -4,8 +4,8 @@ import discord
 from discord.ext import commands
 import json
 import time
-import sqlite3
 import os
+import asyncpg
 import asyncio
 import random
 
@@ -26,24 +26,12 @@ class Invites(commands.Cog):
         asyncio.create_task(self.initialize_invites())
 
         # making sure all existing members can't be invited again
-        
-        # getting list of all ids
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('SELECT id FROM members;')
-        all_ids = c.fetchall()
-        conn.close()
 
-        # writing them to invites db
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
-        for userid in all_ids:
-            try:
-                c.execute('INSERT INTO inviters (member_id, inviter_id) VALUES (?, 0);', (userid[0],))
-            except sqlite3.IntegrityError:
-                pass
-        conn.commit()
-        conn.close()
+    
+    async def write_existing_to_db(self):
+
+        async with self.client.pool.acquire() as db:
+            await db.execute('INSERT INTO inviters SELECT id FROM members ON CONFLICT DO NOTHING;')
 
 
     async def initialize_invites(self):
@@ -130,19 +118,14 @@ class Invites(commands.Cog):
         elif not inviter_id or bot:
             inviter_id = 0
 
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
+        async with self.client.pool.acquire() as db:
 
-        try:
-            c.execute('INSERT INTO inviters (member_id, inviter_id) VALUES (?, ?);', (member.id, inviter_id))
-            
-        # if the member already has an inviter
-        except sqlite3.IntegrityError:
-            c.execute('UPDATE inviters SET in_guild = 1 WHERE member_id = ?', (member.id,))
-        
-        finally:
-            conn.commit()
-            conn.close()
+            try:
+                await db.execute('INSERT INTO inviters (member_id, inviter_id) VALUES ($1, $2);', member.id, inviter_id)
+                
+            # if the member already has an inviter
+            except asyncpg.UniqueViolationError:
+                await db.execute('UPDATE inviters SET in_guild = TRUE WHERE member_id = $1;', member.id)
 
 
         await self.initialize_invites()
@@ -150,11 +133,9 @@ class Invites(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
 
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
-        c.execute('UPDATE inviters SET in_guild = 0 WHERE member_id = ?', (member.id,))
-        conn.commit()
-        conn.close()
+
+        async with self.client.pool.acquire() as db:
+            await db.execute('UPDATE inviters SET in_guild = FALSE WHERE member_id = $1;', member.id)
 
 
     @commands.command()
@@ -174,11 +155,10 @@ class Invites(commands.Cog):
 
         if response.content.lower() != word.lower(): return await ctx.send("Reset cancelled.")
 
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
-        c.execute("UPDATE inviters SET inviter_id = 0, tutorial = 0, in_guild = -1;")
-        conn.commit()
-        conn.close()
+
+        async with self.client.pool.acquire() as db:
+
+            await db.execute("UPDATE inviters SET inviter_id = 0, tutorial = FALSE, in_guild = TRUE;")
 
         await ctx.send("Reset all invites.")
         await log_command(self.client, ctx)
@@ -198,13 +178,10 @@ class Invites(commands.Cog):
         embed.set_author(name=f"{member.name}'s invite count", icon_url=member.avatar_url_as(static_format='jpg'))
 
 
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
-        c.execute('SELECT COUNT(*) FROM inviters WHERE inviter_id = ? AND tutorial = 0 AND in_guild = 1', (member.id,))
-        pending_count = c.fetchone()[0]
-        c.execute('SELECT COUNT(*) FROM inviters WHERE inviter_id = ? AND tutorial = 1 AND in_guild = 1', (member.id,))
-        completed_count = c.fetchone()[0]
-        conn.close()
+        async with self.client.pool.acquire() as db:
+
+            pending_count = await db.fetchval('SELECT COUNT(*) FROM inviters WHERE inviter_id = $1 AND tutorial = FALSE AND in_guild = TRUE;', member.id)
+            completed_count = await db.fetchval('SELECT COUNT(*) FROM inviters WHERE inviter_id = $1 AND tutorial = TRUE AND in_guild = TRUE;', member.id)
 
         embed.add_field(name="Total", value=str(pending_count+completed_count))
         embed.add_field(name="Pending", value=str(pending_count))
@@ -235,20 +212,18 @@ class Invites(commands.Cog):
         embed = discord.Embed(color=0xfffeff)
         embed.set_author(name=f"{member.name}'s {group} invites", icon_url=member.avatar_url_as(static_format='jpg'))
 
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
 
-        if group == 'total':
-            c.execute('SELECT member_id FROM inviters WHERE inviter_id = ? AND in_guild = 1', (member.id,))
+        async with self.client.pool.acquire() as db:
 
-        elif group == 'pending':
-            c.execute('SELECT member_id FROM inviters WHERE inviter_id = ? AND tutorial = 0 AND in_guild = 1', (member.id,))
+            if group == 'total':
+                userids = await db.fetch('SELECT member_id FROM inviters WHERE inviter_id = $1 AND in_guild = TRUE;', member.id)
 
-        elif group == 'total':
-            c.execute('SELECT member_id FROM inviters WHERE inviter_id = ? AND tutorial = 1 AND in_guild = 1', (member.id,))
+            elif group == 'pending':
+                userids = await db.fetch('SELECT member_id FROM inviters WHERE inviter_id = $1 AND tutorial = FALSE AND in_guild = TRUE;', member.id)
 
-        userids = c.fetchall()
-        conn.close()
+            elif group == 'total':
+                userids = await db.fetch('SELECT member_id FROM inviters WHERE inviter_id = $1 AND tutorial = TRUE AND in_guild = TRUE;', member.id)
+
 
         userids = [userid[0] for userid in userids]
 
@@ -289,32 +264,17 @@ class Invites(commands.Cog):
         invites = []
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT id
-        FROM members;
-        """)
-        userids = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
 
-        userids = [userid[0] for userid in userids]
+            invites = await db.fetchval(
+            """
+            SELECT members.id, COUNT(inviters.*)
+            FROM members
+            LEFT OUTER JOIN inviters
+            ON members.id = inviters.inviter_id AND inviters.in_guild = TRUE AND inviters.tutorial = TRUE 
+            GROUP BY members.id;
+            """)
 
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
-
-        for userid in userids:
-            c.execute("""
-            SELECT COUNT(*)
-            FROM inviters
-            WHERE inviter_id = ? AND in_guild = 1 AND tutorial = 1;
-            """, (userid,))
-
-            count = c.fetchone()[0]
-
-            invites.append((userid, count))
-
-        conn.close()
 
         invites = list(filter(lambda x: guild.get_member(x[0]), invites))
         invites.sort(key=lambda member: member[1], reverse=True)
@@ -374,32 +334,17 @@ class Invites(commands.Cog):
         invites = []
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT id
-        FROM members;
-        """)
-        userids = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
 
-        userids = [userid[0] for userid in userids]
+            invites = await db.fetchval(
+            """
+            SELECT members.id, COUNT(inviters.*)
+            FROM members
+            LEFT OUTER JOIN inviters
+            ON members.id = inviters.inviter_id AND inviters.in_guild = TRUE AND inviters.tutorial = TRUE 
+            GROUP BY members.id;
+            """)
 
-        conn = sqlite3.connect('./storage/databases/invites.db')
-        c = conn.cursor()
-
-        for userid in userids:
-            c.execute("""
-            SELECT COUNT(*)
-            FROM inviters
-            WHERE inviter_id = ? AND in_guild = 1 AND tutorial = 1;
-            """, (userid,))
-
-            count = c.fetchone()[0]
-
-            invites.append((userid, count))
-
-        conn.close()
 
         invites = list(filter(lambda x: guild.get_member(x[0]), invites))
         invites.sort(key=lambda member: member[1], reverse=True)

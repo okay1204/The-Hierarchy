@@ -1,14 +1,15 @@
 import discord
 from discord.ext import commands
-import sqlite3
+import asyncpg
 import asyncio
 from datetime import datetime
-from utils import read_value, write_value
 import os
 import time
 import authinfo
+import dbutils
+import traceback
 
-client = commands.Bot(command_prefix = '.', intent=discord.Intents.all())
+client = commands.Bot(command_prefix = '.', intents=discord.Intents.all())
 client.remove_command('help')
 
 async def is_owner(ctx):
@@ -33,7 +34,17 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.InvalidEndOfQuotedStringError) or isinstance(error, commands.UnexpectedQuoteError):
         await ctx.send("Incorrect quote usage.")
 
-    raise error
+    else:
+        message = await ctx.send("An error occured while performing this command. This has been automatically reported.")
+
+        error_channel = client.get_channel(740055762956451870)
+
+        error_message = traceback.format_exception(type(error), error, error.__traceback__)
+        error_message = "".join(error_message) 
+        print(error_message)
+        new_message = await error_channel.send(client.myself.mention)
+        await new_message.edit(content=f"In {ctx.channel.mention} by {ctx.author.mention}:\n{message.jump_url}\n```{error_message}```")
+
 
 #TODO commands to veiw guilds and leave guilds
 
@@ -143,27 +154,28 @@ async def on_ready():
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
     await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with money'))
 
+    guild = client.get_guild(692906379203313695)
+    client.myself = guild.get_member(322896727071784960)
+
 @client.event
 async def on_member_join(member):
 
     if member.guild.id == 692906379203313695: # hierarchy guild id
         return
     
-    conn = sqlite3.connect('./storage/databases/featured.db')
-    c = conn.cursor()
-    c.execute(f'SELECT userid FROM g_{member.guild.id}')
-    userids = c.fetchall()
-    conn.close()
+    async with client.pool.acquire() as db:
 
-    userids = list(map(lambda user: user[0], userids))
+        userids = await db.fetch(f'SELECT userid FROM featured.g_{member.guild.id};')
 
-    if member.id not in userids:
+        userids = list(map(lambda user: user[0], userids))
 
-        for task in asyncio.all_tasks():
-            if task.get_name() == f'timer {member.id}':
-                return
-        
-        asyncio.create_task(timer_money(member), name=f'timer {member.guild.id} {member.id}')
+        if member.id not in userids:
+
+            for task in asyncio.all_tasks():
+                if task.get_name() == f'timer {member.id}':
+                    return
+            
+            asyncio.create_task(timer_money(member), name=f'timer {member.guild.id} {member.id}')
 
 @client.event
 async def on_member_remove(member):
@@ -186,41 +198,52 @@ async def timer_money(member):
 
         else:
             
-            conn = sqlite3.connect('./storage/databases/hierarchy.db')
-            c = conn.cursor()
-            c.execute('SELECT money FROM members WHERE id = ?', (member.id,))
-            money = c.fetchone()
-            conn.close()
-            
-            if not money:
-                return
-            else:
-                money = money[0]
-            
+            async with client.pool.acquire() as db:
 
-            money += 100
-            write_value(member.id, 'money', money)
+                money = await db.get_member_val(member.id, 'money')
+                
+                if not money: return
 
-            try:
-                await member.send(f'You have been in **{member.guild.name}** for five minutes and have recieved your prize of $100!')
-            except:
-                pass
-            
+                money += 100
+                await db.set_member_val(member.id, 'money', money)
 
-
-            conn = sqlite3.connect('./storage/databases/featured.db')
-            c = conn.cursor()
-            c.execute(f'INSERT INTO g_{member.guild.id} (userid) VALUES (?)', (member.id,))
-            conn.commit()
-            conn.close()
+                try:
+                    await member.send(f'You have been in **{member.guild.name}** for five minutes and have recieved your prize of $100!')
+                except:
+                    pass
+                
+                await db.execute(f'INSERT INTO featured.g_{member.guild.id} (userid) VALUES ($1);', member.id)
 
 @client.event
 async def on_guild_join(guild):
     
-    conn = sqlite3.connect('./storage/databases/featured.db')
-    c = conn.cursor()
-    c.execute(f'CREATE TABLE IF NOT EXISTS g_{guild.id} (userid INTEGER PRIMARY KEY)')
-    conn.commit()
-    conn.close()
+    async with client.pool.acquire() as db:
+        await db.execute(f'CREATE TABLE IF NOT EXISTS featured.g_{guild.id} (userid BIGINT PRIMARY KEY);')
+
+
+loop = asyncio.get_event_loop()
+
+async def connection_init(conn):
+    await conn.execute("SET CLIENT_ENCODING to 'utf-8';")
+    conn.client = client
+
+try:
+    client.pool = loop.run_until_complete(asyncpg.create_pool(
+        host=os.environ.get("postgres_host"),
+        database=os.environ.get("postgres_database"),
+        user=os.environ.get("postgres_user"),
+        password=os.environ.get("postgres_password"),
+        connection_class=dbutils.DBUtils,
+        init=connection_init
+    ))
+
+    print('PostgreSQL connection successful')
+except Exception as e:
+    print(e)
+
+    # the bot basically cannot function without database
+    print('PostgreSQL connection failed- aborting')
+    exit()
+
 
 client.run(os.environ.get('featured'))

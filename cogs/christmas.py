@@ -56,20 +56,24 @@ class Christmas(commands.Cog):
         self.client = client
         self.timer_task = None
         self.drop_task = None
+        self.start_timer_task = None
 
         with open('./storage/jsons/christmas meter.json') as f:
             meter_state = json.load(f)
         
         if meter_state == "off":
-            asyncio.create_task(self.start_timer_task())
+            self.start_timer_task = asyncio.create_task(self.start_timer())
 
         asyncio.create_task( self.update_stats() )
 
-    async def start_timer_task(self):
+    async def start_timer(self):
         async with self.client.pool.acquire() as db:
             self.timer_task = asyncio.create_task(self.gift_drop_timer(await find_next_drop(db)))
     
     def cog_unload(self):
+
+        if self.start_timer_task and not self.start_timer_task.done():
+            self.start_timer_task.cancel()
         
         if self.timer_task and not self.timer_task.done():
             self.timer_task.cancel()

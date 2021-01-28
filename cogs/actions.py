@@ -233,7 +233,7 @@ class Actions(commands.Cog):
                 await ctx.send("This user is in your gang. Are you sure you want to continue? Respond with `y` or `yes` to proceed.")
 
                 try:
-                    response = await self.client.wait_for('message', check=lambda m: m.ctx.author == ctx.author and m.channel == ctx.channel, timeout=20)
+                    response = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=20)
                 except asyncio.TimeoutError:
                     await ctx.send("Steal timed out.")
                     return

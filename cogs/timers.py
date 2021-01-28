@@ -223,27 +223,35 @@ class Timers(commands.Cog):
         embed.set_author(name="Fee collection times")
         taxtime = time.localtime()
         minutes = taxtime[4] + taxtime[3]*60
+        taxtime = 1440-minutes
+
         banktime = time.localtime()
         minutes = banktime[4] + banktime[3]*60
         banktime = 720-minutes
+
         shoptime = time.localtime()
         minutes = shoptime[4] + shoptime[3]*60
         shoptime = 0
         times = [0,180,360,540,720,900,1080,1260]
+
         for x in times:
             if minutes > x and minutes < x+180:
                 shoptime = x+180
+
         shoptime -= minutes
         if minutes in times:
             shoptime = 0
+
         if banktime < 0 or banktime == 720:
             banktime = 1440-minutes
             if banktime == 1440:
                 banktime = 0
+
         if taxtime == 1440:
             await self.tax()
         
         embed.add_field(name="Tax collection",value=f'{minisplittime(taxtime)}',inline=False)
+
         embed3 = discord.Embed(color=0xff61d7, title="Boost timer")
 
         if banktime == 0:

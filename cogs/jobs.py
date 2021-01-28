@@ -174,6 +174,13 @@ class Jobs(commands.Cog):
         self.working = []
         self.finals = []
 
+
+        asyncio.create_task(self.start_school_tasks())
+
+    
+
+    async def start_school_tasks(self):
+
         async with self.client.pool.acquire() as db:
             students = await db.fetch('SELECT id, university, study_start FROM members WHERE university IS NOT NULL;')
 

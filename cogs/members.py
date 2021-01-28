@@ -3,7 +3,6 @@
 import asyncio
 import json
 import random
-import sqlite3
 import time
 import datetime
 from sqlite3 import Error
@@ -63,54 +62,44 @@ class Members(commands.Cog):
         joinEmbed.set_author(name=f"{member.name} just joined!", icon_url=member.avatar_url_as(static_format='jpg'))
         await generalchannel.send(embed=joinEmbed)
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('SELECT id FROM members')
-        users = c.fetchall()
-        conn.close()
-        for person in users:
-            if member.id == person[0]:
-                alreadyin = True
-                break
-        
-        # mutes
-        with open(f'./storage/jsons/mutes.json') as f:
-            mutes = json.load(f)
+        async with self.client.pool.acquire() as db:
 
-        if str(member.id) in mutes:
-
-            if mutes[str(member.id)] > time.time():
-                mute_role = guild.get_role(743255783055163392)
-                await member.add_roles(mute_role)
-
-                if self.client.get_cog('Admin'):
-                    asyncio.create_task(self.client.get_cog('Admin').wait_until_unmute(str(member.id), mutes[str(member.id)]), name=f"unmute {member.id}")
+            alreadyin = bool(await db.fetchval('SELECT id FROM members WHERE id = $1;', member.id))
             
-            else:
-                del mutes[str(member.id)]
-                with open(f'./storage/jsons/mutes.json', 'w') as f:
-                    json.dump(mutes, f, indent=2)
+            # mutes
+            with open(f'./storage/jsons/mutes.json') as f:
+                mutes = json.load(f)
+
+            if str(member.id) in mutes:
+
+                if mutes[str(member.id)] > time.time():
+                    mute_role = guild.get_role(743255783055163392)
+                    await member.add_roles(mute_role)
+
+                    if self.client.get_cog('Admin'):
+                        asyncio.create_task(self.client.get_cog('Admin').wait_until_unmute(str(member.id), mutes[str(member.id)]), name=f"unmute {member.id}")
+                
+                else:
+                    del mutes[str(member.id)]
+                    with open(f'./storage/jsons/mutes.json', 'w') as f:
+                        json.dump(mutes, f, indent=2)
+
+            
+            # rank leaderboard
+            if self.client.get_cog('Leveling'):
+                asyncio.create_task(self.client.get_cog('Leveling').rank_leaderboard())
+                            
+            if alreadyin == False:
+
+                await db.execute(f'INSERT INTO members (id) VALUES ($1);', member.id)
+                
+                try:
+                    await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')
+                except:
+                    pass
 
         
-        # rank leaderboard
-        if self.client.get_cog('Leveling'):
-            asyncio.create_task(self.client.get_cog('Leveling').rank_leaderboard())
-
-
-
-
-                        
-        if alreadyin == False:
-            conn = sqlite3.connect('./storage/databases/hierarchy.db')
-            c = conn.cursor()
-            c.execute(f'INSERT INTO members (id) VALUES ({member.id})')
-            conn.commit()
-            conn.close()
-            
-            try:
-                await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')
-            except:
-                pass
+            await db.leaderboard()
 
 
     @commands.Cog.listener()
@@ -137,69 +126,51 @@ class Members(commands.Cog):
                 asyncio.create_task( self.client.heist["location"].send(f"**{member.name}** has left the server. Heist cancelled.") )
                 self.client.heist = {}
 
-        # gangs
-        conn = sqlite3.connect('./storage/databases/gangs.db')
-        c = conn.cursor()
-        c.execute('SELECT name, owner, members, role_id, img_location FROM gangs')
-        gangs = c.fetchall()
-        conn.close()
-
 
         if self.client.get_cog('Leveling'):
             asyncio.create_task(self.client.get_cog('Leveling').rank_leaderboard())
 
-        for gang in gangs:
 
-            if str(member.id) in gang[2].split():
-                
-                members = gang[2].split()
-                members.remove(str(member.id))
-
-                if len(members) < 2:
-                    
-                    if gang[3]:
-                        role = guild.get_role(gang[3])
-
-                        await role.delete(reason="Gang role deleted")
-
-                        conn = sqlite3.connect('./storage/databases/gangs.db')
-                        c = conn.cursor()
-                        c.execute('UPDATE gangs SET role_id = null WHERE name = ?', (gang[0],))
-                        conn.commit()
-                        conn.close()
-                        
-
-                members = " ".join(members)
-
-                conn = sqlite3.connect('./storage/databases/gangs.db')
-                c = conn.cursor()
-                c.execute('UPDATE gangs SET members = ? WHERE name = ?', (members, gang[0]))
-                conn.commit()
-                conn.close()
-                
-
-
-            elif member.id == gang[1]:
-                
-
-                if gang[3]:
-                    role = guild.get_role(gang[3])
-
-                    await role.delete(reason="Gang role deleted")
-
-
-                conn = sqlite3.connect('./storage/databases/gangs.db')
-                c = conn.cursor()
-                c.execute('DELETE FROM gangs WHERE name = ?', (gang[0],))
-                conn.commit()
-                conn.close()
-
-        # mutes
-        
+        # mutes        
         for task in asyncio.all_tasks():
             if task.get_name() == f'unmute {member.id}':
                 task.cancel()
                 break
+
+        # gangs
+        async with self.client.pool.acquire() as db:
+            gang = await db.fetchrow('SELECT name, owner, members, role_id FROM gangs WHERE owner = $1 OR $1 = ANY(members);', member.id)
+
+            await db.leaderboard()
+
+
+        if gang:
+
+            name, owner, members, role_id = gang
+
+
+            if member.id == owner:
+                await db.execute('DELETE FROM gangs WHERE name = $1;', name)
+
+                if role_id:
+                    role = guild.get_role(role_id)
+                    await role.delete(reason="Gang role deleted")
+
+            else:
+                
+                members.remove(member.id)
+                await db.execute('UPDATE gangs SET members = $1 WHERE name = $2;', members, name)
+
+
+                if len(members) < 2:
+                    
+                    if role_id:
+                        role = guild.get_role(role_id)
+
+                        await role.delete(reason="Gang role deleted")
+                        await db.execute('UPDATE gangs SET role_id = NULL WHERE name = $1;', name)
+
+                
                 
 
     @tasks.loop(minutes=10)

@@ -19,14 +19,6 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import bot_check, splittime, timestring, log_command
 
-async def heist_group_jailcheck(ctx):
-
-    jailtime = read_value(ctx.author.id, 'jailtime')        
-    if jailtime > time.time():
-        await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
-        return False
-    return True
-
 class Heist(commands.Cog):
 
     def __init__(self, client):
@@ -57,90 +49,101 @@ class Heist(commands.Cog):
         
         amounts = {}
 
-        if self.client.heist["victim"] == "bank":
+        rolecheck_tasks = []
 
-            for userid in heist["participants"]:
-                heistamount = random.randint(60,70) # bank gives more money
+        async with self.client.pool.acquire() as db:
 
-                amounts[userid] = heistamount
-                stolen += heistamount
-
-        else:
-
-            for userid in heist["participants"]:
-                heistamount = random.randint(40,50)
-
-                amounts[userid] = heistamount
-                stolen += heistamount
-
-            victim_bank = read_value(heist["victim"], 'bank')
-
-            # in case does not have enough money
-            while victim_bank < stolen:
-
-                temp_total = 0
+            if self.client.heist["victim"] == "bank":
 
                 for userid in heist["participants"]:
+                    heistamount = random.randint(60,70) # bank gives more money
 
-                    amounts[userid] -= 1
-                    temp_total += amounts[userid]
-
-                stolen = temp_total
-
-                    
-        embed = discord.Embed(color=0xed1f1f, title="Heist Results")
-
-        done_stolen = 0
-        for userid in heist["participants"]:
-
-            if random.randint(1,4) == 1:
-
-                gotaway = False
-                if 'gun' in in_use(userid):
-
-                    if random.getrandbits(1):
-                        embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, got away with their gun.', inline=True)
-                        gotaway = True
-
-                if not gotaway:
-
-                    embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, jailed for 3h.', inline=True)
-
-                    jailtime = int(time.time()) + 10800
-                    write_value(userid, 'jailtime', jailtime)
-
-                asyncio.create_task( rolecheck(self.client, userid) )
+                    amounts[userid] = heistamount
+                    stolen += heistamount
 
             else:
-                
-                embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Got away with ${amounts[userid]}.')
 
-                money = read_value(userid, "money")
-                money += amounts[userid]
+                for userid in heist["participants"]:
+                    heistamount = random.randint(40,50)
 
-                done_stolen += amounts[userid]
+                    amounts[userid] = heistamount
+                    stolen += heistamount
 
-                write_value(userid, "money", money)
+                victim_bank = await db.get_member_val(heist["victim"], 'bank')
 
-        embed.set_footer(text=f"Total stolen: ${done_stolen}")
+                # in case does not have enough money
+                while victim_bank < stolen:
 
+                    temp_total = 0
 
-        if self.client.heist["victim"] != "bank":
-            victim_bank -= done_stolen
+                    for userid in heist["participants"]:
+
+                        amounts[userid] -= 1
+                        temp_total += amounts[userid]
+
+                    stolen = temp_total
+
+                        
+            embed = discord.Embed(color=0xed1f1f, title="Heist Results")
+
+            done_stolen = 0
+
         
-            write_value(heist["victim"], "bank", victim_bank)
 
-            asyncio.create_task( rolecheck(self.client, heist["victim"]) )
+            for userid in heist["participants"]:
+
+                if random.randint(1,4) == 1:
+
+                    gotaway = False
+                    if 'gun' in await db.in_use(userid):
+
+                        if random.getrandbits(1):
+                            embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, got away with their gun.', inline=True)
+                            gotaway = True
+
+                    if not gotaway:
+
+                        embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, jailed for 3h.', inline=True)
+
+                        jailtime = int(time.time()) + 10800
+                        await db.set_member_val(userid, 'jailtime', jailtime)
+
+                    rolecheck_tasks.append( asyncio.create_task( db.rolecheck(userid) ))
+
+                else:
+                    
+                    embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Got away with ${amounts[userid]}.')
+
+                    money = await db.get_member_val(userid, "money")
+                    money += amounts[userid]
+
+                    done_stolen += amounts[userid]
+
+                    await db.set_member_val(userid, "money", money)
+
+            embed.set_footer(text=f"Total stolen: ${done_stolen}")
 
 
-        await channel.send(embed=embed)
+            if self.client.heist["victim"] != "bank":
+                victim_bank -= done_stolen
+            
+                await db.set_member_val(heist["victim"], "bank", victim_bank)
 
-        self.client.heist = {}
+                asyncio.create_task( db.rolecheck(self.client, heist["victim"]) )
 
-        with open(f'./storage/jsons/heist cooldown.json', 'w') as f:
-            json.dump(int(time.time())+9000, f) # 3 hours
 
-        asyncio.create_task( leaderboard(self.client) )
+            await channel.send(embed=embed)
+
+            self.client.heist = {}
+
+            with open(f'./storage/jsons/heist cooldown.json', 'w') as f:
+                json.dump(int(time.time())+9000, f) # 3 hours
+
+            await db.leaderboard()
+
+            await asyncio.wait(
+                rolecheck_tasks, return_when=asyncio.ALL_COMPLETED
+            )
 
 
     @commands.group(name="heist", invoke_without_command=True)
@@ -148,49 +151,59 @@ class Heist(commands.Cog):
         await ctx.send(f'Incorrect command usage:\n`.heist start/join/list/time/leave/cancel`')
 
     @heist_group.command()
-    @commands.check(heist_group_jailcheck)
     async def start(self, ctx, *, target=None):
 
         with open("./storage/jsons/heist cooldown.json") as f:
             heistc = json.load(f)
 
-        if heistc > time.time():
-            return await ctx.send(f'Everyone must wait {splittime(heistc)} before another heist be made.')
-            
-        elif self.client.heist:
-            return await ctx.send(f"There is an ongoing heist right now.")
 
-        elif not target:
-            return await ctx.send(f'Incorrect command usage:\n`.heist start member` or `.heist start bank`')
+        async with self.client.pool.acquire() as db:
+            jailtime = await db.get_member_val(ctx.author.id, 'jailtime')        
+            if jailtime > time.time():
+                return await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
 
-        if target.lower() == "bank":
-            
-            self.client.heist = {"victim": "bank", "participants": [ctx.author.id], "location": ctx.channel, "start": int(time.time())+120}
 
-        else:
-            try:
-                member = await commands.MemberConverter().convert(ctx, target)
-            except:
-                return await ctx.send("Member not found.")
-
-            if ctx.author == member:
-                return await ctx.send(f"You can't heist yourself.")
+            if heistc > time.time():
+                return await ctx.send(f'Everyone must wait {splittime(heistc)} before another heist be made.')
                 
-            elif not await bot_check(self.client, ctx, member): return
+            elif self.client.heist:
+                return await ctx.send(f"There is an ongoing heist right now.")
 
-            elif read_value(member.id, 'bank') < 100:
-                return await ctx.send(f'The victim must have at least $100 in their bank in order to be heisted from.')
+            elif not target:
+                return await ctx.send(f'Incorrect command usage:\n`.heist start member` or `.heist start bank`')
 
-            self.client.heist = {"victim": member.id, "participants": [ctx.author.id], "location": ctx.channel, "start": int(time.time())+120}
+            if target.lower() == "bank":
                 
+                self.client.heist = {"victim": "bank", "participants": [ctx.author.id], "location": ctx.channel, "start": int(time.time())+120}
 
-        await ctx.send(f'Heist started. You have two minutes to gather at least two more people to join the heist. <@&761786482771099678>') # end part is mention for heist role
+            else:
+                try:
+                    member = await commands.MemberConverter().convert(ctx, target)
+                except:
+                    return await ctx.send("Member not found.")
 
-        self.client.heist_task = asyncio.create_task( self.heist() )
+                if ctx.author == member:
+                    return await ctx.send(f"You can't heist yourself.")
+                    
+                elif not await bot_check(self.client, ctx, member): return
+
+                elif await db.get_member_val(member.id, 'bank') < 100:
+                    return await ctx.send(f'The victim must have at least $100 in their bank in order to be heisted from.')
+
+                self.client.heist = {"victim": member.id, "participants": [ctx.author.id], "location": ctx.channel, "start": int(time.time())+120}
+                    
+
+            await ctx.send(f'Heist started. You have two minutes to gather at least two more people to join the heist. <@&761786482771099678>') # end part is mention for heist role
+
+            self.client.heist_task = asyncio.create_task( self.heist() )
 
     @heist_group.command()
-    @commands.check(heist_group_jailcheck)
     async def join(self, ctx):
+
+        async with self.client.pool.acquire() as db:
+            jailtime = await db.get_member_val(ctx.author.id, 'jailtime')        
+            if jailtime > time.time():
+                return await ctx.send(f'You are still in jail for {splittime(jailtime)}.')
 
         if not self.client.heist: return await ctx.send(f"There is no ongoing heist right now.")
 
@@ -207,7 +220,6 @@ class Heist(commands.Cog):
             await ctx.send(f'**{ctx.author.name}** has joined the heist on **{guild.get_member(self.client.heist["victim"]).name}**.')
 
     @heist_group.command()
-    @commands.check(heist_group_jailcheck)
     async def leave(self, ctx):
 
         if not self.client.heist: return await ctx.send(f"There is no ongoing heist right now.")
@@ -226,7 +238,6 @@ class Heist(commands.Cog):
             await ctx.send(f'**{ctx.author.name}** has left the heist on **{guild.get_member(self.client.heist["victim"]).name}**.')
 
     @heist_group.command()
-    @commands.check(heist_group_jailcheck)
     async def cancel(self, ctx):
 
         if not self.client.heist: return await ctx.send(f"There is no ongoing heist right now.")
@@ -241,7 +252,6 @@ class Heist(commands.Cog):
         await ctx.send("Heist cancelled: Heist cancelled by leader.")
 
     @heist_group.command(name="list")
-    @commands.check(heist_group_jailcheck)
     async def heist_list(self, ctx):
 
         if not self.client.heist: return await ctx.send(f"There is no ongoing heist right now.")

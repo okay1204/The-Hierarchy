@@ -41,13 +41,11 @@ class Events(commands.Cog):
 
         if response.content.lower() != word.lower(): return await ctx.send("Save cancelled.")
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("DROP TABLE IF EXISTS events;")
-        c.execute("CREATE TABLE events (id INTEGER PRIMARY KEY, total INTEGER DEFAULT 0);")
-        c.execute("INSERT INTO events (id, total) SELECT id, money + bank FROM members;")
-        conn.commit()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+
+            await db.execute("DROP TABLE IF EXISTS hierarchy.events;")
+            await db.execute("CREATE TABLE hierarchy.events (id BIGINT PRIMARY KEY, total INTEGER DEFAULT 0);")
+            await db.execute("INSERT INTO hierarchy.events (id, total) SELECT id, money + bank FROM hierarchy.members;")
 
         await ctx.send("Saved all balances.")
         await log_command(self.client, ctx)
@@ -68,11 +66,8 @@ class Events(commands.Cog):
 
         if response.content.lower() not in ('y', 'yes'): return await ctx.send("All join cancelled.")
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('UPDATE members SET in_event = "True"')
-        conn.commit()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            await db.execute('UPDATE members SET in_event = TRUE;')
 
         await ctx.send("All members are now in the event.")
         await log_command(self.client, ctx)
@@ -87,20 +82,23 @@ class Events(commands.Cog):
         if mode != "event":
             return await ctx.send("There is no ongoing event right now.")
 
-        if read_value(ctx.author.id, 'in_event') == "False":
-            return await ctx.send("You have already left this event.")
+        async with self.client.pool.acquire() as db:
 
-        await ctx.send("Are you sure you want to leave the event? **You may not join the event once you leave**. Respond with `y` or `yes` to proceed.")
+            if not await db.get_member_val(ctx.author.id, 'in_event'):
+                return await ctx.send("You have already left this event.")
 
-        try:
-            response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=20)
-        except asyncio.TimeoutError:
-            return await ctx.send("Event leave timed out.")
+            await ctx.send("Are you sure you want to leave the event? **You may not join the event once you leave**. Respond with `y` or `yes` to proceed.")
 
-        if response.content.lower() not in ('y', 'yes'):
-            return await ctx.send("Event leave cancelled.")
-        
-        write_value(ctx.author.id, 'in_event', "False")
+            try:
+                response = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=20)
+            except asyncio.TimeoutError:
+                return await ctx.send("Event leave timed out.")
+
+            if response.content.lower() not in ('y', 'yes'):
+                return await ctx.send("Event leave cancelled.")
+            
+            await db.set_member_val(ctx.author.id, 'in_event', False)
+
         await ctx.send("You have successfully left the event.")
 
         
@@ -114,24 +112,21 @@ class Events(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.money + members.bank - (
-        CASE
-            WHEN events.total IS NULL THEN 0
-            ELSE events.total
-        END), members.in_event
-        FROM members
-        LEFT JOIN events
-        ON members.id = events.id
-        WHERE members.id = ?;
-        """, (member.id,))
+        async with self.client.pool.acquire() as db:
 
-        money, in_event = c.fetchone()
-        conn.close()
+            money, in_event = await db.fetchrow("""
+            SELECT members.money + members.bank - (
+            CASE
+                WHEN events.total IS NULL THEN 0
+                ELSE events.total
+            END), members.in_event
+            FROM members
+            LEFT JOIN events
+            ON members.id = events.id
+            WHERE members.id = $1;
+            """, member.id)
 
-        if in_event == "False":
+        if not in_event:
             if member == ctx.author:
                 await ctx.send("You are not participating in this event.")
             else:
@@ -152,22 +147,19 @@ class Events(commands.Cog):
         embed = discord.Embed(color = 0x2495ff)
         embed.set_author(name='🌟 Event Leaderboard 🌟')
 
+        async with self.client.pool.acquire() as db:
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id, members.money + members.bank - (
-        CASE
-            WHEN events.total IS NULL THEN 0
-            ELSE events.total
-        END)
-        FROM members
-        LEFT JOIN events
-        ON members.id = events.id
-        WHERE members.in_event = "True";
-        """)
-        hierarchy = c.fetchall()
-        conn.close()
+            hierarchy = await db.fetch("""
+            SELECT members.id, members.money + members.bank - (
+            CASE
+                WHEN events.total IS NULL THEN 0
+                ELSE events.total
+            END)
+            FROM members
+            LEFT JOIN events
+            ON members.id = events.id
+            WHERE members.in_event = TRUE;
+            """)
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -195,22 +187,19 @@ class Events(commands.Cog):
         embed = discord.Embed(color = 0x2495ff)
         embed.set_author(name='🌟 Event Leaderboard 🌟')
 
+        async with self.client.pool.acquire() as db:
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id, members.money + members.bank - (
-        CASE
-            WHEN events.total IS NULL THEN 0
-            ELSE events.total
-        END)
-        FROM members
-        LEFT JOIN events
-        ON members.id = events.id
-        WHERE members.in_event = "True";
-        """)
-        hierarchy = c.fetchall()
-        conn.close()
+            hierarchy = await db.fetch("""
+            SELECT members.id, members.money + members.bank - (
+            CASE
+                WHEN events.total IS NULL THEN 0
+                ELSE events.total
+            END)
+            FROM members
+            LEFT JOIN events
+            ON members.id = events.id
+            WHERE members.in_event = TRUE;
+            """)
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -219,13 +208,13 @@ class Events(commands.Cog):
             member = guild.get_member(hierarchy[x][0])
 
             if x == 0:
-                embed.add_field(name='__________',value=f'1. {member.name} 🥇 - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'1. {discord.utils.escape_markdown(member.name)} 🥇 - ${hierarchy[x][1]}',inline=False)
             elif x == 1:
-                embed.add_field(name='__________',value=f'2. {member.name} 🥈 - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'2. {discord.utils.escape_markdown(member.name)} 🥈 - ${hierarchy[x][1]}',inline=False)
             elif x == 2:
-                embed.add_field(name='__________',value=f'3. {member.name} 🥉 - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'3. {discord.utils.escape_markdown(member.name)} 🥉 - ${hierarchy[x][1]}',inline=False)
             else:
-                embed.add_field(name='__________',value=f'{x+1}. {member.name} - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'{x+1}. {discord.utils.escape_markdown(member.name)} - ${hierarchy[x][1]}',inline=False)
 
 
         await ctx.send(embed=embed)
@@ -254,30 +243,29 @@ class Events(commands.Cog):
             await ctx.send('Enter a number from 1-12 for `range`.')
             return
 
-        if read_value(ctx.author.id, 'in_event') == "False" and member == ctx.author:
-            return await ctx.send("You are not participating in this event.")
+        async with self.client.pool.acquire() as db:
+
+            if not await db.get_member_val(ctx.author.id, 'in_event') and member == ctx.author:
+                return await ctx.send("You are not participating in this event.")
+
+            elif not await db.get_member_val(member.id, 'in_event'):
+                return await ctx.send(f"**{member.name}** is not participating in this event.")
 
 
+            userid = member.id
+            guild = self.client.mainGuild
 
-        userid = member.id
-        guild = self.client.mainGuild
-
-
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id, members.money + members.bank - (
-        CASE
-            WHEN events.total IS NULL THEN 0
-            ELSE events.total
-        END)
-        FROM members
-        LEFT JOIN events
-        ON members.id = events.id
-        WHERE members.in_event = "True";
-        """)
-        hierarchy = c.fetchall()
-        conn.close()
+            hierarchy = await db.fetch("""
+            SELECT members.id, members.money + members.bank - (
+            CASE
+                WHEN events.total IS NULL THEN 0
+                ELSE events.total
+            END)
+            FROM members
+            LEFT JOIN events
+            ON members.id = events.id
+            WHERE members.in_event = TRUE;
+            """)
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -351,33 +339,29 @@ class Events(commands.Cog):
             await ctx.send('Incorrect command usage:\n`.eventaroundm (range) (member)`')
             return
 
-        if find < 1 or find > 12:
-            await ctx.send('Enter a number from 1-12 for `range`.')
-            return
+        async with self.client.pool.acquire() as db:
 
-        if read_value(ctx.author.id, 'in_event') == "False" and member == ctx.author:
-            return await ctx.send("You are not participating in this event.")
+            if not await db.get_member_val(ctx.author.id, 'in_event') and member == ctx.author:
+                return await ctx.send("You are not participating in this event.")
 
-
-        userid = member.id
-        guild = self.client.mainGuild
+            elif not await db.get_member_val(member.id, 'in_event'):
+                return await ctx.send(f"**{member.name}** is not participating in this event.")
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id, members.money + members.bank - (
-        CASE
-            WHEN events.total IS NULL THEN 0
-            ELSE events.total
-        END)
-        FROM members
-        LEFT JOIN events
-        ON members.id = events.id
-        WHERE members.in_event = "True";
-        """)
-        hierarchy = c.fetchall()
-        conn.close()
+            userid = member.id
+            guild = self.client.mainGuild
+
+            hierarchy = await db.fetch("""
+            SELECT members.id, members.money + members.bank - (
+            CASE
+                WHEN events.total IS NULL THEN 0
+                ELSE events.total
+            END)
+            FROM members
+            LEFT JOIN events
+            ON members.id = events.id
+            WHERE members.in_event = TRUE;
+            """)
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -422,7 +406,7 @@ class Events(commands.Cog):
                 medal = '🥉 '
             if member.id == person[0]:
                 mk = '**'
-            embed.add_field(name='__________', value=f'{mk}{place}. {current_member.name} {medal}- ${person[1]}{mk}', inline=False)
+            embed.add_field(name='__________', value=f'{mk}{place}. {discord.utils.escape_markdown(current_member.name)} {medal}- ${person[1]}{mk}', inline=False)
             place += 1
 
 

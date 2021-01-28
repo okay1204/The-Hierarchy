@@ -5,7 +5,6 @@ import time
 import os
 import random
 import asyncio
-import sqlite3
 
 # To import from different path
 import sys
@@ -34,11 +33,8 @@ class Leveling(commands.Cog):
 
         embed = discord.Embed(color=0x3e41de, title="⭐ Rank Leaderboard ⭐")
         
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute('SELECT id, level FROM members ORDER BY level DESC')
-        users = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            users = await db.fetch('SELECT id, level, members FROM members ORDER BY level DESC')
 
         guild = self.client.mainGuild
         users = list(filter(lambda x: guild.get_member(x[0]), users))
@@ -81,43 +77,43 @@ class Leveling(commands.Cog):
 
         
         if counts:
-            level = read_value(message.author.id, 'level')
-            progress = read_value(message.author.id, ' progress')
 
-            if level > 10:
-                points = random.randint(1,3)
-            else:
-                randmin = 12 - level
-                randmax = 15 - level
+            async with self.client.pool.acquire() as db:
 
-                points = random.randint(randmin, randmax)
-            
+                level = await db.get_member_val(message.author.id, 'level')
+                progress = await db.get_member_val(message.author.id, ' progress')
 
-            progress += points
+                if level > 10:
+                    points = random.randint(1,3)
+                else:
+                    randmin = 12 - level
+                    randmax = 15 - level
 
-
-            if progress >= 100:
-                level += 1
-                write_value(message.author.id, 'level', level)
-
-                progress -= 100
-
-                embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level} and earned $15! Keep going to unlock more features!")
-                embed.set_author(name=message.author.name, icon_url=message.author.avatar_url_as(static_format="jpg"))
-
-                await message.channel.send(embed=embed)
-
-                money = read_value(message.author.id, 'money')
-                money += 15
-                write_value(message.author.id, 'money', money)
+                    points = random.randint(randmin, randmax)
                 
 
-                asyncio.create_task(self.rank_leaderboard())
+                progress += points
 
 
+                if progress >= 100:
+                    level += 1
+                    await db.set_member_val(message.author.id, 'level', level)
 
+                    progress -= 100
 
-            write_value(message.author.id, 'progress', progress)
+                    embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level} and earned $15! Keep going to unlock more features!")
+                    embed.set_author(name=message.author.name, icon_url=message.author.avatar_url_as(static_format="jpg"))
+
+                    await message.channel.send(embed=embed)
+
+                    money = await db.get_member_val(message.author.id, 'money')
+                    money += 15
+                    await db.set_member_val(message.author.id, 'money', money)
+                    
+
+                    asyncio.create_task(self.rank_leaderboard())
+
+                await db.set_member_val(message.author.id, 'progress', progress)
 
     @commands.command(aliases=["level"])
     async def rank(self, ctx, *, member:discord.Member=None):
@@ -128,19 +124,16 @@ class Leveling(commands.Cog):
         else:
             if not await bot_check(self.client, ctx, member):
                 return
+
         
-        level = read_value(member.id, 'level')
+        async with self.client.pool.acquire() as db:
+        
+            level = await db.get_member_val(member.id, 'level')
 
-        embed = discord.Embed(color=0x3e41de)
-        embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
-        embed.add_field(name=f"Level {level}", value=f"{read_value(member.id, 'progress')}% of the way to level {level + 1}.")
-        await ctx.send(embed=embed)
-
-            
-
-
-
-
+            embed = discord.Embed(color=0x3e41de)
+            embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
+            embed.add_field(name=f"Level {level}", value=f"{await db.get_member_val(member.id, 'progress')}% of the way to level {level + 1}.")
+            await ctx.send(embed=embed)
 
 
 def setup(client):

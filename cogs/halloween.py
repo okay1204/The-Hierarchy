@@ -2,7 +2,6 @@
 
 import discord
 from discord.ext import commands
-import sqlite3
 import random
 import time
 import asyncio
@@ -15,45 +14,15 @@ sys.path.insert(1 , os.getcwd())
 from utils import bot_check, splittime, timestring, log_command
 
 
-def get_halloween_value(userid, value):
+async def get_halloween_value(db, id, value):
 
-    conn = sqlite3.connect('./storage/databases/hierarchy.db')
-    c = conn.cursor()
+    await db.execute('INSERT INTO hierarchy.halloween (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;', id)
+    return await db.fetchval(f'SELECT {value} FROM hierarchy.halloween WHERE id = $1;', id)
 
-    c.execute(f"SELECT {value} FROM halloween WHERE id = ?", (userid,))
-    result = c.fetchone()
+async def write_halloween_value(db, id, value, overwrite):
 
-    if not result:
-        c.execute("INSERT INTO halloween (id) VALUES (?)", (userid,))
-        conn.commit()
-
-        if value == "pumpkins":
-            result = 100
-        elif value == "cooldown":
-            result = 0
-
-    else:
-        result = result[0]
-    
-    conn.close()
-    return result
-
-def write_halloween_value(userid, value, overwrite):
-
-    conn = sqlite3.connect('./storage/databases/hierarchy.db')
-    c = conn.cursor()
-
-    c.execute("SELECT id FROM halloween WHERE id = ?", (userid,))
-    exists = c.fetchone()
-
-    if not exists:
-        c.execute("INSERT INTO halloween (id) VALUES (?)", (userid))
-
-    c.execute(f"UPDATE halloween SET {value} = ? WHERE id = ?", (overwrite, userid))
-
-    conn.commit()
-    conn.close()
-
+    await db.execute('INSERT INTO hierarchy.halloween (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;', id)
+    await db.execute(f'UPDATE hierarchy.halloween SET {value} = $1 WHERE id = $2;', overwrite, id)
 
 
 class Halloween(commands.Cog):
@@ -127,9 +96,10 @@ class Halloween(commands.Cog):
                 await message.clear_reactions()
 
 
-                pumpkins = get_halloween_value(payload.user_id, "pumpkins")
-                pumpkins += gained
-                write_halloween_value(payload.user_id, "pumpkins", pumpkins)
+                async with self.client.pool.acquire() as db:
+                    pumpkins = await get_halloween_value(db, payload.user_id, "pumpkins")
+                    pumpkins += gained
+                    await write_halloween_value(db, payload.user_id, "pumpkins", pumpkins)
 
 
     @commands.command()
@@ -149,21 +119,18 @@ class Halloween(commands.Cog):
 
         if response.content.lower() != word.lower(): return await ctx.send("Save cancelled.")
         
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("DROP TABLE IF EXISTS halloween;")
-        c.execute("CREATE TABLE halloween (id INTEGER PRIMARY KEY, pumpkins INTEGER DEFAULT 100, cooldown INTEGER DEFAULT 0);")
-        c.execute("""
-        INSERT INTO halloween
-        (id, pumpkins)
-        SELECT id, 
-        CASE
-            WHEN members.money + members.bank > 0 THEN 100
-            ELSE 0
-        END
-        FROM members;""")
-        conn.commit()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            await db.execute("DROP TABLE IF EXISTS hierarchy.halloween;")
+            await db.execute("CREATE TABLE hierarchy.halloween (id BIGINT PRIMARY KEY, pumpkins INTEGER DEFAULT 100, cooldown BIGINT DEFAULT 0);")
+            await db.execute("""
+            INSERT INTO hierarchy.halloween
+            (id, pumpkins)
+            SELECT id, 
+            CASE
+                WHEN members.money + members.bank > 0 THEN 100
+                ELSE 0
+            END
+            FROM hierarchy.members;""")
 
         await ctx.send("Reset all pumpkins.")
         await log_command(self.client, ctx)
@@ -186,22 +153,21 @@ class Halloween(commands.Cog):
 
         if response.content.lower() != word.lower(): return await ctx.send("Conversion cancelled.")
         
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("SELECT id, pumpkins FROM halloween WHERE pumpkins > 0;")
-        pumpkins = c.fetchall()
-        c.execute("SELECT id, money FROM members")
-        moneys = c.fetchall()
+        async with self.client.pool.acquire() as db:
 
-        for userid1, pumpkins in pumpkins:
+            pumpkins = await db.fetch("SELECT id, pumpkins FROM halloween WHERE pumpkins > 0;")
 
-            for userid2, money in moneys:
-                if userid1 == userid2:
-                    c.execute(f"UPDATE members SET money = {money + pumpkins*2} WHERE id = ?", (userid1,))
-                    break
+            moneys = await db.fetch("SELECT id, money FROM members;")
+            
 
-        conn.commit()
-        conn.close()
+            for userid1, pumpkins in pumpkins:
+
+                for userid2, money in moneys:
+
+                    if userid1 == userid2:
+                        await db.execute(f"UPDATE members SET money = {money + pumpkins*2} WHERE id = $1;", userid1)
+                        break
+
 
         await ctx.send("Converted all pumpkins.")
         await log_command(self.client, ctx)
@@ -214,7 +180,8 @@ class Halloween(commands.Cog):
         if not member:
             member = ctx.author
 
-        pumpkins = get_halloween_value(member.id, "pumpkins")
+        async with self.client.pool.acquire() as db:
+            pumpkins = await get_halloween_value(db, member.id, "pumpkins")
 
         embed = discord.Embed(color=0xff8519, description=f"🎃  {pumpkins} Pumpkins  🎃")
         embed.set_author(name=f"{member.name}'s pumpkins", icon_url=member.avatar_url_as(static_format='jpg'))
@@ -232,19 +199,16 @@ class Halloween(commands.Cog):
         embed.set_author(name='🎃 Halloween Leaderboard 🎃')
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id,
-        CASE 
-            WHEN halloween.pumpkins IS NULL THEN 100
-            ELSE halloween.pumpkins
-        END
-        FROM members
-        LEFT JOIN halloween
-        ON members.id = halloween.id;""")
-        hierarchy = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch("""
+            SELECT members.id,
+            CASE 
+                WHEN halloween.pumpkins IS NULL THEN 100
+                ELSE halloween.pumpkins
+            END
+            FROM members
+            LEFT JOIN halloween
+            ON members.id = halloween.id;""")
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -274,19 +238,16 @@ class Halloween(commands.Cog):
         embed.set_author(name='🎃 Halloween Leaderboard 🎃')
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id,
-        CASE 
-            WHEN halloween.pumpkins IS NULL THEN 100
-            ELSE halloween.pumpkins
-        END
-        FROM members
-        LEFT JOIN halloween
-        ON members.id = halloween.id;""")
-        hierarchy = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch("""
+            SELECT members.id,
+            CASE 
+                WHEN halloween.pumpkins IS NULL THEN 100
+                ELSE halloween.pumpkins
+            END
+            FROM members
+            LEFT JOIN halloween
+            ON members.id = halloween.id;""")
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -295,13 +256,13 @@ class Halloween(commands.Cog):
             member = guild.get_member(hierarchy[x][0])
 
             if x == 0:
-                embed.add_field(name='__________',value=f'1. {member.name} 🥇 - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'1. {discord.utils.escape_markdown(member.name)} 🥇 - {hierarchy[x][1]} 🎃',inline=False)
             elif x == 1:
-                embed.add_field(name='__________',value=f'2. {member.name} 🥈 - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'2. {discord.utils.escape_markdown(member.name)} 🥈 - {hierarchy[x][1]} 🎃',inline=False)
             elif x == 2:
-                embed.add_field(name='__________',value=f'3. {member.name} 🥉 - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'3. {discord.utils.escape_markdown(member.name)} 🥉 - {hierarchy[x][1]} 🎃',inline=False)
             else:
-                embed.add_field(name='__________',value=f'{x+1}. {member.name} - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'{x+1}. {discord.utils.escape_markdown(member.name)} - {hierarchy[x][1]} 🎃',inline=False)
 
 
         await ctx.send(embed=embed)
@@ -334,19 +295,16 @@ class Halloween(commands.Cog):
         guild = self.client.mainGuild
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id,
-        CASE 
-            WHEN halloween.pumpkins IS NULL THEN 100
-            ELSE halloween.pumpkins
-        END
-        FROM members
-        LEFT JOIN halloween
-        ON members.id = halloween.id;""")
-        hierarchy = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch("""
+            SELECT members.id,
+            CASE 
+                WHEN halloween.pumpkins IS NULL THEN 100
+                ELSE halloween.pumpkins
+            END
+            FROM members
+            LEFT JOIN halloween
+            ON members.id = halloween.id;""")
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -430,19 +388,16 @@ class Halloween(commands.Cog):
         guild = self.client.mainGuild
 
 
-        conn = sqlite3.connect('./storage/databases/hierarchy.db')
-        c = conn.cursor()
-        c.execute("""
-        SELECT members.id,
-        CASE 
-            WHEN halloween.pumpkins IS NULL THEN 100
-            ELSE halloween.pumpkins
-        END
-        FROM members
-        LEFT JOIN halloween
-        ON members.id = halloween.id;""")
-        hierarchy = c.fetchall()
-        conn.close()
+        async with self.client.pool.acquire() as db:
+            hierarchy = await db.fetch("""
+            SELECT members.id,
+            CASE 
+                WHEN halloween.pumpkins IS NULL THEN 100
+                ELSE halloween.pumpkins
+            END
+            FROM members
+            LEFT JOIN halloween
+            ON members.id = halloween.id;""")
 
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
         hierarchy.sort(key=lambda member: member[1], reverse=True)
@@ -491,7 +446,7 @@ class Halloween(commands.Cog):
                 mk = '**'
 
 
-            embed.add_field(name='__________', value=f'{mk}{place}. {current_member.name} {medal}- {person[1]}{mk} 🎃', inline=False)
+            embed.add_field(name='__________', value=f'{mk}{place}. {discord.utils.escape_markdown(current_member.name)} {medal}- {person[1]}{mk} 🎃', inline=False)
             place += 1
 
 
@@ -508,8 +463,8 @@ class Halloween(commands.Cog):
         if not member:
             member = ctx.author
 
-        
-        cooldown = get_halloween_value(member.id, 'cooldown')
+        async with self.client.pool.acquire() as db:
+            cooldown = await get_halloween_value(db, member.id, 'cooldown')
 
         if cooldown > int(time.time()):
             await ctx.send(f"🎃  **{member.name}** has {splittime(cooldown)} left until they can steal pumpkins.  🎃")
@@ -532,24 +487,25 @@ class Halloween(commands.Cog):
         if not 0 < amount <= 100:
             return await ctx.send("Enter an amount from 1 to 100.")
 
-        if (hstealc := get_halloween_value(ctx.author.id, 'cooldown')) > time.time():
-            return await ctx.send(f"You must wait {splittime(hstealc)} before you can steal pumpkins again.")
-        
-        member_pumpkins = get_halloween_value(member.id, 'pumpkins')
+        async with self.client.pool.acquire() as db:
+            if (hstealc := await get_halloween_value(db, ctx.author.id, 'cooldown')) > time.time():
+                return await ctx.send(f"You must wait {splittime(hstealc)} before you can steal pumpkins again.")
+            
+            member_pumpkins = await get_halloween_value(db, member.id, 'pumpkins')
 
-        if amount > member_pumpkins:
-            return await ctx.send("This member does not have that many pumpkins.")
-        
-        member_pumpkins -= amount
-        write_halloween_value(member.id, 'pumpkins', member_pumpkins)
+            if amount > member_pumpkins:
+                return await ctx.send("This member does not have that many pumpkins.")
 
-        author_pumpkins = get_halloween_value(ctx.author.id, 'pumpkins')
-        author_pumpkins += amount
-        write_halloween_value(ctx.author.id, 'pumpkins', author_pumpkins)
+            member_pumpkins -= amount
+            await write_halloween_value(db, member.id, 'pumpkins', member_pumpkins)
 
-        cooldown = ((amount**2)//20 + amount)*60 + int(time.time())
+            author_pumpkins = await get_halloween_value(db, ctx.author.id, 'pumpkins')
+            author_pumpkins += amount
+            await write_halloween_value(db, ctx.author.id, 'pumpkins', author_pumpkins)
 
-        write_halloween_value(ctx.author.id, 'cooldown', cooldown)
+            cooldown = ((amount**2)//20 + amount)*60 + int(time.time())
+
+            await write_halloween_value(db, ctx.author.id, 'cooldown', cooldown)
 
         await ctx.send(f"**{ctx.author.name}** stole {amount} 🎃 from **{member.name}** and has to wait {splittime(cooldown)} before they can steal again.")
 
@@ -575,6 +531,7 @@ class Halloween(commands.Cog):
 
     @commands.Cog.listener() # halloween submission
     async def on_message(self, message):
+        
         if not message.author.bot and message.channel.id == 771787118158413865:
             submissions = self.client.get_channel(771787494764183572)
             to_file_attachments = []

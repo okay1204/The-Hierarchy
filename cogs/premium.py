@@ -3,7 +3,6 @@
 import asyncio
 import json
 import random
-import sqlite3
 import time
 import os
 from sqlite3 import Error
@@ -56,48 +55,55 @@ class Premium(commands.Cog):
 
         with open('./storage/jsons/mode.json') as f:
             mode = json.load(f)
-            
-        if mode == "event" and read_value(ctx.author.id, 'in_event') == "True":
-            return await ctx.send("Premium perks are disabled during events.")
-
-        boosts = read_value(author.id, 'boosts')
-        if boosts <= 0:
-            await ctx.send("You don't have any boosts left.")
-            return
         
-        timers = ["workc", "jailtime", "stealc", "rpsc", "bankc", "dailytime", "studyc", "applyc"]
-        for timer in timers:
-            current = read_value(author.id, timer)
-            current -= 3600
-            write_value(author.id, timer, current)
+        async with self.client.pool.acquire() as db:
 
-        boosts -= 1
-        write_value(author.id, "boosts", boosts)
+            if mode == "event" and await db.get_member_val(ctx.author.id, 'in_event'):
+                return await ctx.send("Premium perks are disabled during events.")
+
+            boosts = await db.get_member_val(author.id, 'boosts')
+            if boosts <= 0:
+                await ctx.send("You don't have any boosts left.")
+                return
+            
+            timers = ["workc", "jailtime", "stealc", "rpsc", "bankc", "dailytime", "studyc", "applyc"]
+            for timer in timers:
+                current = await db.get_member_val(author.id, timer)
+                current -= 3600
+                await db.set_member_val(author.id, timer, current)
+
+            boosts -= 1
+            await db.set_member_val(author.id, "boosts", boosts)
+
         await ctx.send('⏱️ You boosted 1 hour! ⏱️')
 
     @commands.command()
     async def boostcount(self, ctx, *, member:discord.Member=None):
-        if not member:
 
-            if not ctx.author.premium_since:
-                await ctx.send("You don't have __premium__. Get __premium__ by boosting the server!")
+        async with self.client.pool.acquire() as db:
+
+            if not member:
+
+                if not ctx.author.premium_since:
+                    await ctx.send("You don't have __premium__. Get __premium__ by boosting the server!")
+                    return
+
+                boosts = await db.get_member_val(ctx.author.id, 'boosts')
+                await ctx.send(f"⏱️ **{ctx.author.name}**'s boosts: {boosts}")
+
+            elif not await bot_check(self.client, ctx, member):
                 return
 
-            boosts = read_value(ctx.author.id, 'boosts')
-            await ctx.send(f"⏱️ **{ctx.author.name}**'s boosts: {boosts}")
+            else:
 
-        elif not await bot_check(self.client, ctx, member):
-            return
+                if not member.premium_since:      
+                    await ctx.send(f"**{member.name}** does not have __premium__.")
+                    return
 
-        else:
+                    
+                boosts = await db.get_member_val(member.id, 'boosts')
 
-            if not member.premium_since:      
-                await ctx.send(f"**{member.name}** does not have __premium__.")
-                return
-
-                
-            boosts = read_value(member.id, 'boosts')
-            await ctx.send(f"⏱️ **{member.name}**'s boosts: {boosts}")
+        await ctx.send(f"⏱️ **{member.name}**'s boosts: {boosts}")
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
@@ -187,7 +193,7 @@ class Premium(commands.Cog):
 
                                 # make sure message isn't too long
                                 if len(content) > 2000:
-                                    content = content[:1999]
+                                    content = content[:2000]
 
                                 asyncio.create_task( author_message.edit(content=content) )
                                 breakOut = True
@@ -343,41 +349,39 @@ class Premium(commands.Cog):
             await ctx.send("You don't have __premium__. Get __premium__ by boosting the server!")
             return
         
-        if not await jail_heist_check(self.client, ctx, ctx.author):
-            return
+        async with self.client.pool.acquire() as db:
 
-        if not item: 
-            await ctx.send("Incorrect command usage:\n`.sell item`")
-            return
+            if not await db.jail_heist_check(ctx, ctx.author):
+                return
 
-        conn = sqlite3.connect('./storage/databases/shop.db')
-        c = conn.cursor()
-        c.execute('SELECT name, article, price FROM shop')
-        items = c.fetchall()
-        conn.close()
+            if not item: 
+                await ctx.send("Incorrect command usage:\n`.sell item`")
+                return
 
-        item = item.lower()
+            items = await db.fetch('SELECT name, article, price FROM shop')
 
-        for shopitem in items:
-            if item == shopitem[0]:
-                picked_item = shopitem
-                break
+            item = item.lower()
 
-        else:
-            await ctx.send(f"There is no such item called **{item}**.")
-            return
+            for shopitem in items:
+                if item == shopitem[0]:
+                    picked_item = shopitem
+                    break
+
+            else:
+                await ctx.send(f"There is no such item called **{item}**.")
+                return
 
 
-        if item not in read_value(author.id, 'items').split():
-            await ctx.send(f"You do not own {picked_item[1]}**{picked_item[0]}**.")
-            return
+            if item not in await db.get_member_val(author.id, 'items'):
+                await ctx.send(f"You do not own {picked_item[1]}**{picked_item[0]}**.")
+                return
 
-        remove_item(item, author.id)
-        await ctx.send(f'**{author.name}** sold {picked_item[1]}**{picked_item[0]}** for ${picked_item[2]//2}.')
+            await db.remove_item(author.id, item)
+            await ctx.send(f'**{author.name}** sold {picked_item[1]}**{picked_item[0]}** for ${picked_item[2]//2}.')
 
-        money = read_value(ctx.author.id, 'money')
-        money += picked_item[2]//2
-        write_value(ctx.author.id, 'money', money)
+            money = await db.get_member_val(ctx.author.id, 'money')
+            money += picked_item[2]//2
+            await db.set_member_val(ctx.author.id, 'money', money)
 
             
 

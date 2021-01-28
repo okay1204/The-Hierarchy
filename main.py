@@ -156,7 +156,7 @@ async def on_command_error(ctx, error):
         except:
             pass
 
-        allowed_cogs = ['actions', 'fun', 'gambling', 'games', 'info', 'premium', 'jobs', 'leveling']
+        allowed_cogs = ['actions', 'fun', 'gangs', 'gambling', 'games', 'info', 'premium', 'jobs', 'leveling']
 
         command_string = ctx.message.content.split()[0]
         command_string = command_string.replace('.', '')
@@ -287,12 +287,12 @@ async def on_ready():
     # cogs to ungload for development
     
     cogs_to_unload = [
-    'actions', 'games', 'gambling', 
+    'debug', 'actions', 'gambling', 
     'misc', 'premium', 'tutorial', 'heist', 
-    'members', 'fun', 'info', 'polls', 
+    'members', 'fun', 'info', 'polls', 'admin', 
     'reactions', 'timers', 'events', 'invites', 'leveling', 
     'jobs', 'voice_channels', 'alerts', 'halloween',
-    'christmas']
+    'christmas', 'gangs']
     
 
     # all cogs
@@ -303,13 +303,14 @@ async def on_ready():
     # 'members', 'fun', 'info', 'polls', 'admin', 
     # 'reactions', 'timers', 'events', 'invites', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween',
-    # 'christmas']
+    # 'christmas', 'gangs']
 
 
     for cog in cogs_to_unload:
         client.unload_extension(f'cogs.{cog}')
 
-    # asyncio.create_task(leaderboard(client))
+    async with client.pool.acquire() as db:
+        await db.leaderboard()
 
     
     # waiting for reddit connection to finish
@@ -334,19 +335,6 @@ async def connect_reddit():
     )
 
     return reddit
-
-
-    
-        
-# @client.event
-# async def on_member_join(member):
-#     await asyncio.sleep(0.1)
-#     await leaderboard(client)
-
-# @client.event
-# async def on_member_remove(member):
-#     await asyncio.sleep(0.1)
-#     await leaderboard(client)
 
 @client.event
 async def on_message(message):    
@@ -612,6 +600,5 @@ except Exception as e:
     # the bot basically cannot function without database
     print('PostgreSQL connection failed- aborting')
     exit()
-
 
 client.run(os.environ.get("main"))

@@ -333,13 +333,13 @@ class Invites(commands.Cog):
                 member_name = f"<@{invites[x][0]}>"
 
             if x == 0:
-                embed.add_field(name='__________',value=f'1. {member_name} 🥇 - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'1. {discord.utils.escape_markdown(member_name)} 🥇 - {invites[x][1]}',inline=False)
             elif x == 1:
-                embed.add_field(name='__________',value=f'2. {member_name} 🥈 - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'2. {discord.utils.escape_markdown(member_name)} 🥈 - {invites[x][1]}',inline=False)
             elif x == 2:
-                embed.add_field(name='__________',value=f'3. {member_name} 🥉 - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'3. {discord.utils.escape_markdown(member_name)} 🥉 - {invites[x][1]}',inline=False)
             else:
-                embed.add_field(name='__________',value=f'{x+1}. {member_name} - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'{x+1}. {discord.utils.escape_markdown(member_name)} - {invites[x][1]}',inline=False)
 
 
         await ctx.send(embed=embed)
@@ -444,7 +444,7 @@ class Invites(commands.Cog):
         for person in result:
 
             if mobile:
-                member_name = guild.get_member(person[0]).name
+                member_name = discord.utils.escape_markdown(guild.get_member(person[0]).name)
             else:
                 member_name = f"<@{person[0]}>"
 

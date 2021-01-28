@@ -7,7 +7,6 @@ import json
 import math
 import asyncio
 import random
-import sqlite3
 import time
 import os
 from sqlite3 import Error
@@ -60,6 +59,14 @@ class Gambling(commands.Cog):
             return True
 
 
+    async def lead_and_rolecheck(self, id):
+
+        async with self.client.db.acquire() as db:
+
+            await db.leaderboard()
+            await db.rolecheck(id)
+
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
 
@@ -80,7 +87,9 @@ class Gambling(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.fight start/cancel/help`")
             return
 
-        if member and not await member_event_check(ctx, member.id): return
+        async with self.client.pool.acquire() as db:
+
+            if member and not await db.member_event_check(ctx, member.id): return
 
         action = action.lower()
 
@@ -113,87 +122,92 @@ class Gambling(commands.Cog):
             await ctx.send('Enter a valid fight action.')
 
     async def fightreq(self, ctx, member:discord.Member=None, bet=None):
-        author = ctx.author
+        ctx.author = ctx.author
+
+        async with self.client.pool.acquire() as db:
         
-        if not await jail_heist_check(self.client, ctx, ctx.author):
-            return
-
-        if not member or not bet:
-            await ctx.send("Incorrect command usage:\n`.fight start member bet`")
-            return
-        if author == member:
-            await ctx.send("You can't fight yourself.")
-            return
-
-        jailtime = read_value(member.id, 'jailtime')
-        if jailtime > time.time():
-            await ctx.send(f'**{member.name}** is still in jail for {splittime(jailtime)}.')
-            return
-
-        try:
-            bet = int(bet)
-        except:
-            await ctx.send("Incorrect command usage:\n`.fight start member bet`")
-            return
-        if bet <= 0:
-            await ctx.send('Enter an bet greater than 0.')
-            return
-        money = read_value(author.id, 'money')
-        if bet > money:
-            await ctx.send("You don't have enough money for that.")
-            return
-
-
-        embed = discord.Embed(color = 0xffa60d)
-        embed.set_author(name='Fight Request')
-        embed.add_field(name=f'Bet: ${bet}', value=f'{author.name} vs {member.name}')
-        request = await ctx.send(embed=embed)
-        await request.add_reaction('✅')
-        await request.add_reaction('❌')
-        def check(reaction, user):
-            return user == member and (str(reaction.emoji) == '✅' or str(reaction.emoji) == '❌') and reaction.message.id == request.id
-        try:
-            rreaction, ruser = await self.client.wait_for('reaction_add', timeout=60.0, check=check) # noqa pylint: disable=unused-variable
-
-        except asyncio.TimeoutError:
-            await ctx.send(f'Took too long: fight request auto rejected.')
-            return
-
-        if str(rreaction.emoji) == '✅':
-            money = read_value(member.id, 'money')
-            if bet > money:
-                await ctx.send(f"**{member.name}** does not have enough money for the bet.")
+            if not await db.jail_heist_check(ctx, ctx.author):
                 return
 
-            for task in asyncio.all_tasks():
-                name = str(task.get_name())
-                if 'fighting' in name and str(member.id) in name:
-                    await ctx.send(f"**{member.name}** is already fighting.")
-                    return
-        
-            asyncio.create_task(self.fighting(ctx, member, bet), name=f"fighting {author.id} {member.id}")
+            if not member or not bet:
+                await ctx.send("Incorrect command usage:\n`.fight start member bet`")
+                return
+            if ctx.author == member:
+                await ctx.send("You can't fight yourself.")
+                return
 
-        elif str(rreaction.emoji) == '❌':
-            await ctx.send(f'**{member.name}** has rejected the fight against **{author.name}**.')
-            return
+            jailtime = await db.get_member_val(member.id, 'jailtime')
+            if jailtime > time.time():
+                return await ctx.send(f'**{member.name}** is still in jail for {splittime(jailtime)}.')
+                
+
+            try:
+                bet = int(bet)
+            except:
+                await ctx.send("Incorrect command usage:\n`.fight start member bet`")
+                return
+            if bet <= 0:
+                await ctx.send('Enter an bet greater than 0.')
+                return
+
+            money = await db.get_member_val(ctx.author.id, 'money')
+
+            if bet > money:
+                await ctx.send("You don't have enough money for that.")
+                return
+
+
+            embed = discord.Embed(color = 0xffa60d)
+            embed.set_author(name='Fight Request')
+            embed.add_field(name=f'Bet: ${bet}', value=f'{ctx.author.name} vs {member.name}')
+            request = await ctx.send(embed=embed)
+            await request.add_reaction('✅')
+            await request.add_reaction('❌')
+            def check(reaction, user):
+                return user == member and (str(reaction.emoji) == '✅' or str(reaction.emoji) == '❌') and reaction.message.id == request.id
+            try:
+                rreaction, ruser = await self.client.wait_for('reaction_add', timeout=60.0, check=check) # noqa pylint: disable=unused-variable
+
+            except asyncio.TimeoutError:
+                await ctx.send(f'Took too long: fight request auto rejected.')
+                return
+
+            if str(rreaction.emoji) == '✅':
+
+                money = await db.get_member_val(member.id, 'money')
+                if bet > money:
+                    await ctx.send(f"**{member.name}** does not have enough money for the bet.")
+                    return
+
+                for task in asyncio.all_tasks():
+                    name = str(task.get_name())
+                    if 'fighting' in name and str(member.id) in name:
+                        await ctx.send(f"**{member.name}** is already fighting.")
+                        return
+            
+                asyncio.create_task(self.fighting(ctx, member, bet), name=f"fighting {ctx.author.id} {member.id}")
+
+            elif str(rreaction.emoji) == '❌':
+                await ctx.send(f'**{member.name}** has rejected the fight against **{ctx.author.name}**.')
+                return
         
 
     async def fighting(self, ctx, member, bet):
-        author = ctx.author
+        ctx.author = ctx.author
 
-        await ctx.send(f'**{member.name}** has accepted the fight against **{author.name}**.\nGo to your DMs.')
+        await ctx.send(f'**{member.name}** has accepted the fight against **{ctx.author.name}**.\nGo to your DMs.')
         health1 = 3
         health2 = 3
 
         while health1 > 0 and health2 > 0:
             attacking = discord.Embed(color= 0xff0000)
-            attacking.set_author(name=f"{author.name} ({health1}/3) vs {member.name} ({health2}/3)")
+            attacking.set_author(name=f"{ctx.author.name} ({health1}/3) vs {member.name} ({health2}/3)")
             attacking.add_field(name='Status:',value='Attacking',inline=False)
             defending = discord.Embed(color= 0x0015ff)
-            defending.set_author(name=f"{member.name} ({health2}/3) vs {author.name} ({health1}/3)")
+            defending.set_author(name=f"{member.name} ({health2}/3) vs {ctx.author.name} ({health1}/3)")
             defending.add_field(name=f"Status:",value='Defending',inline=False)
             
-            am = await author.send(embed=attacking)
+            am = await ctx.author.send(embed=attacking)
             dm = await member.send(embed=defending)
             await am.add_reaction('✊')
             await am.add_reaction('🦵')
@@ -205,17 +219,17 @@ class Gambling(commands.Cog):
                 reaction, user = await self.client.wait_for('reaction_add', timeout=30.0, check=check)
 
             except asyncio.TimeoutError:
-                await author.send(f'Both users took too long: Fight cancelled.')
+                await ctx.author.send(f'Both users took too long: Fight cancelled.')
                 await member.send(f'Both users took too long: Fight cancelled.')
                 await ctx.send(f'Both users took too long: Fight cancelled.')
                 return
             
-            if user == author:
+            if user == ctx.author:
                 if str(reaction.emoji) == '✊':
                     aa = 'punch'
                 elif str(reaction.emoji) == '🦵':
                     aa = 'kick'
-                awaiting = await author.send('Waiting for opponent...')
+                awaiting = await ctx.author.send('Waiting for opponent...')
                 def check(reaction, user):
                     return reaction.message.id == dm.id and (str(reaction.emoji) == '✊' or str(reaction.emoji) == '🦵' and user.id != 698771271353237575)
                 try:
@@ -248,36 +262,36 @@ class Gambling(commands.Cog):
                 await dwaiting.delete()
 
             if (aa == 'punch' and (da == 'kick' or da == 'none')) or (aa == 'kick' and (da == 'punch' or da == 'none')):
-                await ctx.send(f'**{author.name}** {aa}ed **{member.name}**.')
-                await author.send(f'You successfully {aa}ed your opponent.')
+                await ctx.send(f'**{ctx.author.name}** {aa}ed **{member.name}**.')
+                await ctx.author.send(f'You successfully {aa}ed your opponent.')
                 await member.send(f'You were {aa}ed by your opponent.')
                 health2 -= 1
             
 
             elif (aa == 'punch' and da == 'punch') or (aa == 'kick' and da == 'kick'):
                 rword = random.choice(['dodged', 'blocked'])
-                await ctx.send(f"**{member.name}** {rword} **{author.name}**'s {aa}.")
-                await author.send(f'Your opponent {rword} your {aa}.')
+                await ctx.send(f"**{member.name}** {rword} **{ctx.author.name}**'s {aa}.")
+                await ctx.author.send(f'Your opponent {rword} your {aa}.')
                 await member.send(f"You {rword} your opponent's {aa}.")
             
             elif aa == 'none':
-                await ctx.send(f'**{author.name}** just stood there and did nothing.')
+                await ctx.send(f'**{ctx.author.name}** just stood there and did nothing.')
                 await member.send(f'Your opponent just stood there and did nothing.')
-                await author.send(f'You just stood there and did nothing.')
+                await ctx.author.send(f'You just stood there and did nothing.')
 
 
 
             
 
             attacking = discord.Embed(color= 0xff0000)
-            attacking.set_author(name=f"{member.name} ({health2}/3) vs {author.name} ({health1}/3)")
+            attacking.set_author(name=f"{member.name} ({health2}/3) vs {ctx.author.name} ({health1}/3)")
             attacking.add_field(name='Status:',value='Attacking',inline=False)
             defending = discord.Embed(color= 0x0015ff)
-            defending.set_author(name=f"{author.name} ({health1}/3) vs {member.name} ({health2}/3)")
+            defending.set_author(name=f"{ctx.author.name} ({health1}/3) vs {member.name} ({health2}/3)")
             defending.add_field(name=f"Status:",value='Defending',inline=False)
             
             am = await member.send(embed=attacking)
-            dm = await author.send(embed=defending)
+            dm = await ctx.author.send(embed=defending)
             await am.add_reaction('✊')
             await am.add_reaction('🦵')
             await dm.add_reaction('✊')
@@ -288,7 +302,7 @@ class Gambling(commands.Cog):
                 reaction, user = await self.client.wait_for('reaction_add', timeout=30.0, check=check)
 
             except asyncio.TimeoutError:
-                await author.send(f'Both users took too long: Fight cancelled.')
+                await ctx.author.send(f'Both users took too long: Fight cancelled.')
                 await member.send(f'Both users took too long: Fight cancelled.')
                 await ctx.send(f'Both users took too long: Fight cancelled.')
                 return
@@ -312,12 +326,12 @@ class Gambling(commands.Cog):
                     da = 'none'
                 await awaiting.delete()
             
-            elif user == author:
+            elif user == ctx.author:
                 if str(reaction.emoji) == '✊':
                     da = 'punch'
                 elif str(reaction.emoji) == '🦵':
                     da = 'kick'
-                dwaiting = await author.send('Waiting for opponent...')
+                dwaiting = await ctx.author.send('Waiting for opponent...')
                 def check(reaction, user):
                     return reaction.message.id == am.id and (str(reaction.emoji) == '✊' or str(reaction.emoji) == '🦵' and user.id != 698771271353237575)
                     # Make user.id of bot a global variable
@@ -334,56 +348,57 @@ class Gambling(commands.Cog):
             # Include comments so  I can tell whats going on in each code chunk
             # Define better variable names (shorthand) so you have some idea of what they represent from the name instead of mysterious acronyms
             if (aa == 'punch' and (da == 'kick' or da == 'none')) or (aa == 'kick' and (da == 'punch' or da == 'none')):
-                await ctx.send(f'**{member.name}** {aa}ed **{author.name}**.')
+                await ctx.send(f'**{member.name}** {aa}ed **{ctx.author.name}**.')
                 await member.send(f'You successfully {aa}ed your opponent.')
-                await author.send(f'You were {aa}ed by your opponent.')
+                await ctx.author.send(f'You were {aa}ed by your opponent.')
                 health1 -= 1
             
 
             elif (aa == 'punch' and da == 'punch') or (aa == 'kick' and da == 'kick'):
                 rword = random.choice(['dodged', 'blocked'])
-                await ctx.send(f"**{author.name}** {rword} **{member.name}**'s {aa}.")
+                await ctx.send(f"**{ctx.author.name}** {rword} **{member.name}**'s {aa}.")
                 await member.send(f'Your opponent {rword} your {aa}.')
-                await author.send(f"You {rword} your opponent's {aa}.")
+                await ctx.author.send(f"You {rword} your opponent's {aa}.")
             
             elif aa == 'none':
                 await ctx.send(f'**{member.name}** just stood there and did nothing.')
-                await author.send(f'Your opponent just stood there and did nothing.')
+                await ctx.author.send(f'Your opponent just stood there and did nothing.')
                 await member.send(f'You just stood there and did nothing.')
 
+        async with self.client.pool.acquire() as db:
 
-        if health1 == 0 and health2 == 0:
-            await author.send(f'There was a tie and no one earned any money.')
-            await member.send(f'There was a tie and no one earned any money.')
-            await ctx.send(f'There was a tie between **{author.name}** and **{member.name}**, and no one earned any money.')
-            return
+            if health1 == 0 and health2 == 0:
+                await ctx.author.send(f'There was a tie and no one earned any money.')
+                await member.send(f'There was a tie and no one earned any money.')
+                await ctx.send(f'There was a tie between **{ctx.author.name}** and **{member.name}**, and no one earned any money.')
+                return
 
-        elif health1 == 0:
-            await member.send(f'You have won the fight against **{author.name}** and earned ${bet}.')
-            await author.send(f'You have lost the fight against **{member.name}** and lost ${bet}.')
-            await ctx.send(f'**{member.name}** has won the fight against **{author.name}**, earning ${bet}.')
-            money1 = read_value(author.id, 'money')
-            money2 = read_value(member.id, 'money')
-            money1 -= bet
-            money2 += bet
+            elif health1 == 0:
+                await member.send(f'You have won the fight against **{ctx.author.name}** and earned ${bet}.')
+                await ctx.author.send(f'You have lost the fight against **{member.name}** and lost ${bet}.')
+                await ctx.send(f'**{member.name}** has won the fight against **{ctx.author.name}**, earning ${bet}.')
+                money1 = await db.get_member_val(ctx.author.id, 'money')
+                money2 = await db.get_member_val(member.id, 'money')
+                money1 -= bet
+                money2 += bet
 
-        elif health2 == 0:
-            await author.send(f'You have won the fight against **{member.name}** and earned ${bet}.')
-            await member.send(f'You have lost the fight against **{author.name}** and lost ${bet}.')
-            await ctx.send(f'**{author.name}** has won the fight against **{member.name}**, earning ${bet}.')              
-            money1 = read_value(author.id, 'money')
-            money2 = read_value(member.id, 'money')
-            money1 += bet
-            money2 -= bet
+            elif health2 == 0:
+                await ctx.author.send(f'You have won the fight against **{member.name}** and earned ${bet}.')
+                await member.send(f'You have lost the fight against **{ctx.author.name}** and lost ${bet}.')
+                await ctx.send(f'**{ctx.author.name}** has won the fight against **{member.name}**, earning ${bet}.')              
+                money1 = await db.get_member_val(ctx.author.id, 'money')
+                money2 = await db.get_member_val(member.id, 'money')
+                money1 += bet
+                money2 -= bet
 
-        write_value(author.id, 'money', money1)
-        write_value(member.id, 'money', money2)
+            await db.set_member_val(ctx.author.id, 'money', money1)
+            await db.set_member_val(member.id, 'money', money2)
 
-        
-        
-        await rolecheck(self.client, author.id)
-        await rolecheck(self.client, member.id)
-        await leaderboard(self.client)
+            
+            
+            await db.rolecheck(ctx.author.id)
+            await db.rolecheck(member.id)
+            await db.leaderboard()
                 
 
 
@@ -393,79 +408,76 @@ class Gambling(commands.Cog):
     # @commands.check(event_disabled)
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def blackjack(self, ctx, bet=None):
-        author = ctx.author
 
 
-        if not await jail_heist_check(self.client, ctx, ctx.author):
-            return
+        async with self.client.pool.acquire() as db:
 
-        if not bet:
-            await ctx.send("Incorrect command usage:\n`.blackjack bet`")
-            return
+            if not bet:
+                return await ctx.send("Incorrect command usage:\n`.blackjack bet`")
 
-        if bet.lower() == "all":
-            bet = read_value(ctx.author.id, 'money')
-
-            if bet <= 0:
-                return await ctx.send("You don't have any money to blackjack")
-
-        else:
-            try:
-                bet = int(bet)
-            except:
-                await ctx.send("Incorrect command usage:\n`.blackjack bet`")
+            if not await db.jail_heist_check(ctx, ctx.author):
                 return
 
-            if bet <= 0:
-                await ctx.send('Enter a bet greater than 0.')
-                return
+            if bet.lower() == "all":
+                bet = await db.get_member_val(ctx.author.id, 'money')
 
-            money = read_value(author.id, 'money')
-            if bet > money:
-                await ctx.send("You don't have enough money for that.")
-                return
+                if bet <= 0:
+                    return await ctx.send("You don't have any money to blackjack")
 
-        # making all cards
+            else:
+                try:
+                    bet = int(bet)
+                except:
+                    await ctx.send("Incorrect command usage:\n`.blackjack bet`")
+                    return
 
-        # spade, club, heart, diamond
-        symbols = ['♤', '♧', '♡', '♢']
-        values = ['A', '2', '3', '4', '5', '6', '7',
-         '8', '9', '10', 'J', 'Q', 'K']
+                if bet <= 0:
+                    await ctx.send('Enter a bet greater than 0.')
+                    return
 
-        cards = []
-        for symbol in symbols:
-            for value in values:
-                cards.append(f"{symbol} {value}")
+                money = await db.get_member_val(ctx.author.id, 'money')
+                if bet > money:
+                    await ctx.send("You don't have enough money for that.")
+                    return
 
-        # "dealing" cards out
+            # making all cards
 
-        dealer = []
-        card = random.choice(cards)
-        cards.remove(card)
-        dealer.append(card)
+            # spade, club, heart, diamond
+            symbols = ['♤', '♧', '♡', '♢']
+            values = ['A', '2', '3', '4', '5', '6', '7',
+            '8', '9', '10', 'J', 'Q', 'K']
 
-        card = random.choice(cards)
-        cards.remove(card)
-        hidden = card
+            cards = []
+            for symbol in symbols:
+                for value in values:
+                    cards.append(f"{symbol} {value}")
 
-        player = [[]]
-        bet = [bet]
-        for x in range(2): # noqa pylint: disable=unused-variable
+            # "dealing" cards out
+
+            dealer = []
             card = random.choice(cards)
             cards.remove(card)
-            player[0].append(card)
+            dealer.append(card)
 
-        await ctx.send(f"Actions: `hit`, `pass`, `double down`, `split`, `surrender`. Use `help <action name>` to get info on the action. Starting a message with `#` will ignore it.\n_ _")
-        await asyncio.sleep(3)
-        
-        currentHand = 0
+            card = random.choice(cards)
+            cards.remove(card)
+            hidden = card
 
-        money = read_value(author.id, 'money')
-        money -= bet[0]
-        write_value(author.id, 'money', money)
-        
-        asyncio.create_task(rolecheck(self.client, author.id))
-        asyncio.create_task(leaderboard(self.client))
+            player = [[]]
+            bet = [bet]
+            for x in range(2): # noqa pylint: disable=unused-variable
+                card = random.choice(cards)
+                cards.remove(card)
+                player[0].append(card)
+
+            await ctx.send(f"Actions: `hit`, `pass`, `double down`, `split`, `surrender`. Use `help <action name>` to get info on the action. Starting a message with `#` will ignore it.\n_ _")
+            await asyncio.sleep(3)
+            
+            currentHand = 0
+
+            money = await db.get_member_val(ctx.author.id, 'money')
+            money -= bet[0]
+            await db.set_member_val(ctx.author.id, 'money', money)
 
         while True:
             #Make hand info
@@ -490,12 +502,11 @@ class Gambling(commands.Cog):
             if len(player[currentHand]) == 2 and evaluateCards(player[currentHand]) == 21:
                 winnings = bet[currentHand] * 2
                 await ctx.send(f"You won your bet for an insta win! ${winnings} was added to your account.\n_ _")
-                money = read_value(author.id, 'money')
-                money += winnings
-                write_value(author.id, 'money', money)
                 
-                asyncio.create_task(rolecheck(self.client, author.id))
-                asyncio.create_task(leaderboard(self.client))
+                async with self.client.pool.acquire() as db:
+                    money = await db.get_member_val(ctx.author.id, 'money')
+                    money += winnings
+                    await db.set_member_val(ctx.author.id, 'money', money)
 
                 if len(player) == 1:
                     return
@@ -504,6 +515,7 @@ class Gambling(commands.Cog):
                 bet.remove(bet[currentHand])
                 
                 if currentHand == len(player):
+                    asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
                     break
 
                 await asyncio.sleep(5)
@@ -522,15 +534,14 @@ class Gambling(commands.Cog):
                     player.remove(player[currentHand])
                 
                 if currentHand == len(player):
+                    asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
                     break
                 
                 else:
                     continue
 
-                
-
             try:
-                message = await self.client.wait_for('message', check=lambda x: x.author == author and x.channel == ctx.channel and not x.content.startswith('#'), timeout=120)
+                message = await self.client.wait_for('message', check=lambda x: x.ctx.author == ctx.author and x.channel == ctx.channel and not x.content.startswith('#'), timeout=120)
             except asyncio.TimeoutError:
                 await ctx.send("Blackjack automatically lost due to inactivity.")
                 return
@@ -552,20 +563,23 @@ class Gambling(commands.Cog):
                     break
 
             elif action == "double down" or action == "double":
-                money = read_value(author.id, 'money')
+
+                async with self.client.pool.acquire() as db:
+                    money = await db.get_member_val(ctx.author.id, 'money')
+
                 if bet[currentHand] > money:
                     await ctx.send("You don't have enough money to double down.")
                 else:
                     if len(cards) > 1:
 
                         #removing money
-                        money = read_value(author.id, 'money')
-                        money -= bet[currentHand]
-                        write_value(author.id, 'money', money)
-                        
-                        asyncio.create_task(rolecheck(self.client, author.id))
-                        asyncio.create_task(leaderboard(self.client))
 
+                        async with self.client.pool.acquire() as db:
+                            money = await db.get_member_val(ctx.author.id, 'money')
+                            money -= bet[currentHand]
+                            await db.set_member_val(ctx.author.id, 'money', money)
+                        
+                        asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
 
                         card = random.choice(cards)
                         cards.remove(card)
@@ -581,38 +595,40 @@ class Gambling(commands.Cog):
 
             elif action == "split":
                 if len(player[currentHand]) == 2:
-                    money = read_value(author.id, 'money')
 
-                    if bet[currentHand] > money:
+                    async with self.client.pool.acquire() as db:
+                        money = await db.get_member_val(ctx.author.id, 'money')
 
-                        await ctx.send("You don't have enough money to split.")
+                        if bet[currentHand] > money:
 
-                    else:
-
-                        if player[currentHand][0].split()[1] == player[currentHand][1].split()[1]:
-                            player.append([])
-                            player[-1].append(player[currentHand][1])
-                            player[currentHand].remove(player[currentHand][1])
-
-                            card = random.choice(cards)
-                            cards.remove(card)
-                            player[currentHand].append(card)
-
-                            card = random.choice(cards)
-                            cards.remove(card)
-                            player[-1].append(card)
-
-                            #removing money
-                            money = read_value(author.id, 'money')
-                            money -= bet[currentHand]
-                            write_value(author.id, 'money', money)
-                            
-                            asyncio.create_task(rolecheck(self.client, author.id))
-                            asyncio.create_task(leaderboard(self.client))
-                            bet.append(bet[currentHand])
+                            await ctx.send("You don't have enough money to split.")
 
                         else:
-                            await ctx.send("Your two cards do not match.")
+
+                            if player[currentHand][0].split()[1] == player[currentHand][1].split()[1]:
+                                player.append([])
+                                player[-1].append(player[currentHand][1])
+                                player[currentHand].remove(player[currentHand][1])
+
+                                card = random.choice(cards)
+                                cards.remove(card)
+                                player[currentHand].append(card)
+
+                                card = random.choice(cards)
+                                cards.remove(card)
+                                player[-1].append(card)
+
+                                #removing money
+                                async with self.client.pool.acquire() as db:
+                                    money = await db.get_member_val(ctx.author.id, 'money')
+                                    money -= bet[currentHand]
+                                    await db.set_member_val(ctx.author.id, 'money', money)
+                                    
+                                asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
+                                bet.append(bet[currentHand])
+
+                            else:
+                                await ctx.send("Your two cards do not match.")
 
                 else:
                     await ctx.send("You may only split your initial two cards.")
@@ -625,12 +641,12 @@ class Gambling(commands.Cog):
                     bet = math.ceil(bet)
                     await ctx.send(f"You surrendered from the game and lost ${bet}.")
                     
-                    money = read_value(author.id, 'money')
-                    money += loss
-                    write_value(author.id, 'money', money)
-                    
-                    asyncio.create_task(rolecheck(self.client, author.id))
-                    asyncio.create_task(leaderboard(self.client))
+                    async with self.client.pool.acquire() as db:
+                        money = await db.get_member_val(ctx.author.id, 'money')
+                        money += loss
+                        await db.set_member_val(ctx.author.id, 'money', money)
+                        
+                    asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
                     return
                     
                 else:
@@ -638,12 +654,12 @@ class Gambling(commands.Cog):
                     bet[currentHand] = math.ceil(bet[currentHand])
                     await ctx.send(f"You surrendered hand {currentHand+1} and lost ${bet[currentHand]}.")
                     
-                    money = read_value(author.id, 'money')
-                    money += bet[currentHand]
-                    write_value(author.id, 'money', money)
+                    async with self.client.pool.acquire() as db:
+                        money = await db.get_member_val(ctx.author.id, 'money')
+                        money += bet[currentHand]
+                        await db.set_member_val(ctx.author.id, 'money', money)
                     
-                    asyncio.create_task(rolecheck(self.client, author.id))
-                    asyncio.create_task(leaderboard(self.client))
+                    asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
 
                     bet.remove(bet[currentHand])
                     player.remove(player[currentHand])
@@ -746,60 +762,62 @@ class Gambling(commands.Cog):
             await ctx.send('The dealer had more than 16 points. No card is drawn.') 
 
         await asyncio.sleep(2)
-        dealerValue = evaluateCards(dealer)
-        if dealerValue > 21:
-            winnings = 0
-            displaybet = []
-            for b in bet:
-                winnings += math.ceil(b * 1.5)
-                displaybet.append(math.ceil(b / 2))
 
-            await ctx.send(f"The dealer busted! You won your 1.5x your bet. ${sum(displaybet)} was added to your account.")
-            money = read_value(author.id, 'money')
-            money += winnings
-            write_value(author.id, 'money', money)
+        async with self.client.pool.acquire() as db:
+
+            dealerValue = evaluateCards(dealer)
+            if dealerValue > 21:
+                winnings = 0
+                displaybet = []
+                for b in bet:
+                    winnings += math.ceil(b * 1.5)
+                    displaybet.append(math.ceil(b / 2))
+
+                await ctx.send(f"The dealer busted! You won your 1.5x your bet. ${sum(displaybet)} was added to your account.")
+                
+                money = await db.get_member_val(ctx.author.id, 'money')
+                money += winnings
+                await db.set_member_val(ctx.author.id, 'money', money)
+                
+                asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
+                return
+
             
-            await rolecheck(self.client, author.id)
-            await leaderboard(self.client)
-            return
-
-        
-        await asyncio.sleep(2)
+            await asyncio.sleep(2)
 
 
-        money = read_value(author.id, 'money')
-        if len(player) > 1:
-            text = "**Results**:\n"
-            for hand in player:
-                index = player.index(hand)
-                if evaluateCards(hand) > dealerValue:
-                    text += f"Hand {index+1}: + ${math.ceil(bet[index//2])}\n"
-                    money += math.ceil(bet[index] * 1.5)
-                elif evaluateCards(hand) == dealerValue:
-                    text += f"Hand {index+1}: Tie\n"
-                    money += bet[index]
-                else:
-                    text += f"Hand {index+1}: - ${bet[index]}\n"
+            money = await db.get_member_val(ctx.author.id, 'money')
+            if len(player) > 1:
+                text = "**Results**:\n"
+                for hand in player:
+                    index = player.index(hand)
+                    if evaluateCards(hand) > dealerValue:
+                        text += f"Hand {index+1}: + ${math.ceil(bet[index//2])}\n"
+                        money += math.ceil(bet[index] * 1.5)
+                    elif evaluateCards(hand) == dealerValue:
+                        text += f"Hand {index+1}: Tie\n"
+                        money += bet[index]
+                    else:
+                        text += f"Hand {index+1}: - ${bet[index]}\n"
 
                 
         
-        else:
-            text = "**Result**: "
-            if evaluateCards(player[0]) > dealerValue:
-                text += f"+ ${math.ceil(bet[0]/2)}"
-                money += math.ceil(bet[0] * 1.5)
-            elif evaluateCards(player[0]) == dealerValue:
-                text += f"Tie"
-                money += bet[0]
             else:
-                text += f"- ${bet[0]}"
+                text = "**Result**: "
+                if evaluateCards(player[0]) > dealerValue:
+                    text += f"+ ${math.ceil(bet[0]/2)}"
+                    money += math.ceil(bet[0] * 1.5)
+                elif evaluateCards(player[0]) == dealerValue:
+                    text += f"Tie"
+                    money += bet[0]
+                else:
+                    text += f"- ${bet[0]}"
 
-        write_value(author.id, 'money', money)
-        await ctx.send(text)
+            await db.set_member_val(ctx.author.id, 'money', money)
+            await ctx.send(text)
+            
+            asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
         
-        await rolecheck(self.client, author.id)
-        await leaderboard(self.client)
-    
 
         
         

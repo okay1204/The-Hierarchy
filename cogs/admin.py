@@ -132,7 +132,12 @@ class Admin(commands.Cog):
         else:
             content = None
         await ctx.send(embed=embed)
-        await member.send(f'You were warned by {author.mention} for: {reason}')
+
+        try:
+            await member.send(f'You were warned by {author.mention} for: {reason}')
+        except:
+            pass
+
         embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
         await audit_log_channel.send(embed=embed)
@@ -418,7 +423,10 @@ class Admin(commands.Cog):
         rules = self.client.get_channel(704925578326966316)
         rule_invite = await rules.create_invite(max_uses=1, reason='Kicked, invited back.')
         rule_invite = str(rule_invite)
-        await member.send(f'You were kicked by {author.mention} for: {reason}\n\nHere is a new invite link to join back: {rule_invite}')
+        try:
+            await member.send(f'You were kicked by {author.mention} for: {reason}\n\nHere is a new invite link to join back: {rule_invite}')
+        except:
+            pass
         await member.kick(reason=reason)
         embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)
@@ -509,7 +517,11 @@ class Admin(commands.Cog):
         else:
             content = None
         await ctx.send(embed=embed)
-        await member.send(f'You were banned by {author.mention} for: {reason}\n\nIf you want to make an appeal, you may do so here: https://forms.gle/W1Vna4EAHmvs4bzB9')
+        try:
+            await member.send(f'You were banned by {author.mention} for: {reason}\n\nIf you want to make an appeal, you may do so here: https://forms.gle/W1Vna4EAHmvs4bzB9')
+        except:
+            pass
+        
         await member.ban(reason=reason, delete_message_days=daysdelete)
         embed.add_field(name='Jump Url', value=f"[Click Here]({ctx.message.jump_url})")
         audit_log_channel = self.client.get_channel(723339632145596496)

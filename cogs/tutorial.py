@@ -3,11 +3,9 @@
 import asyncio
 import json
 import random
-import sqlite3
 import time
 import os
 import datetime
-from sqlite3 import Error
 
 import discord
 from discord.ext import commands
@@ -116,17 +114,19 @@ class Tutorial(commands.Cog):
             await asyncio.sleep(3)
 
 
-        if read_value(author.id, 'job'):
-            await channel.send("You seem to already have applied for a job. Let's move on then.")
-            canApply = False
-            canWork = True
+        async with self.client.pool.acquire() as db:
 
-        elif (applyc := read_value(author.id, 'applyc')) > time.time():
-            await channel.send(f"Looks like you can't apply for a job for another {splittime(applyc)}. Let's skip working then.")
-            canApply = canWork = False
+            if await db.get_member_val(author.id, 'job'):
+                await channel.send("You seem to already have applied for a job. Let's move on then.")
+                canApply = False
+                canWork = True
 
-        else:
-            canApply = canWork = True
+            elif (applyc := await db.get_member_val(author.id, 'applyc')) > time.time():
+                await channel.send(f"Looks like you can't apply for a job for another {splittime(applyc)}. Let's skip working then.")
+                canApply = canWork = False
+
+            else:
+                canApply = canWork = True
 
 
         if canApply:
@@ -159,14 +159,18 @@ class Tutorial(commands.Cog):
                 await asyncio.sleep(2)
 
             spoofed = False
-            if read_value(author.id, 'applyc') > time.time() or read_value(author.id, 'job'):
-                await channel.send(f"Looks like you just applied for a job... Let's skip working then.")
-                spoofed = True
-                canWork = False
-            elif read_value(author.id, 'jailtime') > time.time():
-                await channel.send(f"Well it looks like you just got yourself in jail. Let's skip working then.")
-                spoofed = True
-                canWork = False
+
+            async with self.client.pool.acquire() as db:
+
+                if await db.get_member_val(author.id, 'applyc') > time.time() or await db.get_member_val(author.id, 'job'):
+                    await channel.send(f"Looks like you just applied for a job... Let's skip working then.")
+                    spoofed = True
+                    canWork = False
+
+                elif await db.get_member_val(author.id, 'jailtime') > time.time():
+                    await channel.send(f"Well it looks like you just got yourself in jail. Let's skip working then.")
+                    spoofed = True
+                    canWork = False
 
             if not spoofed:
                 await channel.send("The only two jobs that do not require a major to apply for are the **Garbage Collector** and the **Streamer**. Go ahead and apply for whichever job you like, based on the stats, using `.apply`.")
@@ -208,20 +212,24 @@ class Tutorial(commands.Cog):
             
         
         if canWork:
-            if read_value(author.id, 'workc') >= time.time():
-                
-                async with channel.typing():
-                    await asyncio.sleep(4)
 
-                await channel.send("Hm.. you already seem to have used the `.work` command. Since you already know about it, let's move on then.")
-                canWork = False
-            elif read_value(author.id, 'jailtime') >= time.time():
+            async with self.client.pool.acquire() as db:
 
-                async with channel.typing():
-                    await asyncio.sleep(4)
+                if await db.get_member_val(author.id, 'workc') >= time.time():
+                    
+                    async with channel.typing():
+                        await asyncio.sleep(4)
 
-                await channel.send("Well, it looks like you're in jail. It looks like we will have to skip the majority of the tutorial.")
-                canWork = False
+                    await channel.send("Hm.. you already seem to have used the `.work` command. Since you already know about it, let's move on then.")
+                    canWork = False
+
+                elif await db.get_member_val(author.id, 'jailtime') >= time.time():
+
+                    async with channel.typing():
+                        await asyncio.sleep(4)
+
+                    await channel.send("Well, it looks like you're in jail. It looks like we will have to skip the majority of the tutorial.")
+                    canWork = False
 
         breakOut = False
         if canWork:
@@ -287,15 +295,17 @@ class Tutorial(commands.Cog):
         async with channel.typing():
             await asyncio.sleep(3)
 
-        if read_value(author.id, 'stealc') < time.time() and read_value(author.id, 'jailtime') < time.time():        
-            canSteal = True
+        async with self.client.pool.acquire() as db:
 
-        elif read_value(author.id, 'stealc') >= time.time():
-            await channel.send("Hm.. you already seem to have used the `.steal` command. Since you already know about it, let's move on then.")
-            canSteal = False
-        else:
-            await channel.send("Well, it looks like you're in jail. Perhaps you already tried to steal from someone and got jailed already?")
-            canSteal = False
+            if await db.get_member_val(author.id, 'stealc') < time.time() and await db.get_member_val(author.id, 'jailtime') < time.time():        
+                canSteal = True
+
+            elif await db.get_member_val(author.id, 'stealc') >= time.time():
+                await channel.send("Hm.. you already seem to have used the `.steal` command. Since you already know about it, let's move on then.")
+                canSteal = False
+            else:
+                await channel.send("Well, it looks like you're in jail. Perhaps you already tried to steal from someone and got jailed already?")
+                canSteal = False
 
         if canSteal:
             await channel.send("First, we will have to see who is in your place range. To do this, use `.around`.")
@@ -332,12 +342,14 @@ class Tutorial(commands.Cog):
 
             #Quick checks to make sure they didn't spoof the system
             spoofed = False
-            if read_value(author.id, 'stealc') >= time.time():
-                await channel.send("You already used `.steal`... what a shame.")
-                spoofed = True
-            elif read_value(author.id, 'jailtime') >= time.time():
-                await channel.send("Well, it looks like you're in jail. Perhaps you already tried to steal from someone and got jailed already?")
-                spoofed = True
+
+            async with self.client.pool.acquire() as db:
+                if await db.get_member_val(author.id, 'stealc') >= time.time():
+                    await channel.send("You already used `.steal`... what a shame.")
+                    spoofed = True
+                elif await db.get_member_val(author.id, 'jailtime') >= time.time():
+                    await channel.send("Well, it looks like you're in jail. Perhaps you already tried to steal from someone and got jailed already?")
+                    spoofed = True
             
             if not spoofed:
                 await channel.send(f"Use `.steal member amount` to steal from someone. Make sure you replace `member` with the member you want to steal from, and `amount` with the amount you want to steal.\n\n***Wait!*** When you choose an amount to steal, you may choose a number from 1-200 (as long as the person you are stealing from has enough cash). However, the more you try to steal, the higher chance you have of being jailed.\n\nAn example of this command is:\n.steal {guild.me.mention} 100\n\nTry out this command now. (Not the example!)")
@@ -378,11 +390,8 @@ class Tutorial(commands.Cog):
 
         if self.client.get_cog('Invites'):
 
-            conn = sqlite3.connect('./storage/databases/invites.db')
-            c = conn.cursor()
-            c.execute('UPDATE inviters SET tutorial = 1 WHERE member_id = ?', (author.id,))
-            conn.commit()
-            conn.close()
+            async with self.client.pool.acquire() as db:
+                await db.execute('UPDATE inviters SET tutorial = 1 WHERE member_id = $1;', author.id)
 
 
 def setup(client):

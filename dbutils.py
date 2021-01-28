@@ -133,7 +133,7 @@ class DBUtils(asyncpg.Connection):
 
     async def add_item(self, id, name):
 
-        await self.execute('UPDATE hierarchy.members SET items = array_append(items, $1) WHERE id = $2;', name, id)
+        await self.execute('UPDATE hierarchy.members SET items = ARRAY_APPEND(items, $1) WHERE id = $2;', name, id)
 
     async def remove_item(self, id, name):
 

@@ -541,12 +541,13 @@ class Gambling(commands.Cog):
                     continue
 
             try:
-                message = await self.client.wait_for('message', check=lambda x: x.ctx.author == ctx.author and x.channel == ctx.channel and not x.content.startswith('#'), timeout=120)
+                message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel and not m.content.startswith('#'), timeout=120)
             except asyncio.TimeoutError:
                 await ctx.send("Blackjack automatically lost due to inactivity.")
                 return
             
             action = message.content.lower()
+            
             #Evaluate action
             if action == "hit":
                 if len(cards) > 0:

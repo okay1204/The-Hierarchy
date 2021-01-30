@@ -61,7 +61,7 @@ class Gambling(commands.Cog):
 
     async def lead_and_rolecheck(self, id):
 
-        async with self.client.db.acquire() as db:
+        async with self.client.pool.acquire() as db:
 
             await db.leaderboard()
             await db.rolecheck(id)

@@ -5,7 +5,6 @@ import json
 import random
 import time
 import datetime
-from sqlite3 import Error
 
 import discord
 from discord.ext import commands, tasks

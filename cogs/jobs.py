@@ -748,8 +748,7 @@ _ _""")
                 await ctx.send("You already have a job.")
                 return
 
-            majors = await db.get_member_val(ctx.author.id, 'majors').split('|')
-            majors = list(filter(lambda major: major, majors)) # to get rid of empty strings
+            majors = await db.get_member_val(ctx.author.id, 'majors')
 
             for major in job.requirements:
                 if major not in majors:

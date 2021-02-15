@@ -108,7 +108,7 @@ class Heist(commands.Cog):
                         jailtime = int(time.time()) + 10800
                         await db.set_member_val(userid, 'jailtime', jailtime)
 
-                    rolecheck_tasks.append( asyncio.create_task( db.rolecheck(userid) ))
+                    rolecheck_tasks.append( db.rolecheck(userid) )
 
                 else:
                     
@@ -129,7 +129,7 @@ class Heist(commands.Cog):
             
                 await db.set_member_val(heist["victim"], "bank", victim_bank)
 
-                asyncio.create_task( db.rolecheck(self.client, heist["victim"]) )
+                rolecheck_tasks.append( db.rolecheck(heist["victim"]) )
 
 
             await channel.send(embed=embed)
@@ -141,12 +141,9 @@ class Heist(commands.Cog):
 
             await db.leaderboard()
 
-            try:
-                await asyncio.wait(
-                    rolecheck_tasks, return_when=asyncio.ALL_COMPLETED
-                )
-            except ValueError: # in case task list is empty
-                pass
+            # doing all rolechecks at the end
+            for task in rolecheck_tasks:
+                await task
 
 
     @commands.group(name="heist", invoke_without_command=True)

@@ -536,9 +536,47 @@ Gang: {gang}
         for log in steal_logs:
 
             created_at = datetime.strptime(log['created_at'], '%Y-%m-%d %H:%M:%S.%f')
-            time_difference = splittime(int(time.time()) + (datetime.utcnow() - created_at).seconds)
 
-            embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{log['text']} {time_difference} ago\n[Jump]({log['jump_url']})", inline=False)
+            seconds = (datetime.utcnow() - created_at).seconds
+
+            minutes, seconds = divmod(seconds, 60)
+            hours, minutes = divmod(minutes, 60)
+            days, hours = divmod(hours, 24)
+            weeks, days = divmod(days, 7)
+            # aproximate number of weeks in a month
+            months, weeks = tuple(int(x) for x in divmod(weeks, 4.34524))
+            years, months = divmod(months, 12)
+
+
+            all_times = [years, months, weeks, days, hours, minutes, seconds]
+
+            if not any(all_times[:5]):
+                time_difference = f"{minutes}m {seconds}s"
+
+            elif not any(all_times[:4]):
+                time_difference = f"{hours}h"
+
+            elif not any(all_times[:3]):
+                time_difference = f"{days}d"
+
+            elif not any(all_times[:2]):
+
+                time_difference = f"{weeks} week"
+                if weeks != 1:
+                    time_difference += "s"
+
+            elif not any(all_times[:1]):
+
+                time_difference = f"{months} month"
+                if months != 1:
+                    time_difference += "s"
+
+            else:
+                time_difference = f"{years} year"
+                if years != 1:
+                    time_difference += "s"
+
+            embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{log['text']} *{time_difference} ago*\n[Jump]({log['jump_url']})", inline=False)
 
         if not embed.fields:
             embed = discord.Embed(color=0x57d9d0, description="None")

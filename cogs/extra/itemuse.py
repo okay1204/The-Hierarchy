@@ -53,7 +53,7 @@ class ItemUses:
 
         storage = await self.db.fetchval('UPDATE members SET storage = storage + 1 WHERE id = $1 RETURNING storage;', ctx.author.id)
 
-        await self.db.remove_item('backpack', ctx.author.id)
+        await self.db.remove_item(ctx.author.id, 'backpack')
 
         await ctx.send(f"**{ctx.author.name}** used a 🎒 **backpack**.\nYou can now carry up to {storage} items.")
     

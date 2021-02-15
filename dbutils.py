@@ -144,6 +144,19 @@ class DBUtils(asyncpg.Connection):
 
     # misc
 
+    async def steal_log(self, id, channel, text):
+
+        message = await channel.send(text)
+
+        steal_logs = json.loads(await self.get_member_val(id, 'steal_logs'))
+
+        steal_logs.insert(0, {'text': text, 'created_at': str(message.created_at), 'jump_url': message.jump_url})
+        steal_logs = steal_logs[:5]
+
+        await self.set_member_val(id, 'steal_logs', json.dumps(steal_logs))
+
+
+
     async def around(self, id, find):
 
         hierarchy = await self.fetch('SELECT id, money + bank FROM members WHERE money + bank > 0 ORDER BY money + bank DESC;')
@@ -175,6 +188,8 @@ class DBUtils(asyncpg.Connection):
 
         result = ids[lower_index:higher_index]
         return result
+
+
 
     async def leaderboard(self):
         guild = self.client.get_guild(692906379203313695)

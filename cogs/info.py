@@ -13,6 +13,8 @@ sys.path.insert(1 , os.getcwd())
 
 from utils import bot_check, splittime, timestring, log_command
 
+from datetime import datetime
+
 
 class Info(commands.Cog):
 
@@ -202,7 +204,7 @@ class Info(commands.Cog):
                 embed.add_field(name=discord.utils.escape_markdown("____"), value="None", inline=True)
 
 
-            embed.set_author(name=f"{member.name}'s items ({len(items)}/{await db.get_member_val(member.id, 'storage')})",icon_url=avatar)
+            embed.set_author(name=f"{member.name}'s items ({len(items)}/{await db.get_member_val(member.id, 'storage')})", icon_url=avatar)
 
             # In use
 
@@ -212,10 +214,10 @@ class Info(commands.Cog):
             inuse = await db.in_use(member.id)
 
         for x in inuse:
-            embed2.add_field(name='__________', value=f'{x.capitalize()}: {splittime(inuse[x])}', inline=False)
+            embed2.add_field(name=discord.utils.escape_markdown("____"), value=f'{x.capitalize()}: {splittime(inuse[x])}', inline=False)
 
-        if len(embed2.fields) == 0:
-            embed2.add_field(name='__________', value="None", inline=False)
+        if not embed2.fields:
+            embed2.add_field(name=discord.utils.escape_markdown("____"), value="None", inline=False)
     
         await ctx.send(embed=embed)
         await ctx.send(embed=embed2)
@@ -510,6 +512,37 @@ Gang: {gang}
 
         embed = discord.Embed(color=color, title=name, description=long_description)
         embed.set_image(url=image_link)
+
+        await ctx.send(embed=embed)
+
+
+    @commands.command(aliases=['steallog'])
+    async def steallogs(self, ctx, member: discord.Member=None):
+
+        if not member:
+            member = ctx.author
+
+        if not await bot_check(self.client, ctx, member):
+            return
+
+
+        async with self.client.pool.acquire() as db:
+
+            steal_logs = json.loads(await db.get_member_val(member.id, 'steal_logs'))
+
+        embed = discord.Embed(color=0x57d9d0)
+        embed.set_author(name=f"{member.name}'s steal logs", icon_url=member.avatar_url_as(static_format='jpg'))
+
+        for log in steal_logs:
+
+            created_at = datetime.strptime(log['created_at'], '%Y-%m-%d %H:%M:%S.%f')
+            time_difference = splittime(int(time.time()) + (datetime.utcnow() - created_at).seconds)
+
+            embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{log['text']} {time_difference} ago\n[Jump]({log['jump_url']})", inline=False)
+
+        if not embed.fields:
+            embed = discord.Embed(color=0x57d9d0, description="None")
+            embed.set_author(name=f"{member.name}'s steal logs", icon_url=member.avatar_url_as(static_format='jpg'))
 
         await ctx.send(embed=embed)
 

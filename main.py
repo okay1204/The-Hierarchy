@@ -156,7 +156,7 @@ async def on_command_error(ctx, error):
         except:
             pass
 
-        allowed_cogs = ['actions', 'fun', 'gangs', 'gambling', 'games', 'info', 'premium', 'jobs', 'leveling']
+        allowed_cogs = ['actions', 'fun', 'gangs', 'gambling', 'games', 'info', 'premium', 'jobs', 'leveling', 'jail']
 
         command_string = ctx.message.content.split()[0]
         command_string = command_string.replace('.', '')
@@ -287,12 +287,12 @@ async def on_ready():
     # cogs to ungload for development
     
     cogs_to_unload = [
-    'debug', 'actions', 'gambling', 
+    'debug', 'actions', 'games', 'gambling', 
     'misc', 'premium', 'tutorial', 'heist', 
-    'members', 'fun', 'info', 'polls', 'admin', 
+    'members', 'fun', 'polls', 'admin', 
     'reactions', 'timers', 'events', 'invites', 'leveling', 
     'jobs', 'voice_channels', 'alerts', 'halloween',
-    'christmas', 'gangs']
+    'christmas', 'gangs', 'jail']
     
 
     # all cogs
@@ -303,7 +303,7 @@ async def on_ready():
     # 'members', 'fun', 'info', 'polls', 'admin', 
     # 'reactions', 'timers', 'events', 'invites', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween',
-    # 'christmas', 'gangs']
+    # 'christmas', 'gangs', 'jail']
 
 
     for cog in cogs_to_unload:

@@ -262,16 +262,15 @@ class Actions(commands.Cog):
 
                         # 1 in 2 chance
                         if random.getrandbits(1):
-                            await ctx.send(f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead. They were also caught but got away with their gun.")
-                            return
+                            return await db.steal_log(member.id, ctx.channel, f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead. They were also caught but got away with their gun.")
 
-                    await ctx.send(f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead. They were also caught and jailed for 1h 30m.")
+                    await db.steal_log(member.id, ctx.channel, f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead. They were also caught and jailed for 1h 30m.")
                     jailtime = int(time.time()) + 5400
 
                     await db.set_member_val(ctx.author.id, 'jailtime', jailtime)
 
                 else:
-                    await ctx.send(f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead.")
+                    await db.steal_log(member.id, ctx.channel, f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead.")
                 
                 return
 
@@ -291,22 +290,23 @@ class Actions(commands.Cog):
                     if 'gun' in await db.in_use(ctx.author.id):
 
                         if random.getrandbits(1):
-                            return await ctx.send(f"**{ctx.author.name}** was caught stealing but got away with their gun.")
-                            
+                            return await db.steal_log(member.id, ctx.channel, f"**{ctx.author.name}** was caught stealing but got away with their gun.")
+
 
                     jailtime = int(int(time.time()) + amount*100.5)
                     await db.set_member_val(ctx.author.id, 'jailtime', jailtime)
 
-                    await ctx.send(f'**{ctx.author.name}** was caught stealing and sent to jail for {splittime(jailtime)}.') # message linked with tutorial
+                    await db.steal_log(member.id, ctx.channel, f'**{ctx.author.name}** was caught stealing and sent to jail for {splittime(jailtime)}.') # message linked with tutorial
                         
                 else:
-                    await ctx.send(f"**{ctx.author.name}** successfully stole ${amount} from **{member.name}**.") # message linked with tutorial
+                    await db.steal_log(member.id, ctx.channel, f"**{ctx.author.name}** successfully stole ${amount} from **{member.name}**.") # message linked with tutorial
 
                     money -= amount
                     await db.set_member_val(member.id, 'money', money)
                     money = await db.get_member_val(ctx.author.id, 'money')
                     money += amount
                     await db.set_member_val(ctx.author.id, 'money', money)
+
 
             await db.leaderboard()
             await db.rolecheck(ctx.author.id)

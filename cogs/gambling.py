@@ -80,11 +80,13 @@ class Gambling(commands.Cog):
 
 
     @commands.command()
-    # @commands.check(event_disabled)
     async def fight(self, ctx, action=None, member:discord.Member=None, bet=None):
         
         if not action:
             await ctx.send("Incorrect command usage:\n`.fight start/cancel/help`")
+            return
+
+        if not await bot_check(self.client, ctx, member):
             return
 
         async with self.client.pool.acquire() as db:
@@ -405,7 +407,6 @@ class Gambling(commands.Cog):
 
 
     @commands.command()
-    # @commands.check(event_disabled)
     @commands.max_concurrency(1, per=commands.BucketType.channel)
     async def blackjack(self, ctx, bet=None):
 
@@ -414,6 +415,9 @@ class Gambling(commands.Cog):
 
             if not bet:
                 return await ctx.send("Incorrect command usage:\n`.blackjack bet`")
+
+            if not await db.event_disabled(ctx):
+                return
 
             if not await db.jail_heist_check(ctx, ctx.author):
                 return

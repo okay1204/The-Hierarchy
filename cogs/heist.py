@@ -141,9 +141,12 @@ class Heist(commands.Cog):
 
             await db.leaderboard()
 
-            await asyncio.wait(
-                rolecheck_tasks, return_when=asyncio.ALL_COMPLETED
-            )
+            try:
+                await asyncio.wait(
+                    rolecheck_tasks, return_when=asyncio.ALL_COMPLETED
+                )
+            except ValueError: # in case task list is empty
+                pass
 
 
     @commands.group(name="heist", invoke_without_command=True)

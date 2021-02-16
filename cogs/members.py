@@ -66,7 +66,7 @@ class Members(commands.Cog):
             alreadyin = bool(await db.fetchval('SELECT id FROM members WHERE id = $1;', member.id))
             
             # mutes
-            with open(f'./storage/jsons/mutes.json') as f:
+            with open('./storage/jsons/mutes.json') as f:
                 mutes = json.load(f)
 
             if str(member.id) in mutes:

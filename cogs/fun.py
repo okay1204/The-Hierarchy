@@ -11,7 +11,7 @@ import aiohttp
 import string
 import difflib
 import re
-import praw
+import asyncpraw
 import discord
 
 from discord.ext import commands, tasks
@@ -350,11 +350,11 @@ class Fun(commands.Cog):
         async with ctx.channel.typing():
             
             try:
-                sub = self.client.reddit.subreddit('dankmemes')
+                sub = await self.client.reddit.subreddit('dankmemes')
             except:
                 # reconnect to reddit because it auto disconnects after a while
 
-                self.client.reddit = praw.Reddit(
+                self.client.reddit = asyncpraw.Reddit(
                     client_id = os.environ.get("reddit_client_id"),
                     client_secret = os.environ.get("reddit_client_secret"),
                     password = os.environ.get("reddit_password"),
@@ -362,9 +362,13 @@ class Fun(commands.Cog):
                     user_agent = os.environ.get("reddit_user_agent")
                 )
 
-                sub = self.client.reddit.subreddit('dankmemes')
-                
-            post = random.choice(list(sub.hot()))
+                sub = await self.client.reddit.subreddit('dankmemes')
+
+            posts = []
+            async for post in sub.hot(limit=100):
+                posts.append(post)
+
+            post = random.choice(posts)
 
             post_url = f"https://www.reddit.com/r/dankmemes/comments/{post.id}"
 

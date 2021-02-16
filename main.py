@@ -15,7 +15,7 @@ import traceback
 import asyncio
 import string
 from captcha.image import ImageCaptcha
-import praw
+import asyncpraw
 
 
 from utils import *
@@ -156,7 +156,7 @@ async def on_command_error(ctx, error):
         except:
             pass
 
-        allowed_cogs = ['actions', 'fun', 'gangs', 'gambling', 'games', 'info', 'premium', 'jobs', 'leveling', 'jail']
+        allowed_cogs = ['actions', 'fun', 'gangs', 'gambling', 'games', 'info', 'premium', 'jobs', 'leveling']
 
         command_string = ctx.message.content.split()[0]
         command_string = command_string.replace('.', '')
@@ -248,11 +248,6 @@ async def on_ready():
             await client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
 
 
-
-    # make reddit connection
-    client.reddit = asyncio.create_task(connect_reddit())
-
-
     client.bailprice = lambda number: int(int(number-time.time())/3600*40)
     client.leaderboardChannel = client.get_channel(692955859109806180)
     client.leaderboardMessage = await client.leaderboardChannel.fetch_message(698775209024552975)
@@ -282,17 +277,18 @@ async def on_ready():
 
     # for production
     
-    # cogs_to_unload = ['events', 'invites', 'halloween', 'christmas']
+    cogs_to_unload = ['events', 'invites', 'halloween', 'christmas']
 
     # cogs to ungload for development
     
     cogs_to_unload = [
     'debug', 'actions', 'games', 'gambling', 
     'misc', 'premium', 'tutorial', 'heist', 
-    'members', 'fun', 'polls', 'admin', 
+    'members', 'info', 'polls', 'admin', 
     'reactions', 'timers', 'events', 'invites', 'leveling', 
     'jobs', 'voice_channels', 'alerts', 'halloween',
-    'christmas', 'gangs', 'jail']
+    'christmas', 'gangs']
+
     
 
     # all cogs
@@ -303,7 +299,7 @@ async def on_ready():
     # 'members', 'fun', 'info', 'polls', 'admin', 
     # 'reactions', 'timers', 'events', 'invites', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween',
-    # 'christmas', 'gangs', 'jail']
+    # 'christmas', 'gangs']
 
 
     for cog in cogs_to_unload:
@@ -314,7 +310,13 @@ async def on_ready():
 
     
     # waiting for reddit connection to finish
-    client.reddit = await client.reddit
+    client.reddit = asyncpraw.Reddit(
+        client_id = os.environ.get("reddit_client_id"),
+        client_secret = os.environ.get("reddit_client_secret"),
+        password = os.environ.get("reddit_password"),
+        username = os.environ.get("reddit_username"),
+        user_agent = os.environ.get("reddit_user_agent")
+    )
     print("Reddit Connection Successful")
     
 
@@ -323,18 +325,6 @@ client.partnershipChannel = 723945572708384768
 client.rightCategory = 692949972764590160
 client.heist = {}
 
-
-async def connect_reddit():
-
-    reddit = praw.Reddit(
-        client_id = os.environ.get("reddit_client_id"),
-        client_secret = os.environ.get("reddit_client_secret"),
-        password = os.environ.get("reddit_password"),
-        username = os.environ.get("reddit_username"),
-        user_agent = os.environ.get("reddit_user_agent")
-    )
-
-    return reddit
 
 @client.event
 async def on_message(message):    
@@ -350,18 +340,6 @@ async def on_message(message):
 
 def adminCheck(ctx):
     return ctx.channel.id == client.adminChannel
-
-
-@client.command()
-@commands.check(adminCheck)
-@commands.max_concurrency(1, per=commands.BucketType.channel)
-async def redditreload(ctx):
-
-    async with ctx.channel.typing():
-
-        client.reddit = await connect_reddit()
-
-    await ctx.send("Reddit connection reloaded.")
 
 
 @client.command()

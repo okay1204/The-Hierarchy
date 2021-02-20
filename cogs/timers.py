@@ -40,7 +40,7 @@ class Timers(commands.Cog):
             SET bank = GREATEST(m.bank - t.tax_amount, 0),
                 money = 
                 CASE
-                    WHEN t.tax_amount > m.bank THEN m.money + m.bank - t.tax_amount
+                    WHEN t.tax_amount > m.bank THEN GREATEST(m.money + m.bank - t.tax_amount, 0)
                     ELSE m.money
                 END
             FROM tax t
@@ -67,7 +67,7 @@ class Timers(commands.Cog):
                 hbank = GREATEST(m.bank - f.fee_amount, 0),
                 money = 
                 CASE
-                    WHEN f.fee_amount > m.bank THEN m.money + m.bank - f.fee_amount
+                    WHEN f.fee_amount > m.bank THEN GREATEST(m.money + m.bank - f.fee_amount, 0)
                     ELSE m.money
                 END
             FROM fee f

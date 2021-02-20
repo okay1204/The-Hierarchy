@@ -63,6 +63,8 @@ class Members(commands.Cog):
 
         async with self.client.pool.acquire() as db:
 
+            await db.set_member_val(member.id, 'in_guild', True)
+
             alreadyin = bool(await db.fetchval('SELECT id FROM members WHERE id = $1;', member.id))
             
             # mutes
@@ -138,6 +140,10 @@ class Members(commands.Cog):
 
         # gangs
         async with self.client.pool.acquire() as db:
+
+            await db.set_member_val(member.id, 'in_guild', False)
+
+
             gang = await db.fetchrow('SELECT name, owner, members, role_id FROM gangs WHERE owner = $1 OR $1 = ANY(members);', member.id)
 
             await db.leaderboard()

@@ -101,10 +101,11 @@ class Leveling(commands.Cog):
 
                     progress -= 100
 
-                    embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level} and earned $15! Keep going to unlock more features!")
-                    embed.set_author(name=message.author.name, icon_url=message.author.avatar_url_as(static_format="jpg"))
+                    if not self.client.get_cog('Birthday'):
+                        embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level} and earned $15! Keep going to unlock more features!")
+                        embed.set_author(name=message.author.name, icon_url=message.author.avatar_url_as(static_format="jpg"))
 
-                    await message.channel.send(embed=embed)
+                        await message.channel.send(embed=embed)
 
                     money = await db.get_member_val(message.author.id, 'money')
                     money += 15

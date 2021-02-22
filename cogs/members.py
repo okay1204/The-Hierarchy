@@ -63,7 +63,6 @@ class Members(commands.Cog):
 
         async with self.client.pool.acquire() as db:
 
-            await db.set_member_val(member.id, 'in_guild', True)
 
             alreadyin = bool(await db.fetchval('SELECT id FROM members WHERE id = $1;', member.id))
             
@@ -99,6 +98,7 @@ class Members(commands.Cog):
                 except:
                     pass
 
+            await db.set_member_val(member.id, 'in_guild', True)
         
             await db.leaderboard()
 

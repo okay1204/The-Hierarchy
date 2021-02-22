@@ -323,7 +323,7 @@ class Gangs(commands.Cog):
         guild = self.client.mainGuild
 
         if members:
-            members = list(map(lambda userid: guild.get_member(int(userid)).name, members))
+            members = list(map(lambda userid: discord.utils.escape_markdown(guild.get_member(int(userid)).name), members))
             members = "\n".join(members)
         else:
             members = "No members."

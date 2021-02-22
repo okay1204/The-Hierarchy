@@ -225,7 +225,6 @@ async def on_command_error(ctx, error):
 @client.event
 async def on_ready():
 
-
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
 
     client.history = {}
@@ -277,7 +276,7 @@ async def on_ready():
 
     # for production
     
-    cogs_to_unload = ['events', 'invites', 'halloween', 'christmas']
+    cogs_to_unload = ['events', 'invites', 'halloween', 'christmas', 'birthday']
 
     # cogs to ungload for development
     
@@ -290,7 +289,6 @@ async def on_ready():
     'christmas', 'gangs']
 
     
-
     # all cogs
 
     # cogs_to_unload = [
@@ -299,7 +297,7 @@ async def on_ready():
     # 'members', 'fun', 'info', 'polls', 'admin', 
     # 'reactions', 'timers', 'events', 'invites', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween',
-    # 'christmas', 'gangs']
+    # 'christmas', 'gangs', 'birthday']
 
 
     for cog in cogs_to_unload:

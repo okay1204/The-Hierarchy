@@ -303,7 +303,7 @@ class Jobs(commands.Cog):
         embed = discord.Embed(color=0x48157a, title="Universities", description="""__**Key**__:\n🎓 - Major
 📅 - Days to complete
 ⏫ - Finals percentage gain on each study
-🕑 - Study Cooldown
+🕑 - Study cooldown
 📚 - Maximum finals percentage
 💸 - Cost
 

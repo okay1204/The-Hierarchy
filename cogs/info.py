@@ -517,7 +517,7 @@ Gang: {gang}
 
 
     @commands.command(aliases=['steallog'])
-    async def steallogs(self, ctx, member: discord.Member=None):
+    async def steallogs(self, ctx, *, member: discord.Member=None):
 
         if not member:
             member = ctx.author

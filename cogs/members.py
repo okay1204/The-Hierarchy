@@ -39,6 +39,25 @@ class Members(commands.Cog):
         await membercountchannel.edit(name=f"Members: {membercount}")
         await ctx.send('Successfully updated member count.')
 
+    
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+
+        if before.nick != after.nick:
+
+            async with self.client.pool.acquire() as db:
+                await db.set_member_val(after.id, 'nick', after.nick)
+
+    
+    @commands.Cog.listener()
+    async def on_user_update(self, before, after):
+
+        if before.name != after.name:
+
+            async with self.client.pool.acquire() as db:
+                await db.set_member_val(after.id, 'name', after.name)
+
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
 
@@ -91,14 +110,14 @@ class Members(commands.Cog):
                             
             if alreadyin == False:
 
-                await db.execute(f'INSERT INTO members (id) VALUES ($1);', member.id)
+                await db.execute('INSERT INTO members (id) VALUES ($1);', member.id)
                 
                 try:
                     await member.send('*This is the only automated DM you will ever recieve*\n\nHey, you look new to the server! If you want, feel free to DM me `tutorial` and I\'ll walk you through the basics!')
                 except:
                     pass
 
-            await db.set_member_val(member.id, 'in_guild', True)
+            await db.execute('UPDATE members SET name = $1, nick = NULL, in_guild = TRUE', member.name)
         
             await db.leaderboard()
 

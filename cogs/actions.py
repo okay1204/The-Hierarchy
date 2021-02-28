@@ -717,7 +717,7 @@ class Actions(commands.Cog):
 
                         await ctx.send(f"You can only carry a maximum {storage} items. Do you want to discard the shop item you recieve automatically? (Yes/No)")
                         try:
-                            answer = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.ctx.author == ctx.author, timeout=20)
+                            answer = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout=20)
                             if answer.content.lower() == 'yes' or answer.content.lower() == 'y':
                                 skip = True
                             else:

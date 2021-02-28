@@ -537,7 +537,8 @@ Gang: {gang}
 
             created_at = datetime.strptime(log['created_at'], '%Y-%m-%d %H:%M:%S.%f')
 
-            seconds = (datetime.utcnow() - created_at).seconds
+            difference_delta = (datetime.utcnow() - created_at)
+            seconds = difference_delta.seconds + difference_delta.days*86400
 
             minutes, seconds = divmod(seconds, 60)
             hours, minutes = divmod(minutes, 60)

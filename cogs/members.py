@@ -117,7 +117,7 @@ class Members(commands.Cog):
                 except:
                     pass
 
-            await db.execute('UPDATE members SET name = $1, nick = NULL, in_guild = TRUE', member.name)
+            await db.execute('UPDATE members SET name = $1, nick = NULL, in_guild = TRUE WHERE id = $2', member.name, member.id)
         
             await db.leaderboard()
 

@@ -220,7 +220,7 @@ class Info(commands.Cog):
 
             inuse = await db.in_use(member.id)
 
-        for item, timer in inuse:
+        for item, timer in inuse.items():
             embed2.add_field(name=discord.utils.escape_markdown("____"), value=f'{item_emojis[item]} {item.capitalize()}: {splittime(timer)}', inline=False)
 
         if not embed2.fields:

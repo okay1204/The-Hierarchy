@@ -191,14 +191,21 @@ class Info(commands.Cog):
         avatar = avatar.avatar_url_as(static_format='jpg')
         embed = discord.Embed(color=0x4785ff)
 
+
         async with self.client.pool.acquire() as db:
+
+            shop_info = await db.fetch('SELECT name, emoji FROM shop;')
+            item_emojis = {}
+
+            for name, emoji in shop_info:
+                item_emojis[name] = emoji
 
             items = await db.get_member_val(member.id, 'items')
             
             count = dict(Counter(items))
             
-            for x in count:
-                embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{x.capitalize()} x{count[x]}", inline=True)
+            for item, count in count.items():
+                embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{item_emojis[item]} {item.capitalize()} x{count}", inline=True)
 
             if not len(embed.fields):
                 embed.add_field(name=discord.utils.escape_markdown("____"), value="None", inline=True)
@@ -213,8 +220,8 @@ class Info(commands.Cog):
 
             inuse = await db.in_use(member.id)
 
-        for x in inuse:
-            embed2.add_field(name=discord.utils.escape_markdown("____"), value=f'{x.capitalize()}: {splittime(inuse[x])}', inline=False)
+        for item, timer in inuse:
+            embed2.add_field(name=discord.utils.escape_markdown("____"), value=f'{item_emojis[item]} {item.capitalize()}: {splittime(timer)}', inline=False)
 
         if not embed2.fields:
             embed2.add_field(name=discord.utils.escape_markdown("____"), value="None", inline=False)

@@ -52,6 +52,10 @@ class Gambling(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+        self.roullete_members = []
+        self.roullete_timer_task = None
+        self.roullete_bet = None
+
     async def cog_check(self, ctx):
         if ctx.channel.category.id != self.client.rightCategory:
             return False
@@ -822,10 +826,158 @@ class Gambling(commands.Cog):
             await ctx.send(text)
             
             asyncio.create_task( self.lead_and_rolecheck(ctx.author.id) )
-        
 
+    
+    async def roullete_timer(self, ctx):
+        await asyncio.sleep(120)
+        self.roullete_timer_task = None
+        await self.do_roullete_spin(ctx)
+
+    async def do_roullete_spin(self, ctx):
+
+        winner = random.choice(self.roullete_members)
+
+        earnings = self.roullete_bet * len(self.roullete_members)
+
+        if len(self.roullete_members) > 1:
+            await ctx.send(f'<@{winner}> has won the roullete and won ${earnings-self.roullete_bet}!')
+        else:
+            await ctx.send(f'<@{winner}> has won the roullete *because they\'re the only damn possible winner.* ')
+
+        self.roullete_members.clear()
+
+        async with self.client.pool.acquire() as db:
+
+            money = await db.get_member_val(winner, 'money')
+            money += earnings
+
+            await db.set_member_val(winner, 'money', money)
+
+            await db.rolecheck(winner)
+
+
+    @commands.group(invoke_without_command=True)
+    async def roullete(self, ctx):
+
+        await ctx.send('Incorrect command usage: `.roullete start/spin/join/leave/list`')
+    
+    @roullete.command(name='start')
+    async def roullete_start(self, ctx, bet=''):
+
+        async with self.client.pool.acquire() as db:
+
+            if not bet.isdigit():
+                return await ctx.send('Invalid bet amount.')
+            
+            bet = int(bet)
+
+            if bet <= 0:
+                return await ctx.send('Invalid bet amount.')
+
+            if not await db.event_disabled(ctx):
+                return
+
+            money = await db.get_member_val(ctx.author.id, 'money')
+
+            if bet > money:
+                return await ctx.send('You don\'t have enough money for that.')
+
+            if self.client.heist:
+                return await ctx.send('You cannot start a roullete during a heist.')
+
+            if self.roullete_members:
+                return await ctx.send(f'There is already an ongoing roullete.')
+
+            self.roullete_members.append(ctx.author.id)
+            self.roullete_timer_task = asyncio.create_task(self.roullete_timer(ctx))
+            self.roullete_bet = bet
+
+            await ctx.send(f'Roullete started for **${bet}**! Use `.roullete join` to join it. The wheel will spin automatically in 2 minutes.')
+            
+            await db.set_member_val(ctx.author.id, 'money', money-bet)
+
+            await db.rolecheck(ctx.author.id)
+
+    @roullete.command(name='spin')
+    async def spin(self, ctx):
+
+        if not self.roullete_members:
+            return await ctx.send('There is no ongoing roullete.')
+
+        if ctx.author.id != self.roullete_members[0]:
+            return await ctx.send('You must be the first in the roullete list in order to spin the wheel.')
+
+        self.roullete_timer_task.cancel()
+        self.roullete_timer_task = None
+
+        await self.do_roullete_spin(ctx)
+
+    
+    @roullete.command(name='join')
+    async def roullete_join(self, ctx):
+
+        if not self.roullete_members:
+            return await ctx.send('There is no ongoing roullete.')
+
+        if ctx.author.id in self.roullete_members:
+            return await ctx.send('You are already participating in this roullete.')
         
+        async with self.client.pool.acquire() as db:
+            money = await db.get_member_val(ctx.author.id, 'money')
+
+            if self.roullete_bet > money:
+                return await ctx.send('You do not have enough for that.')
+
+            await db.set_member_val(ctx.author.id, 'money', money-self.roullete_bet)
+
+            await db.rolecheck(ctx.author.id)
+
+
+        await ctx.send(f'**{ctx.author.name}** has joined the roullete for **${self.roullete_bet}**')
+        self.roullete_members.append(ctx.author.id)
+
+    @roullete.command(name='leave')
+    async def roullete_leave(self, ctx):
+
+        if not self.roullete_members:
+            return await ctx.send('There is no ongoing roullete.')
+
+        if ctx.author.id not in self.roullete_members:
+            return await ctx.send('You are not participating in this roullete.')
         
+        async with self.client.pool.acquire() as db:
+            money = await db.get_member_val(ctx.author.id, 'money')
+
+            await db.set_member_val(ctx.author.id, 'money', money+self.roullete_bet)
+
+            await db.rolecheck(ctx.author.id)
+
+
+        await ctx.send(f'**{ctx.author.name}** has left the roullete.')
+        self.roullete_members.remove(ctx.author.id)
+
+        if not self.roullete_members:
+            self.roullete_timer_task.cancel()
+            self.roullete_timer_task = None
+            
+            self.roullete_bet = None
+
+            await ctx.send('Roullete cancelled since everyone left.')
+
+
+    @roullete.command(name='list', aliases=['members'])
+    async def roullete_list(self, ctx):
+        
+        if not self.roullete_members: return await ctx.send(f"There is no ongoing roullete right now.")
+
+        guild = self.client.mainGuild
+
+        embed = discord.Embed(color=0x42f5b0, title=f'Roullete for ${self.roullete_bet}')
+
+        for person in self.roullete_members:
+            embed.add_field(value=f'{guild.get_member(person).name}', name=discord.utils.escape_markdown('___'), inline=True)
+
+        await ctx.send(embed=embed)
     
 
 def setup(client):

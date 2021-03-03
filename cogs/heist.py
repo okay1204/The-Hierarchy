@@ -166,11 +166,16 @@ class Heist(commands.Cog):
             if heistc > time.time():
                 return await ctx.send(f'Everyone must wait {splittime(heistc)} before another heist be made.')
                 
+
             elif self.client.heist:
                 return await ctx.send(f"There is an ongoing heist right now.")
 
             elif not target:
                 return await ctx.send(f'Incorrect command usage:\n`.heist start member` or `.heist start bank`')
+
+            if self.client.get_cog('Gambling'):
+                if self.client.get_cog('Gambling').roullete_members:
+                    return await ctx.send('You cannot start a heist during a roulette.')
 
             if target.lower() == "bank":
                 
@@ -264,7 +269,7 @@ class Heist(commands.Cog):
             embed = discord.Embed(color=0xff1414, title=f'Heist on {guild.get_member(self.client.heist["victim"]).name}')
 
         for person in self.client.heist["participants"]:
-            embed.add_field(value=f'{guild.get_member(person).name}', name='__________', inline=True)
+            embed.add_field(value=f'{guild.get_member(person).name}', name=discord.utils.escape_markdown('___'), inline=True)
 
         await ctx.send(embed=embed)
 

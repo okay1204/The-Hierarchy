@@ -174,7 +174,7 @@ class Heist(commands.Cog):
                 return await ctx.send(f'Incorrect command usage:\n`.heist start member` or `.heist start bank`')
 
             if self.client.get_cog('Gambling'):
-                if self.client.get_cog('Gambling').roullete_members:
+                if self.client.get_cog('Gambling').roulette_members:
                     return await ctx.send('You cannot start a heist during a roulette.')
 
             if target.lower() == "bank":

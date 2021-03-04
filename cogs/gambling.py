@@ -892,7 +892,7 @@ class Gambling(commands.Cog):
             self.roulette_timer_task = asyncio.create_task(self.roulette_timer(ctx))
             self.roulette_bet = bet
 
-            await ctx.send(f'roulette started for **${bet}**! Use `.roulette join` to join it. The wheel will spin automatically in 2 minutes.')
+            await ctx.send(f'Roulette started for **${bet}**! Use `.roulette join` to join it. The wheel will spin automatically in 2 minutes.')
             
             await db.set_member_val(ctx.author.id, 'money', money-bet)
 
@@ -962,7 +962,7 @@ class Gambling(commands.Cog):
             
             self.roulette_bet = None
 
-            await ctx.send('roulette cancelled since everyone left.')
+            await ctx.send('Roulette cancelled since everyone left.')
 
 
     @roulette.command(name='list', aliases=['members'])
@@ -972,7 +972,7 @@ class Gambling(commands.Cog):
 
         guild = self.client.mainGuild
 
-        embed = discord.Embed(color=0x42f5b0, title=f'roulette for ${self.roulette_bet}')
+        embed = discord.Embed(color=0x42f5b0, title=f'Roulette for ${self.roulette_bet}')
 
         for person in self.roulette_members:
             embed.add_field(value=f'{guild.get_member(person).name}', name=discord.utils.escape_markdown('___'), inline=True)

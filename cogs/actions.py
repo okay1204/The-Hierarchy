@@ -51,6 +51,9 @@ class Actions(commands.Cog):
 
             if not await db.level_check(ctx, ctx.author.id, 2, "bail someone"): return
 
+            if not member:
+                member = ctx.author
+
             if member.id == ctx.author.id:
                 await ctx.send("You can't bail yourself.")
 

@@ -933,7 +933,7 @@ class Gambling(commands.Cog):
             await db.rolecheck(ctx.author.id)
 
 
-        await ctx.send(f'**{ctx.author.name}** has joined the roulette for **${self.roulette_bet}**')
+        await ctx.send(f'**{ctx.author.name}** has joined the roulette for **${self.roulette_bet}**.')
         self.roulette_members.append(ctx.author.id)
 
     @roulette.command(name='leave')
@@ -972,7 +972,7 @@ class Gambling(commands.Cog):
 
         guild = self.client.mainGuild
 
-        embed = discord.Embed(color=0x42f5b0, title=f'Roulette for ${self.roulette_bet}')
+        embed = discord.Embed(color=0x42f5b0, title=f'Roulette for ${self.roulette_bet}.')
 
         for person in self.roulette_members:
             embed.add_field(value=f'{guild.get_member(person).name}', name=discord.utils.escape_markdown('___'), inline=True)

@@ -835,7 +835,6 @@ _ _""")
 
 
             self.working.append(ctx.author.id)
-            correct = 0
 
             with open('./storage/jsons/mode.json') as f:
                 mode = json.load(f)
@@ -853,6 +852,7 @@ _ _""")
         else:
             premium = False
 
+        correct = 0
 
         for x in range(5):
 
@@ -882,9 +882,8 @@ _ _""")
         earnings = job.salary[correct]
         earnings = random.randint(earnings[0], earnings[1])
 
-        while extra > 0:
-            earnings += random.randint(1,10)
-            extra -= 1
+        for _ in range(extra):
+            earnings += random.randint(20, 40)
 
         async with self.client.pool.acquire() as db:
         
@@ -898,9 +897,9 @@ _ _""")
             article = 'an'
         else:
             article = 'a'
-                            # message linked with tutorial
 
         self.working.remove(ctx.author.id)
+                            # message linked with tutorial
         await ctx.send(f"💰 **{ctx.author.name}** worked as {article} **{job.name}** and successfully completed {correct+extra} tasks, earning ${earnings}. 💰")
 
 

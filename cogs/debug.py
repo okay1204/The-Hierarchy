@@ -533,7 +533,7 @@ class Debug(commands.Cog):
 
         async with self.client.pool.acquire() as db:
 
-            name = await db.fetchval('SELECT name FROM WHERE id = $1', award_id)
+            name = await db.fetchval('SELECT name FROM awards WHERE id = $1', award_id)
             
             # detect if row even exists
             if not name:

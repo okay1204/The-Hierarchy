@@ -409,7 +409,7 @@ _ _""")
                 await ctx.send(f"You are already enrolling at **{current}**.")
                 return
 
-            majors = await db.get_member_val(ctx.author.id, 'majors').split('|')
+            majors = await db.get_member_val(ctx.author.id, 'majors')
             
             if university.major in majors:
                 await ctx.send(f"You already have a **{university.major}** major.")
@@ -454,8 +454,8 @@ _ _""")
 
 
                 await ctx.send(f"""You payed ${university.price} and successfully enrolled in **{name.capitalize()}**.
-    If you do not have enough money to pay the cost every 24 hours, your enrollment will automatically end and no refund will be given.
-    Good luck on the finals!""")
+If you do not have enough money to pay the cost every 24 hours, your enrollment will automatically end and no refund will be given.
+Good luck on the finals!""")
                 
                 asyncio.create_task(self.school_fee( find_next_day(university, int(time.time())), ctx.author.id, university.price), name=f"school {ctx.author.id}")
 

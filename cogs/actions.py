@@ -478,7 +478,7 @@ class Actions(commands.Cog):
                             await ctx.send(f"Would you like to automatically withdraw the missing ${missing} from your bank? Respond with `yes` or `y` to proceed.")
 
                             try:
-                                response = await self.client.wait_for('message', check=lambda msg: msg.ctx.author == ctx.author and msg.channel == ctx.channel, timeout=20)
+                                response = await self.client.wait_for('message', check=lambda msg: msg.author == ctx.author and msg.channel == ctx.channel, timeout=20)
 
                             except asyncio.TimeoutError:
                                 await ctx.send("Bank withdrawal timed out.")

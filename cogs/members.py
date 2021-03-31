@@ -165,36 +165,35 @@ class Members(commands.Cog):
 
             gang = await db.fetchrow('SELECT name, owner, members, role_id FROM gangs WHERE owner = $1 OR $1 = ANY(members);', member.id)
 
-            await db.leaderboard()
+
+            if gang:
+
+                name, owner, members, role_id = gang
 
 
-        if gang:
+                if member.id == owner:
+                    await db.execute('DELETE FROM gangs WHERE name = $1;', name)
 
-            name, owner, members, role_id = gang
-
-
-            if member.id == owner:
-                await db.execute('DELETE FROM gangs WHERE name = $1;', name)
-
-                if role_id:
-                    role = guild.get_role(role_id)
-                    await role.delete(reason="Gang role deleted")
-
-            else:
-                
-                members.remove(member.id)
-                await db.execute('UPDATE gangs SET members = $1 WHERE name = $2;', members, name)
-
-
-                if len(members) < 2:
-                    
                     if role_id:
                         role = guild.get_role(role_id)
-
                         await role.delete(reason="Gang role deleted")
-                        await db.execute('UPDATE gangs SET role_id = NULL WHERE name = $1;', name)
+
+                else:
+                    
+                    members.remove(member.id)
+                    await db.execute('UPDATE gangs SET members = $1 WHERE name = $2;', members, name)
+
+
+                    if len(members) <= 2:
+                        
+                        if role_id:
+                            role = guild.get_role(role_id)
+
+                            await role.delete(reason="Gang role deleted")
+                            await db.execute('UPDATE gangs SET role_id = NULL WHERE name = $1;', name)
 
                 
+            await db.leaderboard()
                 
 
     @tasks.loop(minutes=10)

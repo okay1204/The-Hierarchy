@@ -276,17 +276,17 @@ async def on_ready():
 
     # for production
     
-    cogs_to_unload = ['events', 'invites', 'halloween', 'christmas', 'birthday']
+    cogs_to_unload = ['events', 'invites', 'halloween', 'christmas', 'birthday', 'april_fools']
 
     # cogs to ungload for development
     
-    cogs_to_unload = [
-    'debug', 'actions', 'games', 
-    'misc', 'premium', 'tutorial', 'heist', 
-    'members', 'fun', 'info', 'polls', 'admin', 
-    'reactions', 'timers', 'events', 'invites', 'leveling', 
-    'jobs', 'voice_channels', 'alerts', 'halloween',
-    'christmas', 'gangs', 'birthday']
+    # cogs_to_unload = [
+    # 'debug', 'actions', 'games', 
+    # 'misc', 'premium', 'tutorial', 'heist', 
+    # 'members', 'fun', 'info', 'polls', 'admin', 
+    # 'reactions', 'timers', 'events', 'invites', 'leveling', 
+    # 'jobs', 'voice_channels', 'alerts', 'halloween',
+    # 'christmas', 'gangs', 'birthday', 'april_fools']
 
     
     # all cogs
@@ -297,7 +297,7 @@ async def on_ready():
     # 'members', 'fun', 'info', 'polls', 'admin', 
     # 'reactions', 'timers', 'events', 'invites', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween',
-    # 'christmas', 'gangs', 'birthday']
+    # 'christmas', 'gangs', 'birthday', 'april_fools']
 
 
     for cog in cogs_to_unload:

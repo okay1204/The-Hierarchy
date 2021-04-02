@@ -232,11 +232,12 @@ class Jobs(commands.Cog):
 
             school_announcements = self.client.get_channel(744988365082067034)
 
-            async with self.client.pool.acquire() as db:
 
-                if can_pay:
+            if can_pay:
 
-                    await asyncio.sleep(duration)
+                await asyncio.sleep(duration)
+            
+                async with self.client.pool.acquire() as db:
 
                     broke = False
 
@@ -283,17 +284,22 @@ class Jobs(commands.Cog):
                     else:
                         await school_announcements.send(f"<@{userid}> did not have enough money to pay, enrollment automatically cancelled.")
                         return
+            
+            if duration == 0:
+
+                async with self.client.pool.acquire() as db:
                 
-                if duration == 0:
-                    
                     if not await db.get_member_val(userid, 'final_announced'):
                         await school_announcements.send(f"<@{userid}> can take their finals. Use `.final` to take it!")
                         await db.set_member_val(userid, 'final_announced', True)
-                
-                else:
+            
+            else:
+
+                async with self.client.pool.acquire() as db:
                     study_start = await db.get_member_val(userid, 'study_start')
 
                     asyncio.create_task(self.school_fee(find_next_day(university, study_start), userid, university), name=f"school {userid}")
+
         except Exception as e:
             print(e)
 

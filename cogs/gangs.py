@@ -100,7 +100,7 @@ class Gangs(commands.Cog):
 
 
             try:
-                owner, description, created_at, role_id, color, img_link = await db.fetchrow('SELECT owner, description, created_at, role_id, color, img_link FROM gangs WHERE name = $1;', name)
+                gangid, owner, description, created_at, role_id, color, img_link = await db.fetchrow('SELECT id, owner, description, created_at, role_id, color, img_link FROM gangs WHERE name = $1;', name)
 
             except TypeError:
                 gangs = await db.fetch('SELECT name FROM gangs;')
@@ -136,6 +136,8 @@ class Gangs(commands.Cog):
         if role_id:
             role = guild.get_role(role_id)
             description = f"Role: {role.mention}\n{description}"
+        
+        description += f"\n\nGang Id: {gangid}"
 
         # Convert string to datetime
         created_at = datetime.datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S.%f')

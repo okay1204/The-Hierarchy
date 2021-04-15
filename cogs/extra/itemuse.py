@@ -25,7 +25,8 @@ class ItemUses:
             'backpack': self.backpack, 
             'pass': self.pass_item,
             'handcuffs': self.handcuffs,
-            'thingy': self.thingy
+            'thingy': self.thingy,
+            'assistant': self.assistant
             }
 
     async def dispatch(self, ctx, item):
@@ -133,4 +134,12 @@ class ItemUses:
         
         await ctx.send("💠 You uhh... used? the useless thingy? 💠")
         await self.db.remove_item(ctx.author.id, 'thingy')
+
+    async def assistant(self, ctx):
+        timer = int(time.time()) + 86400 # 24 hours
+
+        await self.db.add_use(ctx.author.id, 'assistant', timer)
+        await self.db.remove_item(ctx.author.id, 'assistant')
+
+        await ctx.send(f"**{ctx.author.name}** used an 👍 **assistant**.")
     

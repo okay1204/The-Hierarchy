@@ -281,12 +281,12 @@ async def on_ready():
     # cogs to ungload for development
     
     cogs_to_unload = [
-    'debug', 'actions', 'games', 
+    'debug', 'actions', 'games', 'gambling', 
     'misc', 'premium', 'tutorial', 'heist', 
     'members', 'fun', 'info', 'polls', 'admin', 
     'reactions', 'timers', 'events', 'invites', 'leveling', 
     'jobs', 'voice_channels', 'alerts', 'halloween',
-    'christmas', 'gangs', 'birthday', 'april_fools']
+    'christmas', 'gangs', 'birthday', 'april_fools', 'jail']
 
     
     # all cogs
@@ -297,7 +297,7 @@ async def on_ready():
     # 'members', 'fun', 'info', 'polls', 'admin', 
     # 'reactions', 'timers', 'events', 'invites', 'leveling', 
     # 'jobs', 'voice_channels', 'alerts', 'halloween',
-    # 'christmas', 'gangs', 'birthday', 'april_fools']
+    # 'christmas', 'gangs', 'birthday', 'april_fools', 'jail']
 
 
     for cog in cogs_to_unload:

@@ -882,16 +882,21 @@ _ _""")
         if correct > 3:
             extra = correct - 3
             correct = 3
-        
-        job = find_job(job)
-
-        earnings = job.salary[correct]
-        earnings = random.randint(earnings[0], earnings[1])
-
-        for _ in range(extra):
-            earnings += random.randint(20, 40)
 
         async with self.client.pool.acquire() as db:
+            if correct < 3 and 'assistant' in await db.in_use(ctx.author.id):
+                correct += 1
+                await ctx.send(f'Your 👍 assistant made up for one of the tasks you missed! *{correct-1} -> {correct} completed tasks*')
+                await db.remove_use(ctx.author.id, 'assistant')
+
+            job = find_job(job)
+
+            earnings = job.salary[correct]
+            earnings = random.randint(earnings[0], earnings[1])
+
+            for _ in range(extra):
+                earnings += random.randint(20, 40)
+
         
             money = await db.get_member_val(ctx.author.id, 'money')
             money += earnings

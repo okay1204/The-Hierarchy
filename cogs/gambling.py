@@ -90,16 +90,19 @@ class Gambling(commands.Cog):
             await ctx.send("Incorrect command usage:\n`.fight start/cancel/help`")
             return
 
-        if not await bot_check(self.client, ctx, member):
-            return
-
-        async with self.client.pool.acquire() as db:
-
-            if member and not await db.member_event_check(ctx, member.id): return
-
         action = action.lower()
 
         if action == 'start':
+
+            if not member:
+                return await ctx.send("Incorrect command usage:\n`.fight start member`")
+
+            if not await bot_check(self.client, ctx, member):
+                return
+
+            async with self.client.pool.acquire() as db:
+                if member and not await db.member_event_check(ctx, member.id): return
+
             for task in asyncio.all_tasks():
                 name = str(task.get_name())
                 if name == f'fightreq {ctx.author.id}':

@@ -102,8 +102,7 @@ class Premium(commands.Cog):
 
                     
                 boosts = await db.get_member_val(member.id, 'boosts')
-
-        await ctx.send(f"⏱️ **{member.name}**'s boosts: {boosts}")
+                await ctx.send(f"⏱️ **{member.name}**'s boosts: {boosts}")
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)

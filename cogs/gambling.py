@@ -978,7 +978,8 @@ class Gambling(commands.Cog):
         embed = discord.Embed(color=0x42f5b0, title=f'Roulette for ${self.roulette_bet}.')
 
         for person in self.roulette_members:
-            embed.add_field(value=f'{guild.get_member(person).name}', name=discord.utils.escape_markdown('___'), inline=True)
+            name = discord.utils.escape_markdown(guild.get_member(person).name)
+            embed.add_field(value=name, name=discord.utils.escape_markdown('___'), inline=True)
 
         await ctx.send(embed=embed)
     

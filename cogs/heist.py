@@ -269,7 +269,8 @@ class Heist(commands.Cog):
             embed = discord.Embed(color=0xff1414, title=f'Heist on {guild.get_member(self.client.heist["victim"]).name}')
 
         for person in self.client.heist["participants"]:
-            embed.add_field(value=f'{guild.get_member(person).name}', name=discord.utils.escape_markdown('___'), inline=True)
+            name = discord.utils.escape_markdown(guild.get_member(person).name)
+            embed.add_field(value=name, name=discord.utils.escape_markdown('___'), inline=True)
 
         await ctx.send(embed=embed)
 

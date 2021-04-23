@@ -146,6 +146,34 @@ class Members(commands.Cog):
                 asyncio.create_task( self.client.heist["location"].send(f"**{member.name}** has left the server. Heist cancelled.") )
                 self.client.heist = {}
 
+        # roulettes
+        if self.client.get_cog('Gambling'):
+            gambling_cog = self.client.get_cog('Gambling')
+            roulette_members = gambling_cog.roulette_members
+            roulette_task = gambling_cog.roulette_timer_task
+
+            if member.id in roulette_members:
+                roulette_members.remove(member.id)
+            
+                if not roulette_members:
+                    roulette_task.cancel()
+                    gambling_cog.roulette_task = None
+                    roulette_members.clear()
+                    gambling_cog.roulette_bet = None
+
+        # riots
+        if self.client.get_cog('Jail'):
+            jail_cog = self.client.get_cog('Jail')
+            riot = jail_cog.riot
+            if riot and member.id in riot['members']:
+                riot['participants'].remove(member.id)
+
+                if not riot['participants']:
+                    jail_cog.riot_task.cancel()
+                    jail_cog.riot_task = None
+                    asyncio.create_task( riot["location"].send(f"**{member.name}** has left the server. Heist cancelled.") )
+                    jail_cog.riot = None
+
 
         if self.client.get_cog('Leveling'):
             asyncio.create_task(self.client.get_cog('Leveling').rank_leaderboard())

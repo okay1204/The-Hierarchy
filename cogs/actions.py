@@ -80,8 +80,9 @@ class Actions(commands.Cog):
 
             jailtime = await db.get_member_val(member.id, 'jailtime')
             if jailtime < time.time(): 
-                await ctx.send(f"**{member.name}** is not in jail.")
-                return
+                return await ctx.send(f"**{member.name}** is not in jail.")
+            elif self.client.get_cog('Jail') and self.client.get_cog('Jail').riot and member.id in self.client.get_cog('Jail').riot['participants']:
+                return await ctx.send(f'**{member.name}** is in a riot.')
             else:
                 bailprice = self.client.bailprice(jailtime)
 

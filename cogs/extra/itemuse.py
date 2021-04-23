@@ -64,6 +64,9 @@ class ItemUses:
         
         if jailtime < time.time():
             return await ctx.send('You are not in jail.')
+
+        elif self.client.get_cog('Jail') and self.client.get_cog('Jail').riot and ctx.author.id in self.client.get_cog('Jail').riot['participants']:
+            return await ctx.send('You are in a riot.')
     
         else:
             bailprice = self.client.bailprice(jailtime)

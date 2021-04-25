@@ -455,7 +455,7 @@ Gang: {gang}
     
 
     @award.command(name="list")
-    async def awards_list(self, ctx, page=1, *, member:discord.Member=None):
+    async def awards_list(self, ctx, member:discord.Member=None, page=1):
 
         if not member:
             member = ctx.author

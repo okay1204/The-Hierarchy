@@ -475,7 +475,7 @@ Gang: {gang}
                 await ctx.send(embed=embed)
                 return
 
-            awards = [await db.fetchrow('SELECT name, short_description FROM awards WHERE id = $1;', award_id) for award_id in award_ids]
+            awards = await db.fetch('SELECT name, short_description FROM awards WHERE id = ANY($1);', award_ids)
 
 
         # dividing into lists of 5

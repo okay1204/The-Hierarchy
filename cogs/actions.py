@@ -262,11 +262,11 @@ class Actions(commands.Cog):
                 # 1 in 4 chance
                 if not random.getrandbits(2):
 
-                    if 'gun' in await db.in_use(ctx.author.id):
+                    if 'lawyer' in await db.in_use(ctx.author.id):
 
                         # 1 in 2 chance
                         if random.getrandbits(1):
-                            return await db.steal_log(member.id, ctx.channel, f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead. They were also caught but got away with their gun.")
+                            return await db.steal_log(member.id, ctx.channel, f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead. They were also caught but avoided jail with their lawyer.")
 
                     await db.steal_log(member.id, ctx.channel, f"**{member.name}** had a padlock in use and **{ctx.author.name}** broke the padlock instead. They were also caught and jailed for 1h 30m.")
                     jailtime = int(time.time()) + 5400
@@ -291,10 +291,10 @@ class Actions(commands.Cog):
 
                 if random.randint(1,200) <= randomer:
 
-                    if 'gun' in await db.in_use(ctx.author.id):
+                    if 'lawyer' in await db.in_use(ctx.author.id):
 
                         if random.getrandbits(1):
-                            return await db.steal_log(member.id, ctx.channel, f"**{ctx.author.name}** was caught stealing but got away with their gun.")
+                            return await db.steal_log(member.id, ctx.channel, f"**{ctx.author.name}** was caught stealing but avoided jail with their lawyer.")
 
 
                     jailtime = int(int(time.time()) + amount*100.5)

@@ -21,7 +21,7 @@ class ItemUses:
 
         self.dispatcher = {
             'padlock': self.padlock, 
-            'gun': self.gun, 
+            'lawyer': self.lawyer, 
             'backpack': self.backpack, 
             'pass': self.pass_item,
             'handcuffs': self.handcuffs,
@@ -41,13 +41,13 @@ class ItemUses:
 
         await ctx.send(f"**{ctx.author.name}** used a 🔒 **padlock**.")
 
-    async def gun(self, ctx):
+    async def lawyer(self, ctx):
         timer = int(time.time()) + 46800
 
-        await self.db.add_use(ctx.author.id, 'gun', timer)
-        await self.db.remove_item(ctx.author.id, 'gun')
+        await self.db.add_use(ctx.author.id, 'lawyer', timer)
+        await self.db.remove_item(ctx.author.id, 'lawyer')
 
-        await ctx.send(f"**{ctx.author.name}** used a 🔫 **gun**.")
+        await ctx.send(f"**{ctx.author.name}** used a 🔨 **lawyer**.")
 
     async def backpack(self, ctx):
 

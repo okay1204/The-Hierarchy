@@ -463,7 +463,7 @@ _ _""")
 If you do not have enough money to pay the cost every 24 hours, your enrollment will automatically end and no refund will be given.
 Good luck on the finals!""")
                 
-                asyncio.create_task(self.school_fee( find_next_day(university, int(time.time())), ctx.author.id, university.price), name=f"school {ctx.author.id}")
+                asyncio.create_task(self.school_fee( find_next_day(university, int(time.time())), ctx.author.id, university), name=f"school {ctx.author.id}")
 
                 await db.leaderboard()
                 await db.rolecheck(ctx.author.id)

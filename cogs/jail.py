@@ -62,7 +62,7 @@ class Jail(commands.Cog):
             mobile = False
         
         # dividing into lists of 5
-        jailed = [jailed[x:x+5] for x in range(0, len(jailed), 5)]
+        jailed = [jailed[x:x+10] for x in range(0, len(jailed), 5)]
 
         embed = discord.Embed(color=0x941919)
         embed.set_author(name=f"Jailed Members")

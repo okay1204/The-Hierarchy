@@ -98,7 +98,7 @@ class Heist(commands.Cog):
                     if 'lawyer' in await db.in_use(userid):
 
                         if random.getrandbits(1):
-                            embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, avoided jail their lawyer.', inline=True)
+                            embed.add_field(name=f'{guild.get_member(userid).name}', value=f'Caught, avoided jail with their lawyer.', inline=True)
                             gotaway = True
 
                     if not gotaway:

@@ -107,6 +107,9 @@ class ItemUses:
         elif ctx.author.id == member.id:
             await ctx.send("You can't handcuff yourself.")
             return
+
+        elif not await bot_check(self.client, ctx, member):
+            return
         
         elif await self.db.get_member_val(member.id, 'jailtime') > time.time():
             await ctx.send("This user is already in jail.")

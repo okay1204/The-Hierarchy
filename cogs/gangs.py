@@ -381,6 +381,9 @@ class Gangs(commands.Cog):
         elif member.id == ctx.author.id:
             return await ctx.send("You can't invite yourself.")
 
+        if not await bot_check(self.client, ctx, member):
+            return
+
         async with self.client.pool.acquire() as db:
 
             if await db.get_member_val(member.id, 'level') < 3:

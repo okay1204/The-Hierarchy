@@ -7,7 +7,11 @@ import difflib
 import asyncio
 import aiohttp
 
+# To import from different path
+import sys
+sys.path.insert(1 , os.getcwd())
 
+from utils import bot_check
 
 class Gangs(commands.Cog):
 

@@ -54,6 +54,9 @@ class Actions(commands.Cog):
             if not member:
                 member = ctx.author
 
+            if not await bot_check(self.client, ctx, member):
+                return
+
             if member.id == ctx.author.id:
                 await ctx.send("You can't bail yourself.")
 

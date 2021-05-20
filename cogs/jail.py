@@ -165,7 +165,7 @@ class Jail(commands.Cog):
 
         self.riot['participants'].append(ctx.author.id)
 
-        await ctx.send(f'**{ctx.author.name}** has joined the heist on the riot.')
+        await ctx.send(f'**{ctx.author.name}** has joined the riot.')
 
 
     @riot_group.command(name="list")
@@ -186,9 +186,17 @@ class Jail(commands.Cog):
     @riot_group.command(name="time")
     async def riot_time(self, ctx):
 
-        if not self.riot: return await ctx.send(f"There is no ongoing riot right now.")
-
-        await ctx.send(f'The riot will start in {self.riot["start"]-int(time.time())} seconds.') 
+        if not self.riot:
+            with open('./storage/jsons/riot cooldown.json') as f:
+                riot_cooldown = json.load(f)
+            
+            if riot_cooldown > time.time():
+                await ctx.send(f'A riot can be made in {splittime(riot_cooldown)}.') 
+            else:
+                await ctx.send('A riot can be made.')
+        
+        else:
+            await ctx.send(f'The riot will start in {self.riot["start"]-int(time.time())} seconds.') 
 
     @riot_group.command()
     async def chance(self, ctx):

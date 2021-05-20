@@ -1,3 +1,4 @@
+# pylint: disable=import-error
 import discord
 from discord.ext import commands
 
@@ -7,6 +8,7 @@ import difflib
 import asyncio
 import aiohttp
 
+import os
 # To import from different path
 import sys
 sys.path.insert(1 , os.getcwd())

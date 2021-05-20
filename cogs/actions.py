@@ -11,7 +11,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
-from extra.itemuse import ItemUses
+from cogs.extra.itemuse import ItemUses
 
 # To import from different path
 import sys

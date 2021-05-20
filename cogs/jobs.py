@@ -335,6 +335,9 @@ _ _""")
         if not member:
             member = ctx.author
 
+        if not await bot_check(self.client, ctx, member):
+                return
+
         async with self.client.pool.acquire() as db:
 
             current = await db.get_member_val(member.id, 'university')
@@ -805,6 +808,9 @@ _ _""")
 
         if not member:
             member = ctx.author
+
+        if not await bot_check(self.client, ctx, member):
+                return
 
         async with self.client.pool.acquire() as db:
 

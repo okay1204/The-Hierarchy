@@ -75,10 +75,10 @@ class Members(commands.Cog):
         await channel.send(f"Hey {member.mention}, welcome to **The Hierarchy**! Please check <#692951648410140722> before you do anything else!")
         await member.add_roles(poor)
         
-        generalchannel = self.client.get_channel(692906379203313698)
+        newcomers_channel = self.client.get_channel(848787619118186527)
         joinEmbed = discord.Embed(color=0x2feb61)
         joinEmbed.set_author(name=f"{member.name} just joined!", icon_url=member.avatar_url_as(static_format='jpg'))
-        await generalchannel.send(embed=joinEmbed)
+        await newcomers_channel.send('<@&848423749907775488>', embed=joinEmbed)
 
         async with self.client.pool.acquire() as db:
 

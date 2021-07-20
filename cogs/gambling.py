@@ -85,6 +85,11 @@ class Gambling(commands.Cog):
 
     @commands.command()
     async def fight(self, ctx, action=None, member:discord.Member=None, bet=None):
+
+        async with self.client.pool.acquire() as db:
+
+            if not await db.event_disabled(ctx):
+                return
         
         if not action:
             await ctx.send("Incorrect command usage:\n`.fight start/cancel/help`")

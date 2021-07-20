@@ -87,7 +87,7 @@ class DBUtils(asyncpg.Connection):
 
         if mode == "event":
 
-            in_event = self.get_member_val(id, 'in_event')
+            in_event = await self.get_member_val(id, 'in_event')
 
             if in_event:
                 await ctx.send("This user is participating in the event.")

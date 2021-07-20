@@ -330,7 +330,7 @@ async def on_message(message):
     if type(message.channel) != discord.channel.DMChannel:
         if message.channel.category.id == client.rightCategory:
             if message.content.lower().startswith('pls '):
-                await message.channel.send(f"Hey, this server isn't ran by Dank Memer, it's a custom bot! Check {client.commandsChannel.mention} for a list of commands.")
+                await message.channel.send(f"Hey, this server isn't run by Dank Memer, it's a custom bot! Check {client.commandsChannel.mention} for a list of commands.")
     
 
     await client.process_commands(message)

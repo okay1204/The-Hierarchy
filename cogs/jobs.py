@@ -455,7 +455,7 @@ _ _""")
                     
                     event_total = await db.fetchval("SELECT total FROM events WHERE id = $1;", ctx.author.id)
 
-                    if event_total:
+                    if event_total != None:
                         event_total += university.price
                         await db.execute("UPDATE events SET total = $1 WHERE id = $2;", event_total, ctx.author.id)
                     else:

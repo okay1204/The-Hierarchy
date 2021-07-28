@@ -366,7 +366,8 @@ class Fun(commands.Cog):
 
             posts = []
             async for post in sub.hot(limit=100):
-                posts.append(post)
+                if not post.over_18:
+                    posts.append(post)
 
             post = random.choice(posts)
 

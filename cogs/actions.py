@@ -775,7 +775,7 @@ class Actions(commands.Cog):
 
             await db.set_member_val(ctx.author.id, 'dailytime', dailytime)
 
-    @commands.command()
+    @commands.command(aliases=['yoink'])
     async def claim(self, ctx):
         
         async with self.client.pool.acquire() as db:

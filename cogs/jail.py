@@ -7,9 +7,9 @@ import time
 import os
 import datetime
 
-import discord
-from discord.ext import commands
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 # To import from different path
 import sys
@@ -51,7 +51,7 @@ class Jail(commands.Cog):
             jailed = await db.fetch('SELECT id, name, jailtime FROM members WHERE jailtime > $1 ORDER BY jailtime DESC;', int(time.time()))
 
         if not jailed:
-            embed = discord.Embed(color=0x941919, description="None")
+            embed = nextcord.Embed(color=0x941919, description="None")
             embed.set_author(name=f"Jailed Members")
             await ctx.send(embed=embed)
             return
@@ -64,7 +64,7 @@ class Jail(commands.Cog):
         # dividing into lists of 5
         jailed = [jailed[x:x+10] for x in range(0, len(jailed), 5)]
 
-        embed = discord.Embed(color=0x941919)
+        embed = nextcord.Embed(color=0x941919)
         embed.set_author(name=f"Jailed Members")
 
         if page > len(jailed):
@@ -73,9 +73,9 @@ class Jail(commands.Cog):
         for member in jailed[page-1]:
 
             if not mobile:
-                embed.add_field(name=discord.utils.escape_markdown('___'), value=f"<@{member['id']}>: {splittime(member['jailtime'])}", inline=False)
+                embed.add_field(name=nextcord.utils.escape_markdown('___'), value=f"<@{member['id']}>: {splittime(member['jailtime'])}", inline=False)
             else:
-                embed.add_field(name=discord.utils.escape_markdown('___'), value=f"{member['name']}: {splittime(member['jailtime'])}", inline=False)
+                embed.add_field(name=nextcord.utils.escape_markdown('___'), value=f"{member['name']}: {splittime(member['jailtime'])}", inline=False)
 
         embed.set_footer(text=f"Page {page}/{len(jailed)}")
 
@@ -175,11 +175,11 @@ class Jail(commands.Cog):
 
         guild = self.client.mainGuild
 
-        embed = discord.Embed(color=0xff1414, title=f'Jail Riot')
+        embed = nextcord.Embed(color=0xff1414, title=f'Jail Riot')
 
         for person in self.riot['participants']:
-            name = discord.utils.escape_markdown(guild.get_member(person).name)
-            embed.add_field(value=name, name=discord.utils.escape_markdown('___'), inline=True)
+            name = nextcord.utils.escape_markdown(guild.get_member(person).name)
+            embed.add_field(value=name, name=nextcord.utils.escape_markdown('___'), inline=True)
 
         await ctx.send(embed=embed)
 

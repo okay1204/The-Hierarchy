@@ -1,6 +1,6 @@
 # pylint: disable=import-error, anomalous-backslash-in-string
-import discord
-from discord.ext import commands, tasks
+import nextcord
+from nextcord.ext import commands, tasks
 import json
 import time
 import os
@@ -57,7 +57,7 @@ class Alerts(commands.Cog):
 
             try:
                 await member.send(f"🔔 Alert 🔔: {name}")
-            except discord.Forbidden:
+            except nextcord.Forbidden:
                 pass
 
             with open('./storage/jsons/alerts.json') as f:
@@ -86,7 +86,7 @@ class Alerts(commands.Cog):
 
 
     @alert.command(name="list")
-    async def alert_list(self, ctx, *, member:discord.Member=None):
+    async def alert_list(self, ctx, *, member:nextcord.Member=None):
         
         if not member:
             member = ctx.author
@@ -100,8 +100,8 @@ class Alerts(commands.Cog):
             text = "\n".join(map(lambda info: f"{all_alerts[str(member.id)].index([info[0], info[1]]) + 1}. {splittime(info[0])}: {info[1]}", all_alerts[str(member.id)]))
         
         
-        embed = discord.Embed(color=0xff931f, description=text)
-        embed.set_author(name=f"{member.name}'s alerts", icon_url=member.avatar_url_as(static_format='jpg'))
+        embed = nextcord.Embed(color=0xff931f, description=text)
+        embed.set_author(name=f"{member.name}'s alerts", icon_url=member.avatar.with_format('jpg').url)
 
         await ctx.send(embed=embed)
 

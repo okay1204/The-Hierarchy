@@ -1,6 +1,6 @@
 import time
 import json
-import discord
+import nextcord
 import asyncpg
 from utils import splittime
 
@@ -194,7 +194,7 @@ class DBUtils(asyncpg.Connection):
     async def leaderboard(self):
         guild = self.client.get_guild(692906379203313695)
 
-        embed = discord.Embed(color = 0xffd24a, title='\U0001f3c6 Leaderboard \U0001f3c6')
+        embed = nextcord.Embed(color = 0xffd24a, title='\U0001f3c6 Leaderboard \U0001f3c6')
 
         hierarchy = await self.fetch('SELECT id, money + bank AS total FROM hierarchy.members ORDER BY total DESC;')
         hierarchy = list(filter(lambda x: guild.get_member(x[0]), hierarchy))
@@ -209,7 +209,7 @@ class DBUtils(asyncpg.Connection):
             elif x == 2:
                 medal = ' 🥉'
 
-            embed.add_field(name=discord.utils.escape_markdown('_______'),value=f'{x+1}. <@{hierarchy[x][0]}>{medal} - ${hierarchy[x][1]}',inline=False)
+            embed.add_field(name=nextcord.utils.escape_markdown('_______'),value=f'{x+1}. <@{hierarchy[x][0]}>{medal} - ${hierarchy[x][1]}',inline=False)
 
 
         await self.client.leaderboardMessage.edit(embed=embed)

@@ -1,6 +1,6 @@
 # pylint: disable=import-error, anomalous-backslash-in-string
-import discord
-from discord.ext import commands, tasks
+import nextcord
+from nextcord.ext import commands, tasks
 import json
 import time
 import datetime
@@ -128,7 +128,7 @@ class Christmas(commands.Cog):
         channel = self.client.get_channel(channel_id)
         meter_message = await channel.fetch_message(meter_id)
 
-        embed = discord.Embed(
+        embed = nextcord.Embed(
             color=0x03ff39,
             title="Holiday Meter",
             description=f"🎁 **Gift drops per day: {drops}** 🎁\n\n💸 Total money: ${total_bal} 💸\n\nProgress to another gift drop:\n{meter}\n${progress}/${money_requirement}")
@@ -138,7 +138,7 @@ class Christmas(commands.Cog):
 
         # leaderboard
 
-        embed = discord.Embed(color=0x03ff39, title="🎄 Contribution leaderboard 🎄")
+        embed = nextcord.Embed(color=0x03ff39, title="🎄 Contribution leaderboard 🎄")
         leaderboard_message = await channel.fetch_message(leaderboard_id)
 
         for x in range(5):
@@ -193,7 +193,7 @@ class Christmas(commands.Cog):
         await channel.set_permissions(self.client.mainGuild.default_role, overwrite=overwrites)
         
 
-        embed = discord.Embed(
+        embed = nextcord.Embed(
             color=0x03ff39,
             title="Gift Drop Results"
         )
@@ -276,7 +276,7 @@ class Christmas(commands.Cog):
                 )
 
             if not embed.fields:
-                embed = discord.Embed(
+                embed = nextcord.Embed(
                 color=0x03ff39,
                 title="Gift Drop Results",
                 description="None"
@@ -395,7 +395,7 @@ class Christmas(commands.Cog):
 
 
     @commands.command()
-    async def cprog(self, ctx, *, member:discord.Member=None):
+    async def cprog(self, ctx, *, member:nextcord.Member=None):
 
         if not member:
             member = ctx.author
@@ -411,7 +411,7 @@ class Christmas(commands.Cog):
         await ctx.send(f"**{member.name}** has contributed ${money} to the Christmas event.")
 
     @commands.command()
-    async def caround(self, ctx, find=None, *, member:discord.Member=None):
+    async def caround(self, ctx, find=None, *, member:nextcord.Member=None):
 
 
         if not member: 
@@ -468,8 +468,8 @@ class Christmas(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0x03ff39, title=f"🎄 Around {member.name} 🎄", icon_url=avatar)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0x03ff39, title=f"🎄 Around {member.name} 🎄", icon_url=avatar)
 
         place = ids.index(result[0][0])+1
         for person in result:
@@ -496,7 +496,7 @@ class Christmas(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def caroundm(self, ctx, find=None, *, member:discord.Member=None):
+    async def caroundm(self, ctx, find=None, *, member:nextcord.Member=None):
 
 
         if not member: 
@@ -553,8 +553,8 @@ class Christmas(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0x03ff39, title=f"🎄 Around {member.name} 🎄", icon_url=avatar)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0x03ff39, title=f"🎄 Around {member.name} 🎄", icon_url=avatar)
 
         place = ids.index(result[0][0])+1
         for person in result:
@@ -569,7 +569,7 @@ class Christmas(commands.Cog):
                 medal = '🥉 '
             if member.id == person[0]:
                 mk = '**'
-            embed.add_field(name='__________', value=f'{mk}{place}. {discord.utils.escape_markdown(current_member.name)} {medal}- ${person[1]}{mk}', inline=False)
+            embed.add_field(name='__________', value=f'{mk}{place}. {nextcord.utils.escape_markdown(current_member.name)} {medal}- ${person[1]}{mk}', inline=False)
             place += 1
 
 
@@ -581,7 +581,7 @@ class Christmas(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def snowball(self, ctx, *, member: discord.Member=None):
+    async def snowball(self, ctx, *, member: nextcord.Member=None):
 
         if not member:
             return await ctx.send("Incorrect command usage:\n`.snowball member`")

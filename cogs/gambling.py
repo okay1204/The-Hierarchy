@@ -1,8 +1,8 @@
 # pylint: disable=import-error, function-redefined
 
-import discord
-from discord.ext import commands
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 import json
 import math
 import asyncio
@@ -84,7 +84,7 @@ class Gambling(commands.Cog):
 
 
     @commands.command()
-    async def fight(self, ctx, action=None, member:discord.Member=None, bet=None):
+    async def fight(self, ctx, action=None, member:nextcord.Member=None, bet=None):
 
         async with self.client.pool.acquire() as db:
 
@@ -135,7 +135,7 @@ class Gambling(commands.Cog):
         else:
             await ctx.send('Enter a valid fight action.')
 
-    async def fightreq(self, ctx, member:discord.Member=None, bet=None):
+    async def fightreq(self, ctx, member:nextcord.Member=None, bet=None):
         ctx.author = ctx.author
 
         async with self.client.pool.acquire() as db:
@@ -171,7 +171,7 @@ class Gambling(commands.Cog):
                 return
 
 
-            embed = discord.Embed(color = 0xffa60d)
+            embed = nextcord.Embed(color = 0xffa60d)
             embed.set_author(name='Fight Request')
             embed.add_field(name=f'Bet: ${bet}', value=f'{ctx.author.name} vs {member.name}')
             request = await ctx.send(embed=embed)
@@ -214,10 +214,10 @@ class Gambling(commands.Cog):
         health2 = 3
 
         while health1 > 0 and health2 > 0:
-            attacking = discord.Embed(color= 0xff0000)
+            attacking = nextcord.Embed(color= 0xff0000)
             attacking.set_author(name=f"{ctx.author.name} ({health1}/3) vs {member.name} ({health2}/3)")
             attacking.add_field(name='Status:',value='Attacking',inline=False)
-            defending = discord.Embed(color= 0x0015ff)
+            defending = nextcord.Embed(color= 0x0015ff)
             defending.set_author(name=f"{member.name} ({health2}/3) vs {ctx.author.name} ({health1}/3)")
             defending.add_field(name=f"Status:",value='Defending',inline=False)
             
@@ -297,10 +297,10 @@ class Gambling(commands.Cog):
 
             
 
-            attacking = discord.Embed(color= 0xff0000)
+            attacking = nextcord.Embed(color= 0xff0000)
             attacking.set_author(name=f"{member.name} ({health2}/3) vs {ctx.author.name} ({health1}/3)")
             attacking.add_field(name='Status:',value='Attacking',inline=False)
-            defending = discord.Embed(color= 0x0015ff)
+            defending = nextcord.Embed(color= 0x0015ff)
             defending.set_author(name=f"{ctx.author.name} ({health1}/3) vs {member.name} ({health2}/3)")
             defending.add_field(name=f"Status:",value='Defending',inline=False)
             
@@ -980,11 +980,11 @@ class Gambling(commands.Cog):
 
         guild = self.client.mainGuild
 
-        embed = discord.Embed(color=0x42f5b0, title=f'Roulette for ${self.roulette_bet}.')
+        embed = nextcord.Embed(color=0x42f5b0, title=f'Roulette for ${self.roulette_bet}.')
 
         for person in self.roulette_members:
-            name = discord.utils.escape_markdown(guild.get_member(person).name)
-            embed.add_field(value=name, name=discord.utils.escape_markdown('___'), inline=True)
+            name = nextcord.utils.escape_markdown(guild.get_member(person).name)
+            embed.add_field(value=name, name=nextcord.utils.escape_markdown('___'), inline=True)
 
         await ctx.send(embed=embed)
     

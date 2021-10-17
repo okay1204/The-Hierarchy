@@ -1,6 +1,6 @@
 # pylint: disable=import-error, anomalous-backslash-in-string
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import time
 import os
 import random
@@ -31,7 +31,7 @@ class Leveling(commands.Cog):
         channel = self.client.get_channel(746062853244715008)
         message = await channel.fetch_message(746063162708721815)
 
-        embed = discord.Embed(color=0x3e41de, title="⭐ Rank Leaderboard ⭐")
+        embed = nextcord.Embed(color=0x3e41de, title="⭐ Rank Leaderboard ⭐")
         
         async with self.client.pool.acquire() as db:
             users = await db.fetch('SELECT id, level, members FROM members ORDER BY level DESC')
@@ -102,8 +102,8 @@ class Leveling(commands.Cog):
                     progress -= 100
 
                     if not self.client.get_cog('Birthday'):
-                        embed = discord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level} and earned $15! Keep going to unlock more features!")
-                        embed.set_author(name=message.author.name, icon_url=message.author.avatar_url_as(static_format="jpg"))
+                        embed = nextcord.Embed(color=0x3e41de, title="⏫ Level Up!", description=f"Advanced to level {level} and earned $15! Keep going to unlock more features!")
+                        embed.set_author(name=message.author.name, icon_url=message.author.avatar.with_format('jpg').url)
 
                         await message.channel.send(embed=embed)
 
@@ -117,7 +117,7 @@ class Leveling(commands.Cog):
                 await db.set_member_val(message.author.id, 'progress', progress)
 
     @commands.command(aliases=["level"])
-    async def rank(self, ctx, *, member:discord.Member=None):
+    async def rank(self, ctx, *, member:nextcord.Member=None):
         
         if not member:
             member = ctx.author
@@ -131,8 +131,8 @@ class Leveling(commands.Cog):
         
             level = await db.get_member_val(member.id, 'level')
 
-            embed = discord.Embed(color=0x3e41de)
-            embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
+            embed = nextcord.Embed(color=0x3e41de)
+            embed.set_author(name=member.name, icon_url=member.avatar.with_format('jpg').url)
             embed.add_field(name=f"Level {level}", value=f"{await db.get_member_val(member.id, 'progress')}% of the way to level {level + 1}.")
             await ctx.send(embed=embed)
 

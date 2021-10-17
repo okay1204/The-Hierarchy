@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands, tasks
+import nextcord
+from nextcord.ext import commands, tasks
 import time
 import os
 

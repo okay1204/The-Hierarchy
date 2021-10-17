@@ -9,9 +9,9 @@ import os
 import datetime
 from sqlite3 import Error
 
-import discord
-from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+import nextcord
+from nextcord.ext import commands, tasks
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 # To import from different path
 import sys
@@ -84,7 +84,7 @@ class Heist(commands.Cog):
                     stolen = temp_total
 
                         
-            embed = discord.Embed(color=0xed1f1f, title="Heist Results")
+            embed = nextcord.Embed(color=0xed1f1f, title="Heist Results")
 
             done_stolen = 0
 
@@ -264,13 +264,13 @@ class Heist(commands.Cog):
         guild = self.client.mainGuild
 
         if self.client.heist["victim"] == "bank":
-            embed = discord.Embed(color=0xff1414, title=f'Heist on the bank')
+            embed = nextcord.Embed(color=0xff1414, title=f'Heist on the bank')
         else:
-            embed = discord.Embed(color=0xff1414, title=f'Heist on {guild.get_member(self.client.heist["victim"]).name}')
+            embed = nextcord.Embed(color=0xff1414, title=f'Heist on {guild.get_member(self.client.heist["victim"]).name}')
 
         for person in self.client.heist["participants"]:
-            name = discord.utils.escape_markdown(guild.get_member(person).name)
-            embed.add_field(value=name, name=discord.utils.escape_markdown('___'), inline=True)
+            name = nextcord.utils.escape_markdown(guild.get_member(person).name)
+            embed.add_field(value=name, name=nextcord.utils.escape_markdown('___'), inline=True)
 
         await ctx.send(embed=embed)
 

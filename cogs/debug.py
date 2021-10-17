@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import json
 import asyncpg
 import os
@@ -34,26 +34,26 @@ class Debug(commands.Cog):
         guild = self.client.mainGuild
         channel = self.client.get_channel(698384786460246147)
         message = await channel.fetch_message(698775210173923429)
-        embed = discord.Embed(color=0x42f57b)
+        embed = nextcord.Embed(color=0x42f57b)
         botuser = guild.get_member(self.client.user.id)
-        botuser = botuser.avatar_url_as(static_format='jpg',size=256)
+        botuser = botuser.avatar.with_format('jpg').url
         embed.set_author(name="Bot ready to use.",icon_url=botuser)
         await message.edit(embed=embed)
         await ctx.send("Status updated to online.")
-        await self.client.change_presence(status=discord.Status.online,activity=discord.Game(name='with money'))
+        await self.client.change_presence(status=nextcord.Status.online,activity=nextcord.Game(name='with money'))
 
     @commands.command()
     async def offline(self, ctx):
         guild = self.client.mainGuild
         channel = self.client.get_channel(698384786460246147)
         message = await channel.fetch_message(698775210173923429)
-        embed = discord.Embed(color=0xff5254)
+        embed = nextcord.Embed(color=0xff5254)
         botuser = guild.get_member(self.client.user.id)
-        botuser = botuser.avatar_url_as(static_format='jpg',size=256)
+        botuser = botuser.avatar.with_format('jpg').url
         embed.set_author(name="Bot under development.",icon_url=botuser)
         await message.edit(embed=embed)
         await ctx.send("Status updated to offline.")
-        await self.client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
+        await self.client.change_presence(status=nextcord.Status.dnd, activity=nextcord.Game(name='UNDER DEVELOPMENT'))
 
     @commands.command()
     async def mode(self, ctx, mode=''):
@@ -127,7 +127,7 @@ class Debug(commands.Cog):
         async with self.client.pool.acquire() as db:
             shopitems = await db.fetch('SELECT name, price, description, emoji FROM shop;')
 
-        embed = discord.Embed(color=0x30ff56, title='Shop')
+        embed = nextcord.Embed(color=0x30ff56, title='Shop')
 
         x = 1
         for name, price, desc, emoji in shopitems:
@@ -143,7 +143,7 @@ class Debug(commands.Cog):
         await ctx.send("Shop successfully updated.")
 
     @commands.command()
-    async def money(self, ctx, member: discord.Member=None, add=None):
+    async def money(self, ctx, member: nextcord.Member=None, add=None):
 
         if not member or not add:
             await ctx.send("Incorrect command usage:\n`.money member +amount` or `.money member -amount`")
@@ -197,7 +197,7 @@ class Debug(commands.Cog):
         if page > len(awards):
             return await ctx.send("There are not that many pages.")
 
-        embed = discord.Embed(color=0x19a83f, title="All Awards")
+        embed = nextcord.Embed(color=0x19a83f, title="All Awards")
 
         for award_id, name, short_description in awards[page-1]:
             embed.add_field(name=f"{award_id}. {name}", value=short_description, inline=False)
@@ -226,7 +226,7 @@ class Debug(commands.Cog):
 
         name, color, long_description, image_link = award
         
-        embed = discord.Embed(color=color, title=f"{name}  Award ID: {award_id}", description=long_description)
+        embed = nextcord.Embed(color=color, title=f"{name}  Award ID: {award_id}", description=long_description)
         embed.set_image(url=image_link)
 
         await ctx.send(embed=embed)
@@ -342,7 +342,7 @@ class Debug(commands.Cog):
         if listed:
             channel = self.client.get_channel(765694242617032774)
 
-            embed = discord.Embed(color=color, title=name, description=long_description)
+            embed = nextcord.Embed(color=color, title=name, description=long_description)
             embed.set_image(url=image)
 
             message = await channel.send(embed=embed)
@@ -442,7 +442,7 @@ class Debug(commands.Cog):
 
         if param in ("name", "color", "long_description", "image_link") and message_id:
 
-            embed = discord.Embed(color=color, title=name, description=long_description)
+            embed = nextcord.Embed(color=color, title=name, description=long_description)
             embed.set_image(url=image_link)
 
             channel = self.client.get_channel(765694242617032774)
@@ -521,7 +521,7 @@ class Debug(commands.Cog):
         await ctx.send("Incorrect command usage:\n`.adminaward member give/remove`")
 
     @member.command()
-    async def give(self, ctx, member: discord.Member=None, award_id=None):
+    async def give(self, ctx, member: nextcord.Member=None, award_id=None):
 
         if not member or not award_id:
             return await ctx.send("Incorrect command usage:\n`.adminaward member give memberid awardid`")
@@ -554,7 +554,7 @@ class Debug(commands.Cog):
         await ctx.send(f"The award **{name}** was granted to **{member.name}**.")
 
     @member.command()
-    async def remove(self, ctx, member: discord.Member=None, award_number=None):
+    async def remove(self, ctx, member: nextcord.Member=None, award_number=None):
 
         if not member or not award_number:
             return await ctx.send("Incorrect command usage:\n`.adminaward member remove memberid awardnumber`")

@@ -8,8 +8,8 @@ import os
 from sqlite3 import Error
 import re
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 # To import from different path
 import sys
@@ -78,7 +78,7 @@ class Premium(commands.Cog):
         await ctx.send('⏱️ You boosted 1 hour! ⏱️')
 
     @commands.command()
-    async def boostcount(self, ctx, *, member:discord.Member=None):
+    async def boostcount(self, ctx, *, member:nextcord.Member=None):
 
         async with self.client.pool.acquire() as db:
 
@@ -181,10 +181,10 @@ class Premium(commands.Cog):
                             channel_message, author_message = both_messages
 
                             # to convert finished task to message
-                            if not isinstance(channel_message, discord.Message):
+                            if not isinstance(channel_message, nextcord.Message):
                                 session["messages"][index][0] = channel_message = await channel_message
 
-                            elif not isinstance(author_message, discord.Message):
+                            elif not isinstance(author_message, nextcord.Message):
                                 session["messages"][index][1] = author_message = await author_message
                             if channel_message.id == message.id:
 
@@ -211,10 +211,10 @@ class Premium(commands.Cog):
                             channel_message, author_message = both_messages
 
                             # to convert finished task to message
-                            if not isinstance(channel_message, discord.Message):
+                            if not isinstance(channel_message, nextcord.Message):
                                 session["messages"][index][0] = channel_message = await channel_message
 
-                            elif not isinstance(author_message, discord.Message):
+                            elif not isinstance(author_message, nextcord.Message):
                                 session["messages"][index][1] = author_message = await author_message
 
                             if author_message.id == message.id:
@@ -242,10 +242,10 @@ class Premium(commands.Cog):
                             channel_message, author_message = both_messages
 
                             # to convert finished task to message
-                            if not isinstance(channel_message, discord.Message):
+                            if not isinstance(channel_message, nextcord.Message):
                                 session["messages"][index][0] = channel_message = await channel_message
 
-                            elif not isinstance(author_message, discord.Message):
+                            elif not isinstance(author_message, nextcord.Message):
                                 session["messages"][index][1] = author_message = await author_message
 
                             if channel_message.id == message.id:
@@ -268,10 +268,10 @@ class Premium(commands.Cog):
                             channel_message, author_message = both_messages
 
                             # to convert finished task to message
-                            if not isinstance(channel_message, discord.Message):
+                            if not isinstance(channel_message, nextcord.Message):
                                 session["messages"][index][0] = channel_message = await channel_message
 
-                            elif not isinstance(author_message, discord.Message):
+                            elif not isinstance(author_message, nextcord.Message):
                                 session["messages"][index][1] = author_message = await author_message
 
                             if author_message.id == message.id:

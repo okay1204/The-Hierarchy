@@ -1,9 +1,9 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import authinfo
 import os
 
-client = commands.Bot(command_prefix = '.', intents=discord.Intents.all())
+client = commands.Bot(command_prefix = '.', intents=nextcord.Intents.all())
 
 
 @client.event

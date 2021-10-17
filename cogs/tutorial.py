@@ -7,9 +7,9 @@ import time
 import os
 import datetime
 
-import discord
-from discord.ext import commands
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 # To import from different path
 import sys
@@ -322,14 +322,14 @@ class Tutorial(commands.Cog):
             async with channel.typing():
                 await asyncio.sleep(8)
 
-            image = discord.File('./storage/images/stealinfo.png')
+            image = nextcord.File('./storage/images/stealinfo.png')
             await channel.send("When stealing, you can only steal from those that are up to 3 places above you or up to 3 places below you. Refer to this diagram:", file=image)
             
             async with channel.typing():
                 await asyncio.sleep(15)
 
 
-            aroundbug = discord.File('./storage/images/aroundbug.png')
+            aroundbug = nextcord.File('./storage/images/aroundbug.png')
             await channel.send("**If this is what you saw when you did `.around`, or you saw something like @invalid-user, it is a common mobile bug. Try using `.aroundm` instead.**", file=aroundbug)
 
             async with channel.typing():

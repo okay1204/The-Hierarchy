@@ -3,10 +3,10 @@ import asyncio
 import json
 import random
 
-import discord
+import nextcord
 
-from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+from nextcord.ext import commands, tasks
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 import os
 
@@ -126,8 +126,8 @@ class Birthday(commands.Cog):
                         else:
                             await the_end_channel.edit(
                                 overwrites= {
-                                    guild.default_role: discord.PermissionOverwrite(read_messages=True, read_message_history=True, send_messages=False),
-                                    member: discord.PermissionOverwrite(send_messages=True)
+                                    guild.default_role: nextcord.PermissionOverwrite(read_messages=True, read_message_history=True, send_messages=False),
+                                    member: nextcord.PermissionOverwrite(send_messages=True)
                                 }
                             )
 
@@ -230,7 +230,7 @@ class Birthday(commands.Cog):
         async with ctx.channel.typing():
             for channel in guild.channels:
 
-                if type(channel) in (discord.TextChannel, discord.VoiceChannel) and channel.category_id != self.event_category.id:
+                if type(channel) in (nextcord.TextChannel, nextcord.VoiceChannel) and channel.category_id != self.event_category.id:
 
                     channel_overwrites = {}
                     
@@ -261,7 +261,7 @@ class Birthday(commands.Cog):
             for channel in guild.channels:
 
                 if channel.category_id != self.event_category.id:
-                    await channel.edit(overwrites={guild.default_role: discord.PermissionOverwrite(read_messages=False)})
+                    await channel.edit(overwrites={guild.default_role: nextcord.PermissionOverwrite(read_messages=False)})
 
 
             # making specific channels visible
@@ -272,9 +272,9 @@ class Birthday(commands.Cog):
                 except ValueError:
 
                     if channel.id != self.the_end:
-                        overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages=True, read_message_history=True, send_messages=False, add_reactions=False)}
+                        overwrites = {guild.default_role: nextcord.PermissionOverwrite(read_messages=True, read_message_history=True, send_messages=False, add_reactions=False)}
                     else:
-                        overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages=False)}
+                        overwrites = {guild.default_role: nextcord.PermissionOverwrite(read_messages=False)}
 
                     await channel.edit(overwrites=overwrites)
 
@@ -282,8 +282,8 @@ class Birthday(commands.Cog):
                     role = guild.get_role(self.puzzle_roles[index])
                     
                     overwrites = {
-                        guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                        role: discord.PermissionOverwrite(read_messages=True, read_message_history=True, add_reactions=False)
+                        guild.default_role: nextcord.PermissionOverwrite(read_messages=False),
+                        role: nextcord.PermissionOverwrite(read_messages=True, read_message_history=True, add_reactions=False)
                     }
 
                     # the last puzzle doesn't require sending messages
@@ -319,9 +319,9 @@ class Birthday(commands.Cog):
 
                     for role_id, overwrite in all_overwrites.items():
 
-                        overwrites[guild.get_role(int(role_id))] = discord.PermissionOverwrite.from_pair(
-                            discord.Permissions(permissions=overwrite['allow']),
-                            discord.Permissions(permissions=overwrite['deny'])
+                        overwrites[guild.get_role(int(role_id))] = nextcord.PermissionOverwrite.from_pair(
+                            nextcord.Permissions(permissions=overwrite['allow']),
+                            nextcord.Permissions(permissions=overwrite['deny'])
                         )
 
                     try:
@@ -331,7 +331,7 @@ class Birthday(commands.Cog):
 
         for channel in self.event_category.channels:
 
-            overwrites = {guild.default_role: discord.PermissionOverwrite(read_messages=False)}
+            overwrites = {guild.default_role: nextcord.PermissionOverwrite(read_messages=False)}
             await channel.edit(overwrites=overwrites)
 
         await ctx.send('Channel overwrites restored.')

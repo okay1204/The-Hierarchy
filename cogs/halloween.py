@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import random
 import time
 import asyncio
@@ -175,7 +175,7 @@ class Halloween(commands.Cog):
 
 
     @commands.command()
-    async def pumpkins(self, ctx, *, member:discord.Member=None):
+    async def pumpkins(self, ctx, *, member:nextcord.Member=None):
 
         if not member:
             member = ctx.author
@@ -183,8 +183,8 @@ class Halloween(commands.Cog):
         async with self.client.pool.acquire() as db:
             pumpkins = await get_halloween_value(db, member.id, "pumpkins")
 
-        embed = discord.Embed(color=0xff8519, description=f"🎃  {pumpkins} Pumpkins  🎃")
-        embed.set_author(name=f"{member.name}'s pumpkins", icon_url=member.avatar_url_as(static_format='jpg'))
+        embed = nextcord.Embed(color=0xff8519, description=f"🎃  {pumpkins} Pumpkins  🎃")
+        embed.set_author(name=f"{member.name}'s pumpkins", icon_url=member.avatar.with_format('jpg').url)
         
         await ctx.send(embed=embed)
 
@@ -195,7 +195,7 @@ class Halloween(commands.Cog):
         guild = self.client.mainGuild
 
 
-        embed = discord.Embed(color = 0xff8519)
+        embed = nextcord.Embed(color = 0xff8519)
         embed.set_author(name='🎃 Halloween Leaderboard 🎃')
 
 
@@ -234,7 +234,7 @@ class Halloween(commands.Cog):
         guild = self.client.mainGuild
 
 
-        embed = discord.Embed(color = 0xff8519)
+        embed = nextcord.Embed(color = 0xff8519)
         embed.set_author(name='🎃 Halloween Leaderboard 🎃')
 
 
@@ -256,20 +256,20 @@ class Halloween(commands.Cog):
             member = guild.get_member(hierarchy[x][0])
 
             if x == 0:
-                embed.add_field(name='__________',value=f'1. {discord.utils.escape_markdown(member.name)} 🥇 - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'1. {nextcord.utils.escape_markdown(member.name)} 🥇 - {hierarchy[x][1]} 🎃',inline=False)
             elif x == 1:
-                embed.add_field(name='__________',value=f'2. {discord.utils.escape_markdown(member.name)} 🥈 - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'2. {nextcord.utils.escape_markdown(member.name)} 🥈 - {hierarchy[x][1]} 🎃',inline=False)
             elif x == 2:
-                embed.add_field(name='__________',value=f'3. {discord.utils.escape_markdown(member.name)} 🥉 - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'3. {nextcord.utils.escape_markdown(member.name)} 🥉 - {hierarchy[x][1]} 🎃',inline=False)
             else:
-                embed.add_field(name='__________',value=f'{x+1}. {discord.utils.escape_markdown(member.name)} - {hierarchy[x][1]} 🎃',inline=False)
+                embed.add_field(name='__________',value=f'{x+1}. {nextcord.utils.escape_markdown(member.name)} - {hierarchy[x][1]} 🎃',inline=False)
 
 
         await ctx.send(embed=embed)
 
 
     @commands.command(aliases=["paround", "haround", "pumpkinaround"])
-    async def halloweenaround(self, ctx, find=None, *, member:discord.Member=None):
+    async def halloweenaround(self, ctx, find=None, *, member:nextcord.Member=None):
 
 
         if not member: 
@@ -332,8 +332,8 @@ class Halloween(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0xff8519)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0xff8519)
         embed.set_author(name=f"🎃 Around {member.name} 🎃",icon_url=avatar)
 
         place = ids.index(result[0][0])+1
@@ -362,7 +362,7 @@ class Halloween(commands.Cog):
 
 
     @commands.command(aliases=["paroundm", "haroundm", "pumpkinaroundm"])
-    async def halloweenaroundm(self, ctx, find=None, *, member:discord.Member=None):
+    async def halloweenaroundm(self, ctx, find=None, *, member:nextcord.Member=None):
 
 
         if not member: 
@@ -425,8 +425,8 @@ class Halloween(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0xff8519)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0xff8519)
         embed.set_author(name=f"🎃 Around {member.name} 🎃",icon_url=avatar)
 
         place = ids.index(result[0][0])+1
@@ -446,7 +446,7 @@ class Halloween(commands.Cog):
                 mk = '**'
 
 
-            embed.add_field(name='__________', value=f'{mk}{place}. {discord.utils.escape_markdown(current_member.name)} {medal}- {person[1]}{mk} 🎃', inline=False)
+            embed.add_field(name='__________', value=f'{mk}{place}. {nextcord.utils.escape_markdown(current_member.name)} {medal}- {person[1]}{mk} 🎃', inline=False)
             place += 1
 
 
@@ -458,7 +458,7 @@ class Halloween(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(aliases=["ptime", "htime", "pumpkintime"])
-    async def halloweentime(self, ctx, *, member:discord.Member=None):
+    async def halloweentime(self, ctx, *, member:nextcord.Member=None):
 
         if not member:
             member = ctx.author
@@ -473,7 +473,7 @@ class Halloween(commands.Cog):
 
 
     @commands.command(aliases=["psteal", "hsteal", "pumpkinsteal"])
-    async def halloweensteal(self, ctx, member:discord.Member=None, amount=None):
+    async def halloweensteal(self, ctx, member:nextcord.Member=None, amount=None):
 
         if not member or not amount:
             return await ctx.send("Incorrect command usage:\n`.halloweensteal member amount`")

@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import json
 import time
 import os
@@ -43,7 +43,7 @@ class Info(commands.Cog):
 
 
     @commands.command(aliases=['balance'])
-    async def bal(self, ctx, *, member:discord.Member=None):
+    async def bal(self, ctx, *, member:nextcord.Member=None):
 
         if not member: member = ctx.author
         
@@ -54,9 +54,9 @@ class Info(commands.Cog):
 
             money, bank = await db.fetchrow('SELECT money, bank FROM members WHERE id = $1', member.id)
 
-        avatar = member.avatar_url_as(static_format='jpg')
+        avatar = member.avatar.with_format('jpg').url
         
-        embed = discord.Embed(color=0x57d9d0)
+        embed = nextcord.Embed(color=0x57d9d0)
         embed.set_author(name=f"{member.name}'s balance",icon_url=avatar)
         embed.add_field(name="Cash",value=f'${money}', inline=True)
         embed.add_field(name="Bank", value=f'${bank}', inline=True)
@@ -65,7 +65,7 @@ class Info(commands.Cog):
         await ctx.send(embed=embed)
           
     @commands.command()
-    async def jailtime(self, ctx, *, member:discord.Member=None):
+    async def jailtime(self, ctx, *, member:nextcord.Member=None):
 
         if not member: member = ctx.author
 
@@ -84,7 +84,7 @@ class Info(commands.Cog):
             await ctx.send(f'**{member.name}** is not in jail.')
 
     @commands.command()
-    async def worktime(self, ctx, *, member:discord.Member=None):
+    async def worktime(self, ctx, *, member:nextcord.Member=None):
 
         if not member: member = ctx.author
 
@@ -100,7 +100,7 @@ class Info(commands.Cog):
             await ctx.send(f'**{member.name}** can work.')
 
     @commands.command()
-    async def stealtime(self, ctx, *, member:discord.Member=None):
+    async def stealtime(self, ctx, *, member:nextcord.Member=None):
 
         if not member: member = ctx.author
 
@@ -116,7 +116,7 @@ class Info(commands.Cog):
             await ctx.send(f'**{member.name}** can steal.')
 
     @commands.command()
-    async def banktime(self, ctx, *, member:discord.Member=None):
+    async def banktime(self, ctx, *, member:nextcord.Member=None):
 
         if not member: member = ctx.author
 
@@ -154,7 +154,7 @@ class Info(commands.Cog):
                 await ctx.send(f'The heist on **{guild.get_member(self.client.heist["victim"]).name}** will start in {self.client.heist["start"]-int(time.time())} seconds.')
         
     @commands.command()
-    async def place(self, ctx, *, member:discord.Member=None):
+    async def place(self, ctx, *, member:nextcord.Member=None):
 
         if not member: member = ctx.author
 
@@ -176,7 +176,7 @@ class Info(commands.Cog):
         await ctx.send(f"**{member.name}** is **#{place}** in The Hierarchy.")
 
     @commands.command(aliases=['inventory'])
-    async def items(self, ctx, *, member:discord.Member=None):
+    async def items(self, ctx, *, member:nextcord.Member=None):
 
         if not member: member = ctx.author
 
@@ -188,8 +188,8 @@ class Info(commands.Cog):
         guild = self.client.mainGuild
 
         avatar = guild.get_member(member.id)
-        avatar = avatar.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0x4785ff)
+        avatar = avatar.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0x4785ff)
 
 
         async with self.client.pool.acquire() as db:
@@ -205,32 +205,32 @@ class Info(commands.Cog):
             count = dict(Counter(items))
             
             for item, count in count.items():
-                embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{item_emojis[item]} {item.capitalize()} x{count}", inline=True)
+                embed.add_field(name=nextcord.utils.escape_markdown("____"), value=f"{item_emojis[item]} {item.capitalize()} x{count}", inline=True)
 
             if not len(embed.fields):
-                embed.add_field(name=discord.utils.escape_markdown("____"), value="None", inline=True)
+                embed.add_field(name=nextcord.utils.escape_markdown("____"), value="None", inline=True)
 
 
             embed.set_author(name=f"{member.name}'s items ({len(items)}/{await db.get_member_val(member.id, 'storage')})", icon_url=avatar)
 
             # In use
 
-            embed2 = discord.Embed(color=0xff8000)
+            embed2 = nextcord.Embed(color=0xff8000)
             embed2.set_author(name=f"{member.name}'s items in use",icon_url=avatar)
 
             inuse = await db.in_use(member.id)
 
         for item, timer in inuse.items():
-            embed2.add_field(name=discord.utils.escape_markdown("____"), value=f'{item_emojis[item]} {item.capitalize()}: {splittime(timer)}', inline=False)
+            embed2.add_field(name=nextcord.utils.escape_markdown("____"), value=f'{item_emojis[item]} {item.capitalize()}: {splittime(timer)}', inline=False)
 
         if not embed2.fields:
-            embed2.add_field(name=discord.utils.escape_markdown("____"), value="None", inline=False)
+            embed2.add_field(name=nextcord.utils.escape_markdown("____"), value="None", inline=False)
     
         await ctx.send(embed=embed)
         await ctx.send(embed=embed2)
 
     @commands.command()
-    async def around(self, ctx, find=None, *, member:discord.Member=None):
+    async def around(self, ctx, find=None, *, member:nextcord.Member=None):
 
         if not member: 
             member = ctx.author
@@ -283,8 +283,8 @@ class Info(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0xffd24a)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0xffd24a)
         embed.set_author(name=f"Around {member.name}",icon_url=avatar)
 
         place = ids.index(result[0][0])+1
@@ -312,7 +312,7 @@ class Info(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def aroundm(self, ctx, find=None, *, member:discord.Member=None):
+    async def aroundm(self, ctx, find=None, *, member:nextcord.Member=None):
         
         if not member: 
             member = ctx.author
@@ -366,8 +366,8 @@ class Info(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0xffd24a)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0xffd24a)
         embed.set_author(name=f"Around {member.name}",icon_url=avatar)
 
         place = ids.index(result[0][0])+1
@@ -383,7 +383,7 @@ class Info(commands.Cog):
                 medal = '🥉 '
             if member.id == person[0]:
                 mk = '**'
-            embed.add_field(name='__________', value=f'{mk}{place}. {discord.utils.escape_markdown(current_member.name)} {medal}- ${person[1]}{mk}', inline=False)
+            embed.add_field(name='__________', value=f'{mk}{place}. {nextcord.utils.escape_markdown(current_member.name)} {medal}- ${person[1]}{mk}', inline=False)
             place += 1
 
 
@@ -395,7 +395,7 @@ class Info(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def dailyinfo(self, ctx, *, member:discord.Member=None):
+    async def dailyinfo(self, ctx, *, member:nextcord.Member=None):
         if not member: member = ctx.author
 
         if not await bot_check(self.client, ctx, member):
@@ -407,7 +407,7 @@ class Info(commands.Cog):
         await ctx.send(f"**{member.name}**'s streak: {streak}")
 
     @commands.command()
-    async def profile(self, ctx, member:discord.Member =None):
+    async def profile(self, ctx, member:nextcord.Member =None):
         
         if not member:
             member = ctx.author
@@ -435,7 +435,7 @@ class Info(commands.Cog):
             if not gang:
                 gang = "None"
 
-            embed = discord.Embed(color=0xffa047, title=f"{member.name}#{member.discriminator}", description=f"""ID: {member.id}
+            embed = nextcord.Embed(color=0xffa047, title=f"{member.name}#{member.discriminator}", description=f"""ID: {member.id}
 Status: {status}
 
 Money: ${await db.get_member_val(member.id, 'money + bank')}
@@ -443,7 +443,7 @@ Gang: {gang}
     """, timestamp=member.joined_at)
             embed.set_footer(text="Joined at")
 
-        embed.set_thumbnail(url=member.avatar_url_as(static_format='jpg'))
+        embed.set_thumbnail(url=member.avatar.with_format('jpg').url)
         
         await ctx.send(embed=embed)
 
@@ -455,7 +455,7 @@ Gang: {gang}
     
 
     @award.command(name="list")
-    async def awards_list(self, ctx, member:discord.Member=None, page=1):
+    async def awards_list(self, ctx, member:nextcord.Member=None, page=1):
 
         if not member:
             member = ctx.author
@@ -470,8 +470,8 @@ Gang: {gang}
             award_ids = await db.fetchval('SELECT awards FROM members WHERE id = $1', member.id)
 
             if not award_ids:
-                embed = discord.Embed(color=0x19a83f, description="None")
-                embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar_url_as(static_format='jpg'))
+                embed = nextcord.Embed(color=0x19a83f, description="None")
+                embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar.with_format('jpg').url)
                 await ctx.send(embed=embed)
                 return
 
@@ -481,8 +481,8 @@ Gang: {gang}
         # dividing into lists of 5
         awards = [awards[x:x+5] for x in range(0, len(awards), 5)]
 
-        embed = discord.Embed(color=0x19a83f)
-        embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar_url_as(static_format='jpg'))
+        embed = nextcord.Embed(color=0x19a83f)
+        embed.set_author(name=f"{member.name}'s awards", icon_url=member.avatar.with_format('jpg').url)
 
         if page > len(awards):
             return await ctx.send("There are not that many pages.")
@@ -517,14 +517,14 @@ Gang: {gang}
 
         name, color, long_description, image_link = award
 
-        embed = discord.Embed(color=color, title=name, description=long_description)
+        embed = nextcord.Embed(color=color, title=name, description=long_description)
         embed.set_image(url=image_link)
 
         await ctx.send(embed=embed)
 
 
     @commands.command(aliases=['steallog'])
-    async def steallogs(self, ctx, *, member: discord.Member=None):
+    async def steallogs(self, ctx, *, member: nextcord.Member=None):
 
         if not member:
             member = ctx.author
@@ -537,8 +537,8 @@ Gang: {gang}
 
             steal_logs = json.loads(await db.get_member_val(member.id, 'steal_logs'))
 
-        embed = discord.Embed(color=0x57d9d0)
-        embed.set_author(name=f"{member.name}'s steal logs", icon_url=member.avatar_url_as(static_format='jpg'))
+        embed = nextcord.Embed(color=0x57d9d0)
+        embed.set_author(name=f"{member.name}'s steal logs", icon_url=member.avatar.with_format('jpg').url)
 
         for log in steal_logs:
 
@@ -584,11 +584,11 @@ Gang: {gang}
                 if years != 1:
                     time_difference += "s"
 
-            embed.add_field(name=discord.utils.escape_markdown("____"), value=f"{log['text']} *{time_difference} ago*\n[Jump]({log['jump_url']})", inline=False)
+            embed.add_field(name=nextcord.utils.escape_markdown("____"), value=f"{log['text']} *{time_difference} ago*\n[Jump]({log['jump_url']})", inline=False)
 
         if not embed.fields:
-            embed = discord.Embed(color=0x57d9d0, description="None")
-            embed.set_author(name=f"{member.name}'s steal logs", icon_url=member.avatar_url_as(static_format='jpg'))
+            embed = nextcord.Embed(color=0x57d9d0, description="None")
+            embed.set_author(name=f"{member.name}'s steal logs", icon_url=member.avatar.with_format('jpg').url)
 
         await ctx.send(embed=embed)
 

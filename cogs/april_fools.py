@@ -6,9 +6,9 @@ import random
 import time
 import datetime
 
-import discord
-from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+import nextcord
+from nextcord.ext import commands, tasks
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 from utils import bot_check, splittime, timestring, log_command
 
@@ -18,7 +18,7 @@ class AprilFools(commands.Cog):
         self.client = client
 
     @commands.command()
-    async def rickroll(self, ctx, *, member: discord.Member=None):
+    async def rickroll(self, ctx, *, member: nextcord.Member=None):
 
         if ctx.channel.category_id == 721444286591139963:
             return

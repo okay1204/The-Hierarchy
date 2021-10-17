@@ -12,10 +12,10 @@ import string
 import difflib
 import re
 import asyncpraw
-import discord
+import nextcord
 
-from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+from nextcord.ext import commands, tasks
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 # To import from different path
 import sys
@@ -375,7 +375,7 @@ class Fun(commands.Cog):
 
             title = post.title[:256]        
 
-            embed = discord.Embed(
+            embed = nextcord.Embed(
                 title = title,
                 url = post_url
             )

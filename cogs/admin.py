@@ -1,8 +1,8 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands
-from discord.ext.commands import BadArgument, CommandNotFound
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext.commands import BadArgument, CommandNotFound
 import json
 import time
 import asyncio
@@ -85,7 +85,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_any_role(*modroles)
-    async def warn(self, ctx, member:discord.Member=None, reason="None", messageid=None, channel:discord.TextChannel=None):
+    async def warn(self, ctx, member:nextcord.Member=None, reason="None", messageid=None, channel:nextcord.TextChannel=None):
 
         if not member:
             await ctx.send("Incorrect command usage:\n`.warn member \"(reason)\" (messageid) (textchannel)`")
@@ -111,10 +111,10 @@ class Admin(commands.Cog):
 
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
-        embed = discord.Embed(color=0xf56451, title=f"User Warned", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed = nextcord.Embed(color=0xf56451, title=f"User Warned", description=f"Reason: {reason}")
+        member_avatar = member.avatar.with_format('jpg').url
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg')
+        author_avatar = author.avatar.with_format('jpg').url
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -171,7 +171,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_any_role(*modroles)
-    async def mute(self, ctx, member:discord.Member=None, duration=None, reason="None", messageid=None, channel:discord.TextChannel=None):
+    async def mute(self, ctx, member:nextcord.Member=None, duration=None, reason="None", messageid=None, channel:nextcord.TextChannel=None):
 
         if not member or not duration:
             await ctx.send("Incorrect command usage:\n`.mute member \"duration\" \"(reason)\" (messageid) (textchannel)`")
@@ -205,10 +205,10 @@ class Admin(commands.Cog):
 
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
-        embed = discord.Embed(color=0xf56451, title=f"User Muted", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed = nextcord.Embed(color=0xf56451, title=f"User Muted", description=f"Reason: {reason}")
+        member_avatar = member.avatar.with_format('jpg').url
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg')
+        author_avatar = author.avatar.with_format('jpg').url
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -279,7 +279,7 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.check(modChannel)
     @commands.has_any_role(*modroles)
-    async def unmute(self, ctx, member:discord.Member=None, *, reason="None"):
+    async def unmute(self, ctx, member:nextcord.Member=None, *, reason="None"):
         
         if not member:
             await ctx.send("Incorrect command usage:\n`.unmute member \"(reason)\" (messageid) (textchannel)`")
@@ -315,10 +315,10 @@ class Admin(commands.Cog):
 
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
-        embed = discord.Embed(color=0xf56451, title=f"User Unmuted", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed = nextcord.Embed(color=0xf56451, title=f"User Unmuted", description=f"Reason: {reason}")
+        member_avatar = member.avatar.with_format('jpg').url
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg')
+        author_avatar = author.avatar.with_format('jpg').url
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -374,7 +374,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_any_role(*modroles)
-    async def kick(self, ctx, member:discord.Member=None, reason="None", messageid=None, channel:discord.TextChannel=None):
+    async def kick(self, ctx, member:nextcord.Member=None, reason="None", messageid=None, channel:nextcord.TextChannel=None):
         if not member:
             await ctx.send("Incorrect command usage:\n`.kick member \"(reason)\" (messageid) (textchannel)`")
             return
@@ -399,10 +399,10 @@ class Admin(commands.Cog):
 
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
-        embed = discord.Embed(color=0xf56451, title=f"User Kicked", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed = nextcord.Embed(color=0xf56451, title=f"User Kicked", description=f"Reason: {reason}")
+        member_avatar = member.avatar.with_format('jpg').url
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg')
+        author_avatar = author.avatar.with_format('jpg').url
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -461,7 +461,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_any_role(*modroles)
-    async def ban(self, ctx, member:discord.Member=None, reason="None", messageid=None, daysdelete=0, channel:discord.TextChannel=None):
+    async def ban(self, ctx, member:nextcord.Member=None, reason="None", messageid=None, daysdelete=0, channel:nextcord.TextChannel=None):
         if not member:
             await ctx.send("Incorrect command usage:\n`.ban member (reason) \"(messageid)\" (daystodelete) (textchannel)`")
             return
@@ -496,10 +496,10 @@ class Admin(commands.Cog):
 
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
-        embed = discord.Embed(color=0xf56451, title=f"User Banned", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed = nextcord.Embed(color=0xf56451, title=f"User Banned", description=f"Reason: {reason}")
+        member_avatar = member.avatar.with_format('jpg').url
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg')
+        author_avatar = author.avatar.with_format('jpg').url
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -601,10 +601,10 @@ class Admin(commands.Cog):
 
         #Building embed
         datetime = str(ctx.message.created_at.utcnow())
-        embed = discord.Embed(color=0xf56451, title=f"User Unbanned", description=f"Reason: {reason}")
-        member_avatar = member.avatar_url_as(static_format='jpg')
+        embed = nextcord.Embed(color=0xf56451, title=f"User Unbanned", description=f"Reason: {reason}")
+        member_avatar = member.avatar.with_format('jpg').url
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg')
+        author_avatar = author.avatar.with_format('jpg').url
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)
@@ -669,8 +669,8 @@ class Admin(commands.Cog):
                 audit = audit[page-1]
                 audit = audit[::-1]
                 for pairs in audit:
-                    embed = discord.Embed(color=0xf56451)
-                    memberavatar = member.avatar_url_as(static_format='jpg')
+                    embed = nextcord.Embed(color=0xf56451)
+                    memberavatar = member.avatar.with_format('jpg').url
                     embed.set_author(name=f'{member.name} (Page: {page}/{pages})', icon_url=memberavatar)
                     for cur_audit, value in pairs.items():
 
@@ -790,7 +790,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_any_role(*modroles)
-    async def purge(self, ctx, amount=None, channel:discord.TextChannel=None):
+    async def purge(self, ctx, amount=None, channel:nextcord.TextChannel=None):
         if not amount:
             amount = 5
 
@@ -855,7 +855,7 @@ class Admin(commands.Cog):
         await ctx.send("Audit not found.")
         
     @commands.command()
-    async def report(self, ctx, member:discord.Member=None, *, reason="Not Specified"):
+    async def report(self, ctx, member:nextcord.Member=None, *, reason="Not Specified"):
         
         if not member:
             await ctx.send("Incorrect command usage:\n`.report member (reason)`")
@@ -899,11 +899,11 @@ class Admin(commands.Cog):
             json.dump(auditcount, f, indent=2)
 
         #Building and sending embed
-        embed = discord.Embed(color=0xf56451, title="User Reported", description=f"Reason: {reason}")
+        embed = nextcord.Embed(color=0xf56451, title="User Reported", description=f"Reason: {reason}")
         datetime = str(ctx.message.created_at.utcnow())
-        member_avatar = member.avatar_url_as(static_format='jpg')
+        member_avatar = member.avatar.with_format('jpg').url
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member_avatar)
-        author_avatar = author.avatar_url_as(static_format='jpg')
+        author_avatar = author.avatar.with_format('jpg').url
         embed.set_footer(text=f'By {author.name}#{author.discriminator} • {datetime}', icon_url=author_avatar)
         embed.add_field(name='User ID:', value=member.id, inline=True)
         embed.add_field(name='Audit ID:', value=auditid, inline=True)

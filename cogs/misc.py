@@ -1,6 +1,6 @@
 # pylint: disable=import-error
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import random
 import json
 import asyncio
@@ -26,7 +26,7 @@ class Misc(commands.Cog):
             return False
 
     @commands.command()
-    async def partner(self, ctx, member:discord.Member=None):
+    async def partner(self, ctx, member:nextcord.Member=None):
         
         if not member:
             await ctx.send('Incorrect command usage:\n`partner member`')
@@ -39,7 +39,7 @@ class Misc(commands.Cog):
         await ctx.send(f'Granted partner role to {member.mention}.')
 
     @commands.command()
-    async def unpartner(self, ctx, member:discord.Member=None):
+    async def unpartner(self, ctx, member:nextcord.Member=None):
         
         if not member:
             await ctx.send('Incorrect command usage:\n`unpartner member`')

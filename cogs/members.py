@@ -6,9 +6,9 @@ import random
 import time
 import datetime
 
-import discord
-from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+import nextcord
+from nextcord.ext import commands, tasks
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 from utils import bot_check, splittime, timestring, log_command
 
@@ -76,8 +76,8 @@ class Members(commands.Cog):
         await member.add_roles(poor)
         
         newcomers_channel = self.client.get_channel(848787619118186527)
-        joinEmbed = discord.Embed(color=0x2feb61)
-        joinEmbed.set_author(name=f"{member.name} just joined!", icon_url=member.avatar_url_as(static_format='jpg'))
+        joinEmbed = nextcord.Embed(color=0x2feb61)
+        joinEmbed.set_author(name=f"{member.name} just joined!", icon_url=member.avatar.with_format('jpg').url)
         await newcomers_channel.send('<@&848423749907775488>', embed=joinEmbed)
 
         async with self.client.pool.acquire() as db:

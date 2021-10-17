@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import os
 import random
 import json
@@ -105,7 +105,7 @@ class Events(commands.Cog):
         
 
     @commands.command()
-    async def eventprog(self, ctx, *, member:discord.Member=None):
+    async def eventprog(self, ctx, *, member:nextcord.Member=None):
         if not member:
             member = ctx.author
         
@@ -144,7 +144,7 @@ class Events(commands.Cog):
         guild = self.client.mainGuild
 
 
-        embed = discord.Embed(color = 0x2495ff)
+        embed = nextcord.Embed(color = 0x2495ff)
         embed.set_author(name='🌟 Event Leaderboard 🌟')
 
         async with self.client.pool.acquire() as db:
@@ -184,7 +184,7 @@ class Events(commands.Cog):
         guild = self.client.mainGuild
 
 
-        embed = discord.Embed(color = 0x2495ff)
+        embed = nextcord.Embed(color = 0x2495ff)
         embed.set_author(name='🌟 Event Leaderboard 🌟')
 
         async with self.client.pool.acquire() as db:
@@ -208,20 +208,20 @@ class Events(commands.Cog):
             member = guild.get_member(hierarchy[x][0])
 
             if x == 0:
-                embed.add_field(name='__________',value=f'1. {discord.utils.escape_markdown(member.name)} 🥇 - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'1. {nextcord.utils.escape_markdown(member.name)} 🥇 - ${hierarchy[x][1]}',inline=False)
             elif x == 1:
-                embed.add_field(name='__________',value=f'2. {discord.utils.escape_markdown(member.name)} 🥈 - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'2. {nextcord.utils.escape_markdown(member.name)} 🥈 - ${hierarchy[x][1]}',inline=False)
             elif x == 2:
-                embed.add_field(name='__________',value=f'3. {discord.utils.escape_markdown(member.name)} 🥉 - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'3. {nextcord.utils.escape_markdown(member.name)} 🥉 - ${hierarchy[x][1]}',inline=False)
             else:
-                embed.add_field(name='__________',value=f'{x+1}. {discord.utils.escape_markdown(member.name)} - ${hierarchy[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'{x+1}. {nextcord.utils.escape_markdown(member.name)} - ${hierarchy[x][1]}',inline=False)
 
 
         await ctx.send(embed=embed)
 
 
     @commands.command()
-    async def eventaround(self, ctx, find=None, *, member:discord.Member=None):
+    async def eventaround(self, ctx, find=None, *, member:nextcord.Member=None):
 
 
         if not member: 
@@ -293,8 +293,8 @@ class Events(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0x2495ff)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0x2495ff)
         embed.set_author(name=f"🌟 Around {member.name} 🌟",icon_url=avatar)
 
         place = ids.index(result[0][0])+1
@@ -322,7 +322,7 @@ class Events(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    async def eventaroundm(self, ctx, find=None, *, member:discord.Member=None):
+    async def eventaroundm(self, ctx, find=None, *, member:nextcord.Member=None):
 
         if not member: 
             member = ctx.author
@@ -389,8 +389,8 @@ class Events(commands.Cog):
 
         result = hierarchy[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0x2495ff)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0x2495ff)
         embed.set_author(name=f"🌟 Around {member.name} 🌟",icon_url=avatar)
 
         place = ids.index(result[0][0])+1
@@ -406,7 +406,7 @@ class Events(commands.Cog):
                 medal = '🥉 '
             if member.id == person[0]:
                 mk = '**'
-            embed.add_field(name='__________', value=f'{mk}{place}. {discord.utils.escape_markdown(current_member.name)} {medal}- ${person[1]}{mk}', inline=False)
+            embed.add_field(name='__________', value=f'{mk}{place}. {nextcord.utils.escape_markdown(current_member.name)} {medal}- ${person[1]}{mk}', inline=False)
             place += 1
 
 

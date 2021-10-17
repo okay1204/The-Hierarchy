@@ -1,7 +1,6 @@
 # pylint: disable=anomalous-backslash-in-string
 
-import discord
-import json
+import nextcord
 import time
 from collections import Counter
 from datetime import datetime
@@ -68,8 +67,8 @@ async def log_command(client, ctx):
 
     command_logs = client.get_channel(755851445303115856)
 
-    embed = discord.Embed(color=0xf56451, title="Command Used", timestamp=datetime.now())
-    embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar_url_as(static_format='jpg'))
+    embed = nextcord.Embed(color=0xf56451, title="Command Used", timestamp=datetime.now())
+    embed.set_author(name=f"{ctx.author.name}#{ctx.author.discriminator}", icon_url=ctx.author.avatar.with_format('jpg').url)
 
     embed.add_field(name="Command", value=f"`{ctx.message.content}`")
 

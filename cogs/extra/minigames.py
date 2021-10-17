@@ -1,6 +1,6 @@
 import random
 import asyncio
-import discord
+import nextcord
 import difflib
 import inflect
 import itertools
@@ -1007,16 +1007,16 @@ class Garbage_Collector:
                 emojispam[random.randint(0, len(emojispam)-1)] = "🗑️"
 
             emojispam = " ".join(emojispam)
-            discord_message = await ctx.send(emojispam)
+            nextcord_message = await ctx.send(emojispam)
             
             if message == "trash":
-                self.bad_ids.append(discord_message.id)
+                self.bad_ids.append(nextcord_message.id)
             else:
-                self.good_ids.append(discord_message.id)
+                self.good_ids.append(nextcord_message.id)
             
-            self.messages[discord_message.id] = discord_message
+            self.messages[nextcord_message.id] = nextcord_message
 
-            await discord_message.add_reaction("🗑️")
+            await nextcord_message.add_reaction("🗑️")
 
             await asyncio.sleep(1.5)
 
@@ -1150,15 +1150,15 @@ class Streamer:
         
         text = "Quickly delete all the bad messages!\n" + "\n".join(map(lambda message: message["content"], messages))
 
-        discord_message = await ctx.send("Give me a second...")
+        nextcord_message = await ctx.send("Give me a second...")
         number_emojis = []
         for message in messages:
-            await discord_message.add_reaction(f"{message['number']}\N{combining enclosing keycap}")
+            await nextcord_message.add_reaction(f"{message['number']}\N{combining enclosing keycap}")
             number_emojis.append(f"{message['number']}\N{combining enclosing keycap}")
 
-        await discord_message.edit(content=text)
+        await nextcord_message.edit(content=text)
 
-        delete_chat_input_task = asyncio.create_task(self.delete_chat_input(ctx, correct, total, number_emojis, discord_message, messages, bad_count))
+        delete_chat_input_task = asyncio.create_task(self.delete_chat_input(ctx, correct, total, number_emojis, nextcord_message, messages, bad_count))
         stream_message_timer_task = asyncio.create_task(self.stream_message_timer(ctx, correct, total))
 
         self.start_timer = False
@@ -1178,14 +1178,14 @@ class Streamer:
 
 
 
-    async def delete_chat_input(self, ctx, correct, total, number_emojis, discord_message, messages, bad_count):
+    async def delete_chat_input(self, ctx, correct, total, number_emojis, nextcord_message, messages, bad_count):
         
 
         failed = False
 
         while bad_count > 0:
             
-            reaction = await self.client.wait_for('reaction_add', check=lambda reaction, user: str(reaction.emoji) in number_emojis and reaction.message.id == discord_message.id and user == ctx.author),
+            reaction = await self.client.wait_for('reaction_add', check=lambda reaction, user: str(reaction.emoji) in number_emojis and reaction.message.id == nextcord_message.id and user == ctx.author),
 
             reaction = int(str(reaction[0][0].emoji)[0]) # extract number from emoji
 
@@ -1198,7 +1198,7 @@ class Streamer:
                     break
 
             text = "Quickly delete all the bad messages!\n" + "\n".join(map(lambda message: message["content"], messages))
-            asyncio.create_task(discord_message.edit(content=text))
+            asyncio.create_task(nextcord_message.edit(content=text))
             bad_count -= 1
 
             if failed:

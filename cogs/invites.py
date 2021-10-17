@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import json
 import time
 import os
@@ -165,7 +165,7 @@ class Invites(commands.Cog):
 
 
     @commands.command()
-    async def invitecount(self, ctx, *, member: discord.Member = None):
+    async def invitecount(self, ctx, *, member: nextcord.Member = None):
 
         if not member:
             member = ctx.author
@@ -173,9 +173,9 @@ class Invites(commands.Cog):
         if not await bot_check(self.client, ctx, member):
             return
 
-        embed = discord.Embed(color=0xfffeff,
+        embed = nextcord.Embed(color=0xfffeff,
         description="Pending invites means those who haven't completed the tutorial.\nCompleted invites means those who have, in other words invites that count.")
-        embed.set_author(name=f"{member.name}'s invite count", icon_url=member.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=f"{member.name}'s invite count", icon_url=member.avatar.with_format('jpg').url)
 
 
         async with self.client.pool.acquire() as db:
@@ -191,7 +191,7 @@ class Invites(commands.Cog):
         
 
     @commands.command(name="invites", aliases=['invitesm'])
-    async def invites_list(self, ctx, group = "", *, member: discord.Member = None):
+    async def invites_list(self, ctx, group = "", *, member: nextcord.Member = None):
 
         if not member:
             member = ctx.author
@@ -209,8 +209,8 @@ class Invites(commands.Cog):
             return await ctx.send(f'Incorrect command usage:\n`.invites all/pending/completed (member)`')
 
 
-        embed = discord.Embed(color=0xfffeff)
-        embed.set_author(name=f"{member.name}'s {group} invites", icon_url=member.avatar_url_as(static_format='jpg'))
+        embed = nextcord.Embed(color=0xfffeff)
+        embed.set_author(name=f"{member.name}'s {group} invites", icon_url=member.avatar.with_format('jpg').url)
 
 
         async with self.client.pool.acquire() as db:
@@ -242,12 +242,12 @@ class Invites(commands.Cog):
             else:
                 member_name = member_name.mention
 
-            embed.add_field(name=discord.utils.escape_markdown('_____'), value=member_name)
+            embed.add_field(name=nextcord.utils.escape_markdown('_____'), value=member_name)
 
         
         if not len(embed.fields):
-            embed = discord.Embed(color=0xfffeff, description="None")
-            embed.set_author(name=f"{member.name}'s {group} invites", icon_url=member.avatar_url_as(static_format='jpg'))
+            embed = nextcord.Embed(color=0xfffeff, description="None")
+            embed.set_author(name=f"{member.name}'s {group} invites", icon_url=member.avatar.with_format('jpg').url)
 
         await ctx.send(embed=embed)
 
@@ -258,7 +258,7 @@ class Invites(commands.Cog):
         guild = self.client.mainGuild
 
 
-        embed = discord.Embed(color = 0xfffeff)
+        embed = nextcord.Embed(color = 0xfffeff)
         embed.set_author(name='✉️ Invites Leaderboard ✉️')
 
         invites = []
@@ -293,20 +293,20 @@ class Invites(commands.Cog):
                 member_name = f"<@{invites[x][0]}>"
 
             if x == 0:
-                embed.add_field(name='__________',value=f'1. {discord.utils.escape_markdown(member_name)} 🥇 - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'1. {nextcord.utils.escape_markdown(member_name)} 🥇 - {invites[x][1]}',inline=False)
             elif x == 1:
-                embed.add_field(name='__________',value=f'2. {discord.utils.escape_markdown(member_name)} 🥈 - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'2. {nextcord.utils.escape_markdown(member_name)} 🥈 - {invites[x][1]}',inline=False)
             elif x == 2:
-                embed.add_field(name='__________',value=f'3. {discord.utils.escape_markdown(member_name)} 🥉 - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'3. {nextcord.utils.escape_markdown(member_name)} 🥉 - {invites[x][1]}',inline=False)
             else:
-                embed.add_field(name='__________',value=f'{x+1}. {discord.utils.escape_markdown(member_name)} - {invites[x][1]}',inline=False)
+                embed.add_field(name='__________',value=f'{x+1}. {nextcord.utils.escape_markdown(member_name)} - {invites[x][1]}',inline=False)
 
 
         await ctx.send(embed=embed)
 
 
     @commands.command(aliases=['invitesaroundm'])
-    async def invitesaround(self, ctx, find=None, *, member:discord.Member=None):
+    async def invitesaround(self, ctx, find=None, *, member:nextcord.Member=None):
 
 
         if not member: 
@@ -373,8 +373,8 @@ class Invites(commands.Cog):
 
         result = invites[lower_index:higher_index]
 
-        avatar = member.avatar_url_as(static_format='jpg')
-        embed = discord.Embed(color=0xfffeff)
+        avatar = member.avatar.with_format('jpg').url
+        embed = nextcord.Embed(color=0xfffeff)
         embed.set_author(name=f"✉️ Around {member.name} ✉️",icon_url=avatar)
 
         place = ids.index(result[0][0])+1
@@ -389,7 +389,7 @@ class Invites(commands.Cog):
         for person in result:
 
             if mobile:
-                member_name = discord.utils.escape_markdown(guild.get_member(person[0]).name)
+                member_name = nextcord.utils.escape_markdown(guild.get_member(person[0]).name)
             else:
                 member_name = f"<@{person[0]}>"
 

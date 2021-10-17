@@ -4,8 +4,8 @@ import os
 import time
 import asyncio
 import random
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 # To import from different path
 import sys

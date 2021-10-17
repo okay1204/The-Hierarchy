@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands, tasks
+import nextcord
+from nextcord.ext import commands, tasks
 import time
 import random
 import os
@@ -87,7 +87,7 @@ class Timers(commands.Cog):
                 stats = await db.fetch('SELECT * FROM shop')
 
 
-                embed = discord.Embed(color=0x30ff56, title='Shop')
+                embed = nextcord.Embed(color=0x30ff56, title='Shop')
                 guild = self.client.mainGuild
                 shopping = guild.get_role(716818790947618857)
 
@@ -143,7 +143,7 @@ class Timers(commands.Cog):
             try:
                 message = await shopchannel.fetch_message(740680266086875243)
                 break
-            except discord.DiscordServerError:
+            except nextcord.nextcordServerError:
                 await asyncio.sleep(2)
                 continue
 
@@ -184,7 +184,7 @@ class Timers(commands.Cog):
     @tasks.loop(minutes=1)
     async def eventtimer(self):
 
-        embed = discord.Embed(color=0x442391)
+        embed = nextcord.Embed(color=0x442391)
 
         # this tends to randomly fail for no reason so keep doing it until it works
 
@@ -194,7 +194,7 @@ class Timers(commands.Cog):
             try:
                 feemessage = await feechannel.fetch_message(740013720301731880)
                 break
-            except discord.DiscordServerError:
+            except nextcord.nextcordServerError:
                 await asyncio.sleep(2)
                 continue
 
@@ -204,7 +204,7 @@ class Timers(commands.Cog):
             try:
                 shopmessage = await shopchannel.fetch_message(740013721371410474)
                 break
-            except discord.DiscordServerError:
+            except nextcord.nextcordServerError:
                 await asyncio.sleep(2)
                 continue
 
@@ -215,7 +215,7 @@ class Timers(commands.Cog):
             try:
                 premiummessage = await premiumchannel.fetch_message(740013722642153543)
                 break
-            except discord.DiscordServerError:
+            except nextcord.nextcordServerError:
                 await asyncio.sleep(2)
                 continue
 
@@ -252,7 +252,7 @@ class Timers(commands.Cog):
         
         embed.add_field(name="Tax collection",value=f'{minisplittime(taxtime)}',inline=False)
 
-        embed3 = discord.Embed(color=0xff61d7, title="Boost timer")
+        embed3 = nextcord.Embed(color=0xff61d7, title="Boost timer")
 
         if banktime == 0:
             await self.bank()
@@ -263,7 +263,7 @@ class Timers(commands.Cog):
             embed.add_field(name="Bank fee collection",value=f'{minisplittime(banktime)}',inline=False)
             embed3.add_field(name="__________",value=f'{minisplittime(banktime)}',inline=False)
 
-        embed2 = discord.Embed(color=0x30ff56, title='Shop change timer')
+        embed2 = nextcord.Embed(color=0x30ff56, title='Shop change timer')
         if shoptime == 0:
             await self.shopchange()
             embed2.add_field(name='__________', value='3h 0m', inline=False)

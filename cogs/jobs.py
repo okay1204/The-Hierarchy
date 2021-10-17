@@ -1,7 +1,7 @@
 # pylint: disable=import-error
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import random
 import time
 import os
@@ -306,7 +306,7 @@ class Jobs(commands.Cog):
     @commands.command()
     async def universities(self, ctx):
         
-        embed = discord.Embed(color=0x48157a, title="Universities", description="""__**Key**__:\n🎓 - Major
+        embed = nextcord.Embed(color=0x48157a, title="Universities", description="""__**Key**__:\n🎓 - Major
 📅 - Days to complete
 ⏫ - Finals percentage gain on each study
 🕑 - Study cooldown
@@ -330,7 +330,7 @@ _ _""")
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def studyinfo(self, ctx, *, member: discord.Member=None):
+    async def studyinfo(self, ctx, *, member: nextcord.Member=None):
 
         if not member:
             member = ctx.author
@@ -382,13 +382,13 @@ _ _""")
             else:
                 studyc = "Study Available"
 
-            embed = discord.Embed(color=0x48157a, description=f"""Enrolled at: **{current.name}**
+            embed = nextcord.Embed(color=0x48157a, description=f"""Enrolled at: **{current.name}**
     Majoring in: {current.major}
     Chance to pass final: {progress}%
     Time left until final: {time_left}
     Time left until next payment: {next_payment}
     Study cooldown: {studyc}""")
-            embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
+            embed.set_author(name=member.name, icon_url=member.avatar.with_format('jpg').url)
             
             await ctx.send(embed=embed)
 
@@ -589,7 +589,7 @@ Good luck on the finals!""")
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def majors(self, ctx, *, member:discord.Member=None):
+    async def majors(self, ctx, *, member:nextcord.Member=None):
 
         if not member:
             member = ctx.author
@@ -599,14 +599,14 @@ Good luck on the finals!""")
             majors = await db.get_member_val(member.id, 'majors')        
 
         if not majors:
-            embed = discord.Embed(color=0x48157a, title="Majors", description="None")
+            embed = nextcord.Embed(color=0x48157a, title="Majors", description="None")
         else:
-            embed = discord.Embed(color=0x48157a, title="Majors")
+            embed = nextcord.Embed(color=0x48157a, title="Majors")
 
             for major in majors:
-                embed.add_field(name=discord.utils.escape_markdown("_____"), value=major, inline=True) # noqa pylint: disable=anomalous-backslash-in-string
+                embed.add_field(name=nextcord.utils.escape_markdown("_____"), value=major, inline=True) # noqa pylint: disable=anomalous-backslash-in-string
         
-        embed.set_author(name=member.name, icon_url=member.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=member.name, icon_url=member.avatar.with_format('jpg').url)
 
         await ctx.send(embed=embed)
 
@@ -717,7 +717,7 @@ Good luck on the finals!""")
     @commands.command()
     async def jobs(self, ctx):
                                     # embed title linked with tutorial
-        embed = discord.Embed(color=0x3d9c17, title="Jobs", description="""__**Key**__:\n💸 - Salary
+        embed = nextcord.Embed(color=0x3d9c17, title="Jobs", description="""__**Key**__:\n💸 - Salary
 🕑 - Work Cooldown
 🎓 - Major Requirements
 
@@ -804,7 +804,7 @@ _ _""")
 
 
     @commands.command()
-    async def job(self, ctx, *, member:discord.Member=None):
+    async def job(self, ctx, *, member:nextcord.Member=None):
 
         if not member:
             member = ctx.author

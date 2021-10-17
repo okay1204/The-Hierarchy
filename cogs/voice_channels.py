@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 
 class VoiceChannels(commands.Cog):
@@ -35,14 +35,14 @@ class VoiceChannels(commands.Cog):
 
                     category = self.client.get_channel(757374291028213852)
 
-                    channel = await category.create_voice_channel(f"{member.name}'s room", overwrites= {member: discord.PermissionOverwrite(manage_channels=True)})
+                    channel = await category.create_voice_channel(f"{member.name}'s room", overwrites= {member: nextcord.PermissionOverwrite(manage_channels=True)})
                     await member.move_to(channel)
 
                 elif after.channel.id == 757374658172551198: # create 1-1
 
                     category = self.client.get_channel(757374291028213852)
 
-                    channel = await category.create_voice_channel(f"{member.name}'s 1-1", user_limit=2, overwrites= {member: discord.PermissionOverwrite(manage_channels=True)})
+                    channel = await category.create_voice_channel(f"{member.name}'s 1-1", user_limit=2, overwrites= {member: nextcord.PermissionOverwrite(manage_channels=True)})
                     await member.move_to(channel)
 
 

@@ -1,6 +1,6 @@
 # pylint: disable=import-error
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 import datetime
 import re
@@ -59,10 +59,10 @@ class Gangs(commands.Cog):
             await ctx.send("Page not found.")
             return
         
-        embed = discord.Embed(color=0xffe6a1, title="Gangs")
+        embed = nextcord.Embed(color=0xffe6a1, title="Gangs")
 
         for gang in gangs[page-1]:
-            embed.add_field(name=discord.utils.escape_markdown("________"), value=gang, inline=True)
+            embed.add_field(name=nextcord.utils.escape_markdown("________"), value=gang, inline=True)
         
         embed.set_footer(text=f"Page {page}/{len(gangs)}")
 
@@ -70,7 +70,7 @@ class Gangs(commands.Cog):
 
     @gang.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def which(self, ctx, *, member:discord.Member=None):
+    async def which(self, ctx, *, member:nextcord.Member=None):
 
         if not member:
             member = ctx.author
@@ -148,10 +148,10 @@ class Gangs(commands.Cog):
         # Convert string to datetime
         created_at = datetime.datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S.%f')
 
-        embed = discord.Embed(color=color, title=name, description=description, timestamp=created_at)
+        embed = nextcord.Embed(color=color, title=name, description=description, timestamp=created_at)
 
         owner = guild.get_member(owner)
-        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar.with_format('jpg').url)
 
         embed.set_footer(text="Created at")
 
@@ -212,8 +212,8 @@ class Gangs(commands.Cog):
 
             owner = guild.get_member(owner)
 
-            embed = discord.Embed(color=color, title=f"{name}'s balance", description=f"${total}")
-            embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
+            embed = nextcord.Embed(color=color, title=f"{name}'s balance", description=f"${total}")
+            embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar.with_format('jpg').url)
 
             if img_link:
                 embed.set_image(url=img_link)
@@ -273,10 +273,10 @@ class Gangs(commands.Cog):
         else:
             members = "No members."
 
-        embed = discord.Embed(color=color, title=name, description=members)
+        embed = nextcord.Embed(color=color, title=name, description=members)
 
         owner = guild.get_member(owner)
-        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar.with_format('jpg').url)
 
         if img_link:
             embed.set_image(url=img_link)
@@ -331,15 +331,15 @@ class Gangs(commands.Cog):
         guild = self.client.mainGuild
 
         if members:
-            members = list(map(lambda userid: discord.utils.escape_markdown(guild.get_member(int(userid)).name), members))
+            members = list(map(lambda userid: nextcord.utils.escape_markdown(guild.get_member(int(userid)).name), members))
             members = "\n".join(members)
         else:
             members = "No members."
 
-        embed = discord.Embed(color=color, title=name, description=members)
+        embed = nextcord.Embed(color=color, title=name, description=members)
 
         owner = guild.get_member(owner)
-        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar_url_as(static_format='jpg'))
+        embed.set_author(name=f"Owner: {owner.name}", icon_url=owner.avatar.with_format('jpg').url)
 
         if img_link:
             embed.set_image(url=img_link)
@@ -378,7 +378,7 @@ class Gangs(commands.Cog):
             
     
     @gang.command()
-    async def invite(self, ctx, member:discord.Member=None):
+    async def invite(self, ctx, member:nextcord.Member=None):
 
 
         if not member:
@@ -439,7 +439,7 @@ class Gangs(commands.Cog):
 
     async def invite_req_task(self, ctx, member, gangname, img_link, color):
 
-        embed = discord.Embed(color=color, title="Gang invite", description=f"To: {member.mention}\nFrom {ctx.author.mention}\nGang: {gangname}")
+        embed = nextcord.Embed(color=color, title="Gang invite", description=f"To: {member.mention}\nFrom {ctx.author.mention}\nGang: {gangname}")
 
 
         if img_link:
@@ -492,7 +492,7 @@ class Gangs(commands.Cog):
 
 
     @gang.command()
-    async def uninvite(self, ctx, member:discord.Member=None):
+    async def uninvite(self, ctx, member:nextcord.Member=None):
 
         if not member:
             return await ctx.send("Incorrect command usage:\n`.gang uninvite member`")
@@ -683,7 +683,7 @@ class Gangs(commands.Cog):
                     return await ctx.send("You already has a gang role.")
                     
 
-                color = discord.Color(int(color, 16))
+                color = nextcord.Color(int(color, 16))
                 role = await guild.create_role(reason="Gang role created", name=name, color=color, mentionable=True)
 
                 await db.execute('UPDATE gangs SET role_id = $1 WHERE name = $2;', role.id, name)
@@ -759,7 +759,7 @@ class Gangs(commands.Cog):
                 guild = self.client.mainGuild
                 role = guild.get_role(role_id)
                 
-                await role.edit(color=discord.Color(color_code))
+                await role.edit(color=nextcord.Color(color_code))
 
 
     @settings.command()
@@ -852,7 +852,7 @@ class Gangs(commands.Cog):
 
     @gang.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def promote(self, ctx, member:discord.Member=None):
+    async def promote(self, ctx, member:nextcord.Member=None):
 
         if not member:
             await ctx.send("Incorrect command usage:\n`.gang promote member`")
@@ -893,7 +893,7 @@ class Gangs(commands.Cog):
 
     @gang.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def kick(self, ctx, member:discord.Member=None):
+    async def kick(self, ctx, member:nextcord.Member=None):
 
         if not member:
             await ctx.send("Incorrect command usage:\n`.gang kick member`")

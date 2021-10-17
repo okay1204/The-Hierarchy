@@ -7,9 +7,9 @@ import asyncpg
 import time
 import os
 
-import discord
-from discord.ext import commands
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached
 
 from cogs.extra.itemuse import ItemUses
 
@@ -44,7 +44,7 @@ class Actions(commands.Cog):
 
 
     @commands.command()
-    async def bail(self, ctx, *, member:discord.Member=None):
+    async def bail(self, ctx, *, member:nextcord.Member=None):
 
 
         async with self.client.pool.acquire() as db:
@@ -108,7 +108,7 @@ class Actions(commands.Cog):
 
                 
     @commands.command()
-    async def pay(self, ctx, member:discord.Member=None, amount=None):
+    async def pay(self, ctx, member:nextcord.Member=None, amount=None):
 
 
         async with self.client.pool.acquire() as db:
@@ -171,7 +171,7 @@ class Actions(commands.Cog):
 
     @commands.command()
     @commands.max_concurrency(1, per=commands.BucketType.member)
-    async def steal(self, ctx, member:discord.Member=None, amount=None):
+    async def steal(self, ctx, member:nextcord.Member=None, amount=None):
 
 
         async with self.client.pool.acquire() as db:
@@ -214,7 +214,7 @@ class Actions(commands.Cog):
                 if not await db.get_member_val(ctx.author.id, 'rangeinformed'):
 
                     await asyncio.sleep(3)
-                    image = discord.File('./storage/images/stealinfo.png')
+                    image = nextcord.File('./storage/images/stealinfo.png')
                     await ctx.send("*Not sure what this means?*\n**Use the .around command. You may steal from anyone who up to 3 places above you or below you.**", file=image)
                     await db.set_member_val(ctx.author.id, 'rangeinformed', True)
 
@@ -583,7 +583,7 @@ class Actions(commands.Cog):
         
 
     @commands.command()
-    async def give(self, ctx, member: discord.Member=None, *, item=None):
+    async def give(self, ctx, member: nextcord.Member=None, *, item=None):
 
         async with self.client.pool.acquire() as db:
 

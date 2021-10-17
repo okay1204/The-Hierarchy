@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import asyncpg
 import asyncio
 from datetime import datetime
@@ -9,7 +9,7 @@ import authinfo
 import dbutils
 import traceback
 
-client = commands.Bot(command_prefix = '.', intents=discord.Intents.all())
+client = commands.Bot(command_prefix = '.', intents=nextcord.Intents.all())
 client.remove_command('help')
 
 async def is_owner(ctx):
@@ -55,14 +55,14 @@ async def featured(ctx):
 @featured.command(name="list")
 async def featured_list(ctx):
     
-    embed = discord.Embed(color=0x7ef7ab, title="Featured Servers")
+    embed = nextcord.Embed(color=0x7ef7ab, title="Featured Servers")
 
     for guild in client.guilds:
         if guild.id != 692906379203313695: # hierarchy guild id
             embed.add_field(name="\_\_\_\_\_\_\_\_\_\_", value=guild.name, inline=True) # noqa pylint: disable=anomalous-backslash-in-string
 
     if len(embed.fields) == 0:
-        embed = discord.Embed(color=0x7ef7ab, title="Featured Servers", description="None")
+        embed = nextcord.Embed(color=0x7ef7ab, title="Featured Servers", description="None")
     
     await ctx.send(embed=embed)
 
@@ -99,8 +99,8 @@ async def about(ctx, *, name=None):
 
             
             
-            embed = discord.Embed(color=0x7ef7ab, title=name, description=f"Member Count: {len(guild.members)}\nFeatured For: {time_passed}")
-            embed.set_author(name=f"{guild.owner.name}#{guild.owner.discriminator}", icon_url=guild.owner.avatar_url_as(static_format='jpg'))
+            embed = nextcord.Embed(color=0x7ef7ab, title=name, description=f"Member Count: {len(guild.members)}\nFeatured For: {time_passed}")
+            embed.set_author(name=f"{guild.owner.name}#{guild.owner.discriminator}", icon_url=guild.owner.avatar.with_format('jpg').url)
             embed.set_thumbnail(url=guild.icon_url_as(static_format='jpg'))
             await ctx.send(embed=embed)
             return
@@ -152,7 +152,7 @@ async def invite(ctx):
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}.\nID: {client.user.id}")
-    await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with money'))
+    await client.change_presence(status=nextcord.Status.online, activity=nextcord.Game(name='with money'))
 
     guild = client.get_guild(692906379203313695)
     client.myself = guild.get_member(322896727071784960)

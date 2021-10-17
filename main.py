@@ -1,12 +1,10 @@
 # pylint: disable=unused-wildcard-import
 
-import discord
-from discord.ext import commands, tasks
-from discord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached, CheckFailure, ExpectedClosingQuoteError, UnexpectedQuoteError
+import nextcord
+from nextcord.ext import commands
+from nextcord.ext.commands import BadArgument, CommandNotFound, MaxConcurrencyReached, CheckFailure, ExpectedClosingQuoteError, UnexpectedQuoteError
 import random
-import json
 import time
-import datetime
 import asyncio
 import asyncpg
 import os
@@ -44,18 +42,18 @@ async def do_captcha(ctx):
         image.write(word, f"./storage/images/captchas/{word}.png")
 
         # making embed
-        embed = discord.Embed(title="Captcha Required", description="Please answer this captcha to prove this is you.\n(There are only lowercase letters)", color=0x15a7c2)
+        embed = nextcord.Embed(title="Captcha Required", description="Please answer this captcha to prove this is you.\n(There are only lowercase letters)", color=0x15a7c2)
         embed.set_image(url="attachment://captcha.png")
 
         # prompt user
-        captcha = await ctx.send(embed=embed, file=discord.File(f'./storage/images/captchas/{word}.png', filename="captcha.png"))
+        captcha = await ctx.send(embed=embed, file=nextcord.File(f'./storage/images/captchas/{word}.png', filename="captcha.png"))
 
         os.remove(f"./storage/images/captchas/{word}.png")
 
         try:
             response = await client.wait_for('message', check = lambda message: message.author == ctx.author and message.channel == ctx.channel, timeout=30)
         except asyncio.TimeoutError:
-            embed = discord.Embed(color=0xed373a, title="❌ Captcha Timed Out", description="No response was given in the last 30 seconds.")
+            embed = nextcord.Embed(color=0xed373a, title="❌ Captcha Timed Out", description="No response was given in the last 30 seconds.")
             embed.set_image(url="attachment://captcha.png")
             await captcha.edit(embed=embed)
 
@@ -67,7 +65,7 @@ async def do_captcha(ctx):
         response = response.content.lower().replace(' ', '')
 
         if response == word:
-            embed = discord.Embed(color=0x4fed4a, title="✅ Captcha Complete", description="Your command will be run in a moment.")
+            embed = nextcord.Embed(color=0x4fed4a, title="✅ Captcha Complete", description="Your command will be run in a moment.")
             embed.set_image(url="attachment://captcha.png")
             await captcha.edit(embed=embed)
             await asyncio.sleep(1.5)
@@ -75,7 +73,7 @@ async def do_captcha(ctx):
             client.making_captchas.remove(ctx.author.id)
             return True
         else:
-            embed = discord.Embed(color=0xed373a, title="❌ Captcha Failed", description="Run another command to try again.")
+            embed = nextcord.Embed(color=0xed373a, title="❌ Captcha Failed", description="Run another command to try again.")
             embed.set_image(url="attachment://captcha.png")
             await captcha.edit(embed=embed)
 
@@ -132,7 +130,7 @@ async def macro_check(ctx):
 
 
 
-client = commands.Bot(command_prefix = '.', intents=discord.Intents.all())
+client = commands.Bot(command_prefix = '.', intents=nextcord.Intents.all())
 client.remove_command('help')
 
 client.add_check(lambda ctx: not ctx.author.bot)
@@ -237,14 +235,14 @@ async def on_ready():
     statusmessage = await statuschannel.fetch_message(698775210173923429)
 
 
-    green = discord.Color(0x42f57b)
-    red = discord.Color(0xff5254)
+    green = nextcord.Color(0x42f57b)
+    red = nextcord.Color(0xff5254)
 
     for x in statusmessage.embeds:
         if x.color == green:
-            await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with money'))
+            await client.change_presence(status=nextcord.Status.online, activity=nextcord.Game(name='with money'))
         elif x.color == red:
-            await client.change_presence(status=discord.Status.dnd, activity=discord.Game(name='UNDER DEVELOPMENT'))
+            await client.change_presence(status=nextcord.Status.dnd, activity=nextcord.Game(name='UNDER DEVELOPMENT'))
 
 
     client.bailprice = lambda number: int(int(number-time.time())/3600*40)
@@ -327,7 +325,7 @@ client.heist = {}
 @client.event
 async def on_message(message):    
     
-    if type(message.channel) != discord.channel.DMChannel:
+    if type(message.channel) != nextcord.channel.DMChannel:
         if message.channel.category.id == client.rightCategory:
             if message.content.lower().startswith('pls '):
                 await message.channel.send(f"Hey, this server isn't run by Dank Memer, it's a custom bot! Check {client.commandsChannel.mention} for a list of commands.")

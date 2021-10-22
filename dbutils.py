@@ -150,7 +150,7 @@ class DBUtils(asyncpg.Connection):
 
         steal_logs = json.loads(await self.get_member_val(id, 'steal_logs'))
 
-        steal_logs.insert(0, {'text': text, 'created_at': str(message.created_at.replace('+00:00', '')), 'jump_url': message.jump_url})
+        steal_logs.insert(0, {'text': text, 'created_at': str(message.created_at).replace('+00:00', ''), 'jump_url': message.jump_url})
         steal_logs = steal_logs[:5]
 
         await self.set_member_val(id, 'steal_logs', json.dumps(steal_logs))

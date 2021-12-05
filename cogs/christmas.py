@@ -290,8 +290,8 @@ class Christmas(commands.Cog):
 
 
     async def cog_check(self, ctx):
-
-        if ctx.command.name != "snowball":
+        
+        if ctx.command.name == "snowball":
             if ctx.channel.category.id in (692949972764590160, 692949458551439370, 757374291028213852, 716729977223119018):
                 return True
 
